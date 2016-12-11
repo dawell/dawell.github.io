@@ -1,44 +1,63 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-  <title>Hexo</title>
-  
+  <title>Dawell的博客</title>
+  <subtitle>我不是一个简单的少年~</subtitle>
   <link href="/atom.xml" rel="self"/>
   
-  <link href="http://yoursite.com/"/>
-  <updated>2016-12-11T04:26:44.736Z</updated>
-  <id>http://yoursite.com/</id>
+  <link href="https://dawell.github.io/"/>
+  <updated>2016-12-11T08:01:49.030Z</updated>
+  <id>https://dawell.github.io/</id>
   
   <author>
-    <name>John Doe</name>
-    
+    <name>Dawell</name>
+    <email>355398356@qq.com</email>
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
   
   <entry>
-    <title>Hello World</title>
-    <link href="http://yoursite.com/2016/12/11/hello-world/"/>
-    <id>http://yoursite.com/2016/12/11/hello-world/</id>
-    <published>2016-12-11T04:26:44.736Z</published>
-    <updated>2016-12-11T04:26:44.736Z</updated>
+    <title>我的博客</title>
+    <link href="https://dawell.github.io/2016/12/11/my-blog/"/>
+    <id>https://dawell.github.io/2016/12/11/my-blog/</id>
+    <published>2016-12-11T07:17:39.000Z</published>
+    <updated>2016-12-11T08:01:49.030Z</updated>
     
-    <content type="html"><![CDATA[<p>Welcome to <a href="https://hexo.io/" target="_blank" rel="external">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/" target="_blank" rel="external">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html" target="_blank" rel="external">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues" target="_blank" rel="external">GitHub</a>.</p>
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ hexo new <span class="string">"My New Post"</span></div></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/writing.html" target="_blank" rel="external">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ hexo server</div></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/server.html" target="_blank" rel="external">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ hexo generate</div></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/generating.html" target="_blank" rel="external">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ hexo deploy</div></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/deployment.html" target="_blank" rel="external">Deployment</a></p>
+    <content type="html"><![CDATA[<p>网名Dawell，第一个公开的博客站点，分享自己的观点与学到的技术！</p>
+<h2 id="自我介绍"><a href="#自我介绍" class="headerlink" title="自我介绍"></a>自我介绍</h2><ul>
+<li>Java程序员</li>
+<li>喜欢编程、动漫、游戏</li>
+<li>就职于一家互联网金融公司</li>
+</ul>
+<h2 id="目的"><a href="#目的" class="headerlink" title="目的"></a>目的</h2><ul>
+<li>过去记录笔记都在本地使用OneNote记录，有很多知识经验不如拿出来分享下，网络公开可以促使自己更加Open。</li>
+<li>为了达成每日学习2小时的目标，每日写一篇博文总结，更好的消化知识，督促自己学习。</li>
+<li>可以结交更多志同道合的人</li>
+</ul>
+<h2 id="计划"><a href="#计划" class="headerlink" title="计划"></a>计划</h2><ul>
+<li>日常学习每日1篇</li>
+<li>技术博文每周1篇</li>
+<li>专题总结每月1篇</li>
+</ul>
+<h2 id="时间"><a href="#时间" class="headerlink" title="时间"></a>时间</h2><ul>
+<li>2016年12月各种环境准备</li>
+<li>2017年1月正式开始</li>
+</ul>
+<p>Best Wishes!</p>
 ]]></content>
     
     <summary type="html">
     
-      &lt;p&gt;Welcome to &lt;a href=&quot;https://hexo.io/&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;Hexo&lt;/a&gt;! This is your very first post. Check &lt;a href=&quot;https://hexo.
+      &lt;p&gt;网名Dawell，第一个公开的博客站点，分享自己的观点与学到的技术！&lt;/p&gt;
+&lt;h2 id=&quot;自我介绍&quot;&gt;&lt;a href=&quot;#自我介绍&quot; class=&quot;headerlink&quot; title=&quot;自我介绍&quot;&gt;&lt;/a&gt;自我介绍&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;Java程序员&lt;/li&gt;
+&lt;
     
     </summary>
     
+      <category term="杂谈" scheme="https://dawell.github.io/categories/%E6%9D%82%E8%B0%88/"/>
+    
+    
+      <category term="日常" scheme="https://dawell.github.io/tags/%E6%97%A5%E5%B8%B8/"/>
     
   </entry>
   
