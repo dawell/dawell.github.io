@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://dawell.github.io/"/>
-  <updated>2016-12-11T08:01:49.030Z</updated>
+  <updated>2016-12-11T09:03:25.058Z</updated>
   <id>https://dawell.github.io/</id>
   
   <author>
@@ -20,9 +20,10 @@
     <link href="https://dawell.github.io/2016/12/11/my-blog/"/>
     <id>https://dawell.github.io/2016/12/11/my-blog/</id>
     <published>2016-12-11T07:17:39.000Z</published>
-    <updated>2016-12-11T08:01:49.030Z</updated>
+    <updated>2016-12-11T09:03:25.058Z</updated>
     
-    <content type="html"><![CDATA[<p>网名Dawell，第一个公开的博客站点，分享自己的观点与学到的技术！</p>
+    <content type="html"><![CDATA[<p><img src="http://ww4.sinaimg.cn/mw690/712a7015jw1famyj9sbqfj21hc0u0n2u.jpg" alt="img"></p>
+<p>网名Dawell，第一个公开的博客站点，分享自己的观点与学到的技术！</p>
 <h2 id="自我介绍"><a href="#自我介绍" class="headerlink" title="自我介绍"></a>自我介绍</h2><ul>
 <li>Java程序员</li>
 <li>喜欢编程、动漫、游戏</li>
@@ -47,10 +48,9 @@
     
     <summary type="html">
     
-      &lt;p&gt;网名Dawell，第一个公开的博客站点，分享自己的观点与学到的技术！&lt;/p&gt;
-&lt;h2 id=&quot;自我介绍&quot;&gt;&lt;a href=&quot;#自我介绍&quot; class=&quot;headerlink&quot; title=&quot;自我介绍&quot;&gt;&lt;/a&gt;自我介绍&lt;/h2&gt;&lt;ul&gt;
-&lt;li&gt;Java程序员&lt;/li&gt;
-&lt;
+      &lt;p&gt;&lt;img src=&quot;http://ww4.sinaimg.cn/mw690/712a7015jw1famyj9sbqfj21hc0u0n2u.jpg&quot; alt=&quot;img&quot;&gt;&lt;/p&gt;
+&lt;p&gt;网名Dawell，第一个公开的博客站点，分享自己的观点与学到的技术！&lt;/p&gt;
+&lt;h2 
     
     </summary>
     
