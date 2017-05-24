@@ -105,8 +105,9 @@
 <meta property="og:image" content="http://wx3.sinaimg.cn/mw690/712a7015gy1ffue2fumooj20eq0d3jt3.jpg">
 <meta property="og:image" content="http://wx3.sinaimg.cn/mw690/712a7015gy1ffue2ixrz0j20su0jhmxs.jpg">
 <meta property="og:image" content="http://wx2.sinaimg.cn/mw690/712a7015gy1ffue2lstwvj20b706rdfv.jpg">
+<meta property="og:image" content="http://wx2.sinaimg.cn/mw690/712a7015gy1ffue2o52c4j20hd03r74d.jpg">
 <meta property="og:image" content="http://wx2.sinaimg.cn/mw690/712a7015gy1ffue9vkviqj208r0jumxx.jpg">
-<meta property="og:updated_time" content="2017-05-22T12:15:55.354Z">
+<meta property="og:updated_time" content="2017-05-24T10:45:47.544Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="静态代码扫描工具">
 <meta name="twitter:description" content="优秀的团队为了保证可读性、可维护性、避免重复踩坑与保证代码质量，都会推出一些开发规范来遵守。开发规范是前置主动要求团队成员遵守的，而光靠意识是难以保证完全遵守规范的，所以还需要一些工具辅助。当然即使有工具做这些事情，规范也是必须推广的，让大家先仔细读读，毕竟直接写出优秀的代码是最好的，然后再辅助工具乃最佳实践。
@@ -458,10 +459,14 @@
 </ul>
 <h2 id="SonarQube"><a href="#SonarQube" class="headerlink" title="SonarQube"></a>SonarQube</h2><p>代码质量管理系统<br>相当于QAPlug的工程独立出一个服务器部署，可以配置规则，扫描代码，集成了很多静态扫描工具<br>2015年3月的时候就看到一篇文章介绍这个平台了，那时候还没有太过关注，后来发现这个是个很好的平台</p>
 <h3 id="Sonarlint"><a href="#Sonarlint" class="headerlink" title="Sonarlint"></a>Sonarlint</h3><p>是SonarQube的配套的IDE插件，配置远程服务器的地址，然后本地就可以执行校验了，用的远程的规则<br>这样还是很方便的，规则可以同一在SonarQube维护，不用每个人本地导入，团队的话用这个最适合</p>
-<p>不过使用起来遇到一个问题，如果sonarqube的子项目比较多时，插件拉去项目的api会超时timeout，导致无法使用，可能项目太多了导致的<br><img src="http://wx2.sinaimg.cn/mw690/712a7015gy1ffue9vkviqj208r0jumxx.jpg" alt="img"></p>
+<h4 id="插件拉去项目列表时报错"><a href="#插件拉去项目列表时报错" class="headerlink" title="插件拉去项目列表时报错"></a>插件拉去项目列表时报错</h4><p>不过使用起来遇到一个问题，如果SonarQube的子项目比较多时，插件拉去项目的api会超时timeout，导致无法使用<br><img src="http://wx2.sinaimg.cn/mw690/712a7015gy1ffue2o52c4j20hd03r74d.jpg" alt="img"><br>解决：<br>问题就是<code>http://xxx:9000/api/projects/index?format=json&amp;subprojects=true</code>这个URL请求时timeout，如果浏览器请求会报如下错误：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">&#123;&quot;err_code&quot;:500,&quot;err_msg&quot;:&quot;ActiveRecord::JDBCError: Can not read response from server. Expected to read 255 bytes, read 0 bytes before connection was unexpectedly lost.: SELECT id,uuid,kee,name,language,long_name,scope,qualifier,root_uuid,project_uuid FROM `projects` WHERE (enabled=1 AND scope in (&apos;PRJ&apos;) AND qualifier in (&apos;TRK&apos;,&apos;BRC&apos;))  ORDER BY name&quot;&#125;</div></pre></td></tr></table></figure></p>
+<p>问题SQL：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">SELECT</span> <span class="keyword">id</span>,<span class="keyword">uuid</span>,kee,<span class="keyword">name</span>,<span class="keyword">language</span>,long_name,<span class="keyword">scope</span>,qualifier,root_uuid,project_uuid</div><div class="line"><span class="keyword">FROM</span> <span class="string">`projects`</span></div><div class="line"><span class="keyword">WHERE</span> (enabled=<span class="number">1</span> <span class="keyword">AND</span> <span class="keyword">scope</span> <span class="keyword">in</span> (<span class="string">'PRJ'</span>) <span class="keyword">AND</span> qualifier <span class="keyword">in</span> (<span class="string">'TRK'</span>,<span class="string">'BRC'</span>))</div><div class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> <span class="keyword">name</span></div></pre></td></tr></table></figure></p>
+<p>实际测试发现：问题出在order by name上，如果只使用order by，执行就会慢到没结果甚至报<code>[Err] 2000 - Unknown MySQL error</code>错误，之后看表结构发现问题<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">`name` varchar(2000) COLLATE utf8_bin DEFAULT NULL,</div></pre></td></tr></table></figure></p>
+<p>name这个字段竟然有2000的长度，然后看数据库实际数据长度没有超过160的，所以修改为300，查询就非常快了，问题解决！</p>
 <h3 id="扩充-Lint概念"><a href="#扩充-Lint概念" class="headerlink" title="扩充-Lint概念"></a>扩充-Lint概念</h3><p>Sonarlint是一个Lint工具，其实Lint的含义就代表代码静态分析的工具，协助开发的工具，尤其是前端经常使用，比如插件eslint：检查JavaScript错误非常方便</p>
 <h2 id="JArchitect"><a href="#JArchitect" class="headerlink" title="JArchitect"></a>JArchitect</h2><p>多种分析工具的聚合工具<br>是一个商业性的收费的分析工具<br>可以汇聚checkstyle、findbugs、pmd的xml，然后分类总结生成图表<br>不过是收费的，也没有idea插件，不用</p>
 <h1 id="代码覆盖率工具"><a href="#代码覆盖率工具" class="headerlink" title="代码覆盖率工具"></a>代码覆盖率工具</h1><p>idea自带了代码覆盖率插件还不错<br>跑单元测试的时候以代码覆盖率的方式运行就行了<br>一般逻辑覆盖率60%就差不多了，核心模块80%覆盖标准即可</p>
+<h2 id="运行方法"><a href="#运行方法" class="headerlink" title="运行方法"></a>运行方法</h2><p><img src="http://wx2.sinaimg.cn/mw690/712a7015gy1ffue9vkviqj208r0jumxx.jpg" alt="img"></p>
 <h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>首先要从意识上要遵守规范，风格统一，需要制定一份Java开发规范，我比较倾向于直接使用阿里的Java规范吧，简单实用，也不过分严格<br>其次要选择静态代码工具，没有SonarQube的话用QAPlug是很好的选择，有的话装个Sonarlint插件就可以了<br>代码覆盖率通过idea自带的即可</p>
 <p>有些人可能很排斥规范，总感觉条条框框太多，不符合自己的自由风格，但是软件不是开发完上线就结束的过程，而是需要持续迭代维护升级的过程，新人会接手，要有可读性可维护性。项目大了，人多了也是需要规范化才能更好的融合协作，让混乱变得有序<br>一个人的优秀靠的是经验，一个团队的优秀靠的是规范。<br>有了这些规范与工具，就可以大大的提高团队的整体素质与水平，尤其是大厂开发人员，这个是必须有的。</p>
 <p>Best Wishes!</p>
@@ -476,9 +481,50 @@
       
     </div>
 
+	<div>
+	 
+	   
+<div style="text-align:center;color: #ccc;font-size:14px;">
+------ 本文结束 ------</div>
+<br/>
+<div style="border: 1px solid black">
+<div style="margin-left:10px">
+<span style="font-weight:blod">版权声明</span>
+<img src="http://wx4.sinaimg.cn/mw690/712a7015gy1ffwqkthgrlj20e9026gm4.jpg" >
+<br/>
+<p style="font-size: 10px;line-height: 30px"><a href="http://dawell.cc" style="color:#258FC6">dawell's Notes</a> by <a href="http://dawell.cc" style="color:#258FC6">Zhou Da Wei</a> is licensed under a <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" style="color:#258FC6">Creative Commons BY-NC-ND 4.0 International License</a>.<br/>
+由<a href="http://dawell.cc" style="color:#258FC6">Dawell</a>创作并维护的<a href="http://dawell.cc" style="color:#258FC6">dawell's Notes</a>博客采用<a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" style="color:#258FC6">创作共用保留署名-非商业-禁止演绎4.0国际许可证</a>。<br/>
+本文首发于<a href="http://dawell.cc" style="color:#258FC6">dawell's Notes</a> 博客（ <a href="http://dawell.cc" style="color:#258FC6">http://dawell.cc</a> ），版权所有，侵权必究。</p>
+</div>
+</div>
+
+	 
+	</div>
+	
     <div>
       
         
+  <div style="padding: 10px 0; margin: 20px auto; width: 90%; text-align: center;">
+    <div>坚持原创技术分享，您的支持将鼓励我继续创作！</div>
+    <button id="rewardButton" disable="enable" onclick="var qr = document.getElementById('QR'); if (qr.style.display === 'none') {qr.style.display='block';} else {qr.style.display='none'}">
+      <span>赏</span>
+    </button>
+    <div id="QR" style="display: none;">
+      
+        <div id="wechat" style="display: inline-block">
+          <img id="wechat_qr" src="http://wx3.sinaimg.cn/mw690/712a7015gy1ffwq5phr1rj208j08imxp.jpg" alt="Dawell WeChat Pay"/>
+          <p>微信打赏</p>
+        </div>
+      
+      
+        <div id="alipay" style="display: inline-block">
+          <img id="alipay_qr" src="http://wx1.sinaimg.cn/mw690/712a7015gy1ffwq4f2m3kj208x08w74w.jpg" alt="Dawell Alipay"/>
+          <p>支付宝打赏</p>
+        </div>
+      
+    </div>
+  </div>
+
 
       
     </div>
@@ -489,7 +535,7 @@
 
       
     </div>
-
+	
     <footer class="post-footer">
       
         <div class="post-tags">
@@ -507,8 +553,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2016/12/11/20161211我的博客/" rel="next" title="Dawell的博客">
-                <i class="fa fa-chevron-left"></i> Dawell的博客
+              <a href="/2017/05/21/20170521博客评论插件/" rel="next" title="博客评论插件">
+                <i class="fa fa-chevron-left"></i> 博客评论插件
               </a>
             
           </div>
@@ -589,7 +635,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-count">3</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -600,7 +646,7 @@
             
             <div class="site-state-item site-state-categories">
               <a href="/categories/index.html">
-                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-count">3</span>
                 <span class="site-state-item-name">分类</span>
               </a>
             </div>
@@ -611,7 +657,7 @@
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-count">3</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
@@ -630,9 +676,26 @@
 
         <div class="links-of-author motion-element">
           
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/Dawell" target="_blank" title="GitHub">
+                  
+                    <i class="fa fa-fw fa-github"></i>
+                  
+                  GitHub
+                </a>
+              </span>
+            
+          
         </div>
 
         
+        
+          <div class="cc-license motion-element" itemprop="license">
+            <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" target="_blank">
+              <img src="/images/cc-by-nc-sa.svg" alt="Creative Commons" />
+            </a>
+          </div>
         
 
         
@@ -653,7 +716,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#开发规范"><span class="nav-number">1.</span> <span class="nav-text">开发规范</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#独立的组件"><span class="nav-number">2.</span> <span class="nav-text">独立的组件</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#FindBugs"><span class="nav-number">2.1.</span> <span class="nav-text">FindBugs</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#特点"><span class="nav-number">2.1.1.</span> <span class="nav-text">特点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#代码缺陷分类"><span class="nav-number">2.1.2.</span> <span class="nav-text">代码缺陷分类</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#缺陷列表"><span class="nav-number">2.1.3.</span> <span class="nav-text">缺陷列表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#排除单个规则"><span class="nav-number">2.1.4.</span> <span class="nav-text">排除单个规则</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CheckStyle"><span class="nav-number">2.2.</span> <span class="nav-text">CheckStyle</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#工具界面"><span class="nav-number">2.2.1.</span> <span class="nav-text">工具界面</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#特点-1"><span class="nav-number">2.2.2.</span> <span class="nav-text">特点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#规范配置"><span class="nav-number">2.2.3.</span> <span class="nav-text">规范配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#技巧"><span class="nav-number">2.2.4.</span> <span class="nav-text">技巧</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#PMD"><span class="nav-number">2.3.</span> <span class="nav-text">PMD</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#特点-2"><span class="nav-number">2.3.1.</span> <span class="nav-text">特点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#错误分类"><span class="nav-number">2.3.2.</span> <span class="nav-text">错误分类</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#集合组件"><span class="nav-number">3.</span> <span class="nav-text">集合组件</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#IdeaIDE的QAPlug"><span class="nav-number">3.1.</span> <span class="nav-text">IdeaIDE的QAPlug</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#插件下载安装"><span class="nav-number">3.1.1.</span> <span class="nav-text">插件下载安装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#分类"><span class="nav-number">3.1.2.</span> <span class="nav-text">分类</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SonarQube"><span class="nav-number">3.2.</span> <span class="nav-text">SonarQube</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Sonarlint"><span class="nav-number">3.2.1.</span> <span class="nav-text">Sonarlint</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#扩充-Lint概念"><span class="nav-number">3.2.2.</span> <span class="nav-text">扩充-Lint概念</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#JArchitect"><span class="nav-number">3.3.</span> <span class="nav-text">JArchitect</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#代码覆盖率工具"><span class="nav-number">4.</span> <span class="nav-text">代码覆盖率工具</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#总结"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#开发规范"><span class="nav-number">1.</span> <span class="nav-text">开发规范</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#独立的组件"><span class="nav-number">2.</span> <span class="nav-text">独立的组件</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#FindBugs"><span class="nav-number">2.1.</span> <span class="nav-text">FindBugs</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#特点"><span class="nav-number">2.1.1.</span> <span class="nav-text">特点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#代码缺陷分类"><span class="nav-number">2.1.2.</span> <span class="nav-text">代码缺陷分类</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#缺陷列表"><span class="nav-number">2.1.3.</span> <span class="nav-text">缺陷列表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#排除单个规则"><span class="nav-number">2.1.4.</span> <span class="nav-text">排除单个规则</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CheckStyle"><span class="nav-number">2.2.</span> <span class="nav-text">CheckStyle</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#工具界面"><span class="nav-number">2.2.1.</span> <span class="nav-text">工具界面</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#特点-1"><span class="nav-number">2.2.2.</span> <span class="nav-text">特点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#规范配置"><span class="nav-number">2.2.3.</span> <span class="nav-text">规范配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#技巧"><span class="nav-number">2.2.4.</span> <span class="nav-text">技巧</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#PMD"><span class="nav-number">2.3.</span> <span class="nav-text">PMD</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#特点-2"><span class="nav-number">2.3.1.</span> <span class="nav-text">特点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#错误分类"><span class="nav-number">2.3.2.</span> <span class="nav-text">错误分类</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#集合组件"><span class="nav-number">3.</span> <span class="nav-text">集合组件</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#IdeaIDE的QAPlug"><span class="nav-number">3.1.</span> <span class="nav-text">IdeaIDE的QAPlug</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#插件下载安装"><span class="nav-number">3.1.1.</span> <span class="nav-text">插件下载安装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#分类"><span class="nav-number">3.1.2.</span> <span class="nav-text">分类</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SonarQube"><span class="nav-number">3.2.</span> <span class="nav-text">SonarQube</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Sonarlint"><span class="nav-number">3.2.1.</span> <span class="nav-text">Sonarlint</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#插件拉去项目列表时报错"><span class="nav-number">3.2.1.1.</span> <span class="nav-text">插件拉去项目列表时报错</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#扩充-Lint概念"><span class="nav-number">3.2.2.</span> <span class="nav-text">扩充-Lint概念</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#JArchitect"><span class="nav-number">3.3.</span> <span class="nav-text">JArchitect</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#代码覆盖率工具"><span class="nav-number">4.</span> <span class="nav-text">代码覆盖率工具</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#运行方法"><span class="nav-number">4.1.</span> <span class="nav-text">运行方法</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#总结"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li></ol></div>
             
 
           </div>
