@@ -276,6 +276,170 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2017/05/23/20170523Sonarlint插件/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dawell">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Dawell的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/05/23/20170523Sonarlint插件/" itemprop="url">Sonarlint插件</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-05-23T21:30:00+08:00">
+                2017-05-23
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/技术/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+             <span id="/2017/05/23/20170523Sonarlint插件/" class="leancloud_visitors" data-flag-title="Sonarlint插件">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h1><p>sonar与idea集成的相关步骤：</p>
+<ol>
+<li><p>安装插件<br>idea–plugns中查找sonarLint插件，并安装；安装完成后，重启idea；<br><img src="http://wx3.sinaimg.cn/mw690/712a7015gy1ffxpq8n40dj20at047glk.jpg" alt="image"></p>
+</li>
+<li><p>配置sonarlint插件<br>第一次添加时，需要到General中配置使用的sonar平台地址，一般是公司内部搭建的地址<br><img src="http://wx4.sinaimg.cn/mw690/712a7015gy1ffxpq9bjadj20rr0fk3zv.jpg" alt="image"><br>配置项目信息，在上面那个环节时，下面有个“UPdate bingding”，必须要点击下；看解释就很清楚了。从服务器获取项目列表、规则、配置等；必须在选择项目前完成这事儿。<br><img src="http://wx1.sinaimg.cn/mw690/712a7015gy1ffxpq9xwpuj20id028web.jpg" alt="image"></p>
+</li>
+<li><p>配置项目：<br>选择你们的项目<br>如果项目，要在SonarQube在配置下你们的项目，导入checkstyle、pmd、findbugs的配置，或者用默认的<br><img src="http://wx4.sinaimg.cn/mw690/712a7015gy1ffxpqafpqvj20s00h50tq.jpg" alt="image"></p>
+</li>
+<li><p>使用插件<br>配置完成后，在当前项目环境下，idea的左下角就可以看到sonar扩展了，注意选Project files后选择scope<br><img src="http://wx2.sinaimg.cn/mw690/712a7015gy1ffxpqaxrguj20n009bmxm.jpg" alt="image"></p>
+</li>
+</ol>
+<p>至此，idea与sonar插件集成完毕</p>
+<h2 id="插件拉去项目列表时报错"><a href="#插件拉去项目列表时报错" class="headerlink" title="插件拉去项目列表时报错"></a>插件拉去项目列表时报错</h2><p>不过使用起来遇到一个问题，如果SonarQube的子项目比较多时，插件拉去项目的api会超时timeout，导致无法使用<br><img src="http://wx2.sinaimg.cn/mw690/712a7015gy1ffue2o52c4j20hd03r74d.jpg" alt="img"><br>解决：<br>问题就是<code>http://xxx:9000/api/projects/index?format=json&amp;subprojects=true</code>这个URL请求时timeout，如果浏览器请求会报如下错误：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">&#123;&quot;err_code&quot;:500,&quot;err_msg&quot;:&quot;ActiveRecord::JDBCError: Can not read response from server. Expected to read 255 bytes, read 0 bytes before connection was unexpectedly lost.: SELECT id,uuid,kee,name,language,long_name,scope,qualifier,root_uuid,project_uuid FROM `projects` WHERE (enabled=1 AND scope in (&apos;PRJ&apos;) AND qualifier in (&apos;TRK&apos;,&apos;BRC&apos;))  ORDER BY name&quot;&#125;</div></pre></td></tr></table></figure></p>
+<p>问题SQL：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">SELECT</span> <span class="keyword">id</span>,<span class="keyword">uuid</span>,kee,<span class="keyword">name</span>,<span class="keyword">language</span>,long_name,<span class="keyword">scope</span>,qualifier,root_uuid,project_uuid</div><div class="line"><span class="keyword">FROM</span> <span class="string">`projects`</span></div><div class="line"><span class="keyword">WHERE</span> (enabled=<span class="number">1</span> <span class="keyword">AND</span> <span class="keyword">scope</span> <span class="keyword">in</span> (<span class="string">'PRJ'</span>) <span class="keyword">AND</span> qualifier <span class="keyword">in</span> (<span class="string">'TRK'</span>,<span class="string">'BRC'</span>))</div><div class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> <span class="keyword">name</span></div></pre></td></tr></table></figure></p>
+<p>实际测试发现：问题出在order by name上，如果只使用order by，执行就会慢到没结果甚至报<code>[Err] 2000 - Unknown MySQL error</code>错误，之后看表结构发现问题<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">`name` varchar(2000) COLLATE utf8_bin DEFAULT NULL,</div></pre></td></tr></table></figure></p>
+<p>name这个字段竟然有2000的长度，然后看数据库实际数据长度没有超过160的，所以修改为300，查询就非常快了，问题解决！</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+	<div>
+	 
+	</div>
+	
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+	
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2017/05/22/20170522静态代码扫描工具/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -307,7 +471,7 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-05-22T15:57:00+08:00">
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-05-22T21:57:00+08:00">
                 2017-05-22
               </time>
             
@@ -346,6 +510,17 @@
           
 
           
+          
+             <span id="/2017/05/22/20170522静态代码扫描工具/" class="leancloud_visitors" data-flag-title="静态代码扫描工具">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
           
 
           
@@ -442,11 +617,8 @@
 <li>Usability 可用性</li>
 </ul>
 <h2 id="SonarQube"><a href="#SonarQube" class="headerlink" title="SonarQube"></a>SonarQube</h2><p>代码质量管理系统<br>相当于QAPlug的工程独立出一个服务器部署，可以配置规则，扫描代码，集成了很多静态扫描工具<br>2015年3月的时候就看到一篇文章介绍这个平台了，那时候还没有太过关注，后来发现这个是个很好的平台</p>
-<h3 id="Sonarlint"><a href="#Sonarlint" class="headerlink" title="Sonarlint"></a>Sonarlint</h3><p>是SonarQube的配套的IDE插件，配置远程服务器的地址，然后本地就可以执行校验了，用的远程的规则<br>这样还是很方便的，规则可以同一在SonarQube维护，不用每个人本地导入，团队的话用这个最适合</p>
-<h4 id="插件拉去项目列表时报错"><a href="#插件拉去项目列表时报错" class="headerlink" title="插件拉去项目列表时报错"></a>插件拉去项目列表时报错</h4><p>不过使用起来遇到一个问题，如果SonarQube的子项目比较多时，插件拉去项目的api会超时timeout，导致无法使用<br><img src="http://wx2.sinaimg.cn/mw690/712a7015gy1ffue2o52c4j20hd03r74d.jpg" alt="img"><br>解决：<br>问题就是<code>http://xxx:9000/api/projects/index?format=json&amp;subprojects=true</code>这个URL请求时timeout，如果浏览器请求会报如下错误：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">&#123;&quot;err_code&quot;:500,&quot;err_msg&quot;:&quot;ActiveRecord::JDBCError: Can not read response from server. Expected to read 255 bytes, read 0 bytes before connection was unexpectedly lost.: SELECT id,uuid,kee,name,language,long_name,scope,qualifier,root_uuid,project_uuid FROM `projects` WHERE (enabled=1 AND scope in (&apos;PRJ&apos;) AND qualifier in (&apos;TRK&apos;,&apos;BRC&apos;))  ORDER BY name&quot;&#125;</div></pre></td></tr></table></figure></p>
-<p>问题SQL：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">SELECT</span> <span class="keyword">id</span>,<span class="keyword">uuid</span>,kee,<span class="keyword">name</span>,<span class="keyword">language</span>,long_name,<span class="keyword">scope</span>,qualifier,root_uuid,project_uuid</div><div class="line"><span class="keyword">FROM</span> <span class="string">`projects`</span></div><div class="line"><span class="keyword">WHERE</span> (enabled=<span class="number">1</span> <span class="keyword">AND</span> <span class="keyword">scope</span> <span class="keyword">in</span> (<span class="string">'PRJ'</span>) <span class="keyword">AND</span> qualifier <span class="keyword">in</span> (<span class="string">'TRK'</span>,<span class="string">'BRC'</span>))</div><div class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> <span class="keyword">name</span></div></pre></td></tr></table></figure></p>
-<p>实际测试发现：问题出在order by name上，如果只使用order by，执行就会慢到没结果甚至报<code>[Err] 2000 - Unknown MySQL error</code>错误，之后看表结构发现问题<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">`name` varchar(2000) COLLATE utf8_bin DEFAULT NULL,</div></pre></td></tr></table></figure></p>
-<p>name这个字段竟然有2000的长度，然后看数据库实际数据长度没有超过160的，所以修改为300，查询就非常快了，问题解决！</p>
+<h3 id="Sonarlint"><a href="#Sonarlint" class="headerlink" title="Sonarlint"></a>Sonarlint</h3><p>是SonarQube的配套的IDE插件，配置远程服务器的地址,选取要拉去规则的项目，然后本地就可以执行校验了，用的远程的规则<br>这样还是很方便的，规则可以同一在SonarQube维护，不用每个人本地导入，团队的话用这个最适合</p>
+<p>Sonarlint安装与拉取列表失败问题解决见 <a href="/2017/05/23/20170523Sonarlint插件/" title="Sonarlint插件">Sonarlint插件</a></p>
 <h3 id="扩充-Lint概念"><a href="#扩充-Lint概念" class="headerlink" title="扩充-Lint概念"></a>扩充-Lint概念</h3><p>Sonarlint是一个Lint工具，其实Lint的含义就代表代码静态分析的工具，协助开发的工具，尤其是前端经常使用，比如插件eslint：检查JavaScript错误非常方便</p>
 <h2 id="JArchitect"><a href="#JArchitect" class="headerlink" title="JArchitect"></a>JArchitect</h2><p>多种分析工具的聚合工具<br>是一个商业性的收费的分析工具<br>可以汇聚checkstyle、findbugs、pmd的xml，然后分类总结生成图表<br>不过是收费的，也没有idea插件，不用</p>
 <h1 id="代码覆盖率工具"><a href="#代码覆盖率工具" class="headerlink" title="代码覆盖率工具"></a>代码覆盖率工具</h1><p>idea自带了代码覆盖率插件还不错<br>跑单元测试的时候以代码覆盖率的方式运行就行了<br>一般逻辑覆盖率60%就差不多了，核心模块80%覆盖标准即可</p>
@@ -532,7 +704,7 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-05-21T17:00:00+08:00">
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-05-21T21:00:00+08:00">
                 2017-05-21
               </time>
             
@@ -555,8 +727,8 @@
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/个人/" itemprop="url" rel="index">
-                    <span itemprop="name">个人</span>
+                  <a href="/categories/博客/" itemprop="url" rel="index">
+                    <span itemprop="name">博客</span>
                   </a>
                 </span>
 
@@ -571,6 +743,17 @@
           
 
           
+          
+             <span id="/2017/05/21/20170521博客评论插件/" class="leancloud_visitors" data-flag-title="博客评论插件">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
           
 
           
@@ -601,11 +784,15 @@
 </ul>
 <h2 id="多说"><a href="#多说" class="headerlink" title="多说"></a>多说</h2><p>以前一直用多说，不过2017年6月1日开始将不再维护，所以只能弃用之</p>
 <h2 id="友言"><a href="#友言" class="headerlink" title="友言"></a>友言</h2><p>尝试了下，一开始网上说不支持https，所以哥有申请了个域名换成了http，结果发现还是不行，最后才发现官网的示例程序都不能跑了，都是一个错误：502，所以弃用！</p>
-<h2 id="网易云跟帖"><a href="#网易云跟帖" class="headerlink" title="网易云跟帖"></a>网易云跟帖</h2><p>目前就是用的这个，功能还算可以满足，不过不支持子域名，所以过去挂在github.io上的子域名注册的时候会提示重复无法注册，所以需要单独申请个域名挂上</p>
+<h2 id="网易云跟帖"><a href="#网易云跟帖" class="headerlink" title="网易云跟帖"></a>网易云跟帖</h2><p>目前就是用的这个，功能还算可以满足，不过不支持子域名，所以过去挂在github.io上的子域名注册的时候会提示“站点url存在”，所以需要单独申请个域名挂上</p>
 <p>新版的next主体已经支持网易云跟帖，主要更新新版后只要加一个配置即可使用。</p>
 <h2 id="disqus"><a href="#disqus" class="headerlink" title="disqus"></a>disqus</h2><p>我看网上很多人在弃用多说后都是选择的这个，不过不用翻墙vpn，我官网都无法访问，无比尴尬，所以国内无法使用，弃用！</p>
 <h2 id="畅言"><a href="#畅言" class="headerlink" title="畅言"></a>畅言</h2><p>搜狐的，不过未备案的网站只能用15天，弃用！</p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>目前能选择的只有 网易云跟帖了 ，后续完善教程，如何配置网易云跟帖。</p>
+<h1 id="参考网站"><a href="#参考网站" class="headerlink" title="参考网站"></a>参考网站</h1><ul>
+<li><a href="https://www.zhihu.com/question/57426274" target="_blank" rel="external">https://www.zhihu.com/question/57426274</a></li>
+<li><a href="https://blog.shuiba.co/comment-systems-recommendation#toc_2" target="_blank" rel="external">https://blog.shuiba.co/comment-systems-recommendation#toc_2</a></li>
+</ul>
 
           
         
@@ -707,8 +894,8 @@
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/杂谈/" itemprop="url" rel="index">
-                    <span itemprop="name">杂谈</span>
+                  <a href="/categories/个人/" itemprop="url" rel="index">
+                    <span itemprop="name">个人</span>
                   </a>
                 </span>
 
@@ -723,6 +910,17 @@
           
 
           
+          
+             <span id="/2016/12/11/20161211我的博客/" class="leancloud_visitors" data-flag-title="Dawell的博客">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
           
 
           
@@ -848,7 +1046,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">3</span>
+                <span class="site-state-item-count">4</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -870,7 +1068,7 @@
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">3</span>
+                <span class="site-state-item-count">4</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
@@ -1076,6 +1274,113 @@
 
 
   
+
+  
+  <script src="https://cdn1.lncld.net/static/js/av-core-mini-0.6.1.js"></script>
+  <script>AV.initialize("3Vbe2UCzbY41yP5dtkxpWd5G-gzGzoHsz", "EeVqL4YwIANsoGT9sJXoTgjp");</script>
+  <script>
+    function showTime(Counter) {
+      var query = new AV.Query(Counter);
+      var entries = [];
+      var $visitors = $(".leancloud_visitors");
+
+      $visitors.each(function () {
+        entries.push( $(this).attr("id").trim() );
+      });
+
+      query.containedIn('url', entries);
+      query.find()
+        .done(function (results) {
+          var COUNT_CONTAINER_REF = '.leancloud-visitors-count';
+
+          if (results.length === 0) {
+            $visitors.find(COUNT_CONTAINER_REF).text(0);
+            return;
+          }
+
+          for (var i = 0; i < results.length; i++) {
+            var item = results[i];
+            var url = item.get('url');
+            var time = item.get('time');
+            var element = document.getElementById(url);
+
+            $(element).find(COUNT_CONTAINER_REF).text(time);
+          }
+          for(var i = 0; i < entries.length; i++) {
+            var url = entries[i];
+            var element = document.getElementById(url);
+            var countSpan = $(element).find(COUNT_CONTAINER_REF);
+            if( countSpan.text() == '') {
+              countSpan.text(0);
+            }
+          }
+        })
+        .fail(function (object, error) {
+          console.log("Error: " + error.code + " " + error.message);
+        });
+    }
+
+    function addCount(Counter) {
+      var $visitors = $(".leancloud_visitors");
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+      var query = new AV.Query(Counter);
+
+      query.equalTo("url", url);
+      query.find({
+        success: function(results) {
+          if (results.length > 0) {
+            var counter = results[0];
+            counter.fetchWhenSave(true);
+            counter.increment("time");
+            counter.save(null, {
+              success: function(counter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.get('time'));
+              },
+              error: function(counter, error) {
+                console.log('Failed to save Visitor num, with error message: ' + error.message);
+              }
+            });
+          } else {
+            var newcounter = new Counter();
+            /* Set ACL */
+            var acl = new AV.ACL();
+            acl.setPublicReadAccess(true);
+            acl.setPublicWriteAccess(true);
+            newcounter.setACL(acl);
+            /* End Set ACL */
+            newcounter.set("title", title);
+            newcounter.set("url", url);
+            newcounter.set("time", 1);
+            newcounter.save(null, {
+              success: function(newcounter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(newcounter.get('time'));
+              },
+              error: function(newcounter, error) {
+                console.log('Failed to create');
+              }
+            });
+          }
+        },
+        error: function(error) {
+          console.log('Error:' + error.code + " " + error.message);
+        }
+      });
+    }
+
+    $(function() {
+      var Counter = AV.Object.extend("Counter");
+      if ($('.leancloud_visitors').length == 1) {
+        addCount(Counter);
+      } else if ($('.post-title-link').length > 1) {
+        showTime(Counter);
+      }
+    });
+  </script>
+
+
 
   
 

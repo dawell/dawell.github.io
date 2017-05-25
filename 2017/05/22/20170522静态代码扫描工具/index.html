@@ -105,9 +105,8 @@
 <meta property="og:image" content="http://wx3.sinaimg.cn/mw690/712a7015gy1ffue2fumooj20eq0d3jt3.jpg">
 <meta property="og:image" content="http://wx3.sinaimg.cn/mw690/712a7015gy1ffue2ixrz0j20su0jhmxs.jpg">
 <meta property="og:image" content="http://wx2.sinaimg.cn/mw690/712a7015gy1ffue2lstwvj20b706rdfv.jpg">
-<meta property="og:image" content="http://wx2.sinaimg.cn/mw690/712a7015gy1ffue2o52c4j20hd03r74d.jpg">
 <meta property="og:image" content="http://wx2.sinaimg.cn/mw690/712a7015gy1ffue9vkviqj208r0jumxx.jpg">
-<meta property="og:updated_time" content="2017-05-24T10:45:47.544Z">
+<meta property="og:updated_time" content="2017-05-25T08:32:23.139Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="静态代码扫描工具">
 <meta name="twitter:description" content="优秀的团队为了保证可读性、可维护性、避免重复踩坑与保证代码质量，都会推出一些开发规范来遵守。开发规范是前置主动要求团队成员遵守的，而光靠意识是难以保证完全遵守规范的，所以还需要一些工具辅助。当然即使有工具做这些事情，规范也是必须推广的，让大家先仔细读读，毕竟直接写出优秀的代码是最好的，然后再辅助工具乃最佳实践。
@@ -315,7 +314,7 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-05-22T15:57:00+08:00">
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-05-22T21:57:00+08:00">
                 2017-05-22
               </time>
             
@@ -364,6 +363,17 @@
           
 
           
+          
+             <span id="/2017/05/22/20170522静态代码扫描工具/" class="leancloud_visitors" data-flag-title="静态代码扫描工具">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
           
 
           
@@ -458,11 +468,8 @@
 <li>Usability 可用性</li>
 </ul>
 <h2 id="SonarQube"><a href="#SonarQube" class="headerlink" title="SonarQube"></a>SonarQube</h2><p>代码质量管理系统<br>相当于QAPlug的工程独立出一个服务器部署，可以配置规则，扫描代码，集成了很多静态扫描工具<br>2015年3月的时候就看到一篇文章介绍这个平台了，那时候还没有太过关注，后来发现这个是个很好的平台</p>
-<h3 id="Sonarlint"><a href="#Sonarlint" class="headerlink" title="Sonarlint"></a>Sonarlint</h3><p>是SonarQube的配套的IDE插件，配置远程服务器的地址，然后本地就可以执行校验了，用的远程的规则<br>这样还是很方便的，规则可以同一在SonarQube维护，不用每个人本地导入，团队的话用这个最适合</p>
-<h4 id="插件拉去项目列表时报错"><a href="#插件拉去项目列表时报错" class="headerlink" title="插件拉去项目列表时报错"></a>插件拉去项目列表时报错</h4><p>不过使用起来遇到一个问题，如果SonarQube的子项目比较多时，插件拉去项目的api会超时timeout，导致无法使用<br><img src="http://wx2.sinaimg.cn/mw690/712a7015gy1ffue2o52c4j20hd03r74d.jpg" alt="img"><br>解决：<br>问题就是<code>http://xxx:9000/api/projects/index?format=json&amp;subprojects=true</code>这个URL请求时timeout，如果浏览器请求会报如下错误：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">&#123;&quot;err_code&quot;:500,&quot;err_msg&quot;:&quot;ActiveRecord::JDBCError: Can not read response from server. Expected to read 255 bytes, read 0 bytes before connection was unexpectedly lost.: SELECT id,uuid,kee,name,language,long_name,scope,qualifier,root_uuid,project_uuid FROM `projects` WHERE (enabled=1 AND scope in (&apos;PRJ&apos;) AND qualifier in (&apos;TRK&apos;,&apos;BRC&apos;))  ORDER BY name&quot;&#125;</div></pre></td></tr></table></figure></p>
-<p>问题SQL：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">SELECT</span> <span class="keyword">id</span>,<span class="keyword">uuid</span>,kee,<span class="keyword">name</span>,<span class="keyword">language</span>,long_name,<span class="keyword">scope</span>,qualifier,root_uuid,project_uuid</div><div class="line"><span class="keyword">FROM</span> <span class="string">`projects`</span></div><div class="line"><span class="keyword">WHERE</span> (enabled=<span class="number">1</span> <span class="keyword">AND</span> <span class="keyword">scope</span> <span class="keyword">in</span> (<span class="string">'PRJ'</span>) <span class="keyword">AND</span> qualifier <span class="keyword">in</span> (<span class="string">'TRK'</span>,<span class="string">'BRC'</span>))</div><div class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> <span class="keyword">name</span></div></pre></td></tr></table></figure></p>
-<p>实际测试发现：问题出在order by name上，如果只使用order by，执行就会慢到没结果甚至报<code>[Err] 2000 - Unknown MySQL error</code>错误，之后看表结构发现问题<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">`name` varchar(2000) COLLATE utf8_bin DEFAULT NULL,</div></pre></td></tr></table></figure></p>
-<p>name这个字段竟然有2000的长度，然后看数据库实际数据长度没有超过160的，所以修改为300，查询就非常快了，问题解决！</p>
+<h3 id="Sonarlint"><a href="#Sonarlint" class="headerlink" title="Sonarlint"></a>Sonarlint</h3><p>是SonarQube的配套的IDE插件，配置远程服务器的地址,选取要拉去规则的项目，然后本地就可以执行校验了，用的远程的规则<br>这样还是很方便的，规则可以同一在SonarQube维护，不用每个人本地导入，团队的话用这个最适合</p>
+<p>Sonarlint安装与拉取列表失败问题解决见 <a href="/2017/05/23/20170523Sonarlint插件/" title="Sonarlint插件">Sonarlint插件</a></p>
 <h3 id="扩充-Lint概念"><a href="#扩充-Lint概念" class="headerlink" title="扩充-Lint概念"></a>扩充-Lint概念</h3><p>Sonarlint是一个Lint工具，其实Lint的含义就代表代码静态分析的工具，协助开发的工具，尤其是前端经常使用，比如插件eslint：检查JavaScript错误非常方便</p>
 <h2 id="JArchitect"><a href="#JArchitect" class="headerlink" title="JArchitect"></a>JArchitect</h2><p>多种分析工具的聚合工具<br>是一个商业性的收费的分析工具<br>可以汇聚checkstyle、findbugs、pmd的xml，然后分类总结生成图表<br>不过是收费的，也没有idea插件，不用</p>
 <h1 id="代码覆盖率工具"><a href="#代码覆盖率工具" class="headerlink" title="代码覆盖率工具"></a>代码覆盖率工具</h1><p>idea自带了代码覆盖率插件还不错<br>跑单元测试的时候以代码覆盖率的方式运行就行了<br>一般逻辑覆盖率60%就差不多了，核心模块80%覆盖标准即可</p>
@@ -563,6 +570,10 @@
 
           <div class="post-nav-prev post-nav-item">
             
+              <a href="/2017/05/23/20170523Sonarlint插件/" rel="prev" title="Sonarlint插件">
+                Sonarlint插件 <i class="fa fa-chevron-right"></i>
+              </a>
+            
           </div>
         </div>
       
@@ -635,7 +646,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">3</span>
+                <span class="site-state-item-count">4</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -657,7 +668,7 @@
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">3</span>
+                <span class="site-state-item-count">4</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
@@ -716,7 +727,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#开发规范"><span class="nav-number">1.</span> <span class="nav-text">开发规范</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#独立的组件"><span class="nav-number">2.</span> <span class="nav-text">独立的组件</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#FindBugs"><span class="nav-number">2.1.</span> <span class="nav-text">FindBugs</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#特点"><span class="nav-number">2.1.1.</span> <span class="nav-text">特点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#代码缺陷分类"><span class="nav-number">2.1.2.</span> <span class="nav-text">代码缺陷分类</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#缺陷列表"><span class="nav-number">2.1.3.</span> <span class="nav-text">缺陷列表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#排除单个规则"><span class="nav-number">2.1.4.</span> <span class="nav-text">排除单个规则</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CheckStyle"><span class="nav-number">2.2.</span> <span class="nav-text">CheckStyle</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#工具界面"><span class="nav-number">2.2.1.</span> <span class="nav-text">工具界面</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#特点-1"><span class="nav-number">2.2.2.</span> <span class="nav-text">特点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#规范配置"><span class="nav-number">2.2.3.</span> <span class="nav-text">规范配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#技巧"><span class="nav-number">2.2.4.</span> <span class="nav-text">技巧</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#PMD"><span class="nav-number">2.3.</span> <span class="nav-text">PMD</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#特点-2"><span class="nav-number">2.3.1.</span> <span class="nav-text">特点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#错误分类"><span class="nav-number">2.3.2.</span> <span class="nav-text">错误分类</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#集合组件"><span class="nav-number">3.</span> <span class="nav-text">集合组件</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#IdeaIDE的QAPlug"><span class="nav-number">3.1.</span> <span class="nav-text">IdeaIDE的QAPlug</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#插件下载安装"><span class="nav-number">3.1.1.</span> <span class="nav-text">插件下载安装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#分类"><span class="nav-number">3.1.2.</span> <span class="nav-text">分类</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SonarQube"><span class="nav-number">3.2.</span> <span class="nav-text">SonarQube</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Sonarlint"><span class="nav-number">3.2.1.</span> <span class="nav-text">Sonarlint</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#插件拉去项目列表时报错"><span class="nav-number">3.2.1.1.</span> <span class="nav-text">插件拉去项目列表时报错</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#扩充-Lint概念"><span class="nav-number">3.2.2.</span> <span class="nav-text">扩充-Lint概念</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#JArchitect"><span class="nav-number">3.3.</span> <span class="nav-text">JArchitect</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#代码覆盖率工具"><span class="nav-number">4.</span> <span class="nav-text">代码覆盖率工具</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#运行方法"><span class="nav-number">4.1.</span> <span class="nav-text">运行方法</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#总结"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#开发规范"><span class="nav-number">1.</span> <span class="nav-text">开发规范</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#独立的组件"><span class="nav-number">2.</span> <span class="nav-text">独立的组件</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#FindBugs"><span class="nav-number">2.1.</span> <span class="nav-text">FindBugs</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#特点"><span class="nav-number">2.1.1.</span> <span class="nav-text">特点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#代码缺陷分类"><span class="nav-number">2.1.2.</span> <span class="nav-text">代码缺陷分类</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#缺陷列表"><span class="nav-number">2.1.3.</span> <span class="nav-text">缺陷列表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#排除单个规则"><span class="nav-number">2.1.4.</span> <span class="nav-text">排除单个规则</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CheckStyle"><span class="nav-number">2.2.</span> <span class="nav-text">CheckStyle</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#工具界面"><span class="nav-number">2.2.1.</span> <span class="nav-text">工具界面</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#特点-1"><span class="nav-number">2.2.2.</span> <span class="nav-text">特点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#规范配置"><span class="nav-number">2.2.3.</span> <span class="nav-text">规范配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#技巧"><span class="nav-number">2.2.4.</span> <span class="nav-text">技巧</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#PMD"><span class="nav-number">2.3.</span> <span class="nav-text">PMD</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#特点-2"><span class="nav-number">2.3.1.</span> <span class="nav-text">特点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#错误分类"><span class="nav-number">2.3.2.</span> <span class="nav-text">错误分类</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#集合组件"><span class="nav-number">3.</span> <span class="nav-text">集合组件</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#IdeaIDE的QAPlug"><span class="nav-number">3.1.</span> <span class="nav-text">IdeaIDE的QAPlug</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#插件下载安装"><span class="nav-number">3.1.1.</span> <span class="nav-text">插件下载安装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#分类"><span class="nav-number">3.1.2.</span> <span class="nav-text">分类</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SonarQube"><span class="nav-number">3.2.</span> <span class="nav-text">SonarQube</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Sonarlint"><span class="nav-number">3.2.1.</span> <span class="nav-text">Sonarlint</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#扩充-Lint概念"><span class="nav-number">3.2.2.</span> <span class="nav-text">扩充-Lint概念</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#JArchitect"><span class="nav-number">3.3.</span> <span class="nav-text">JArchitect</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#代码覆盖率工具"><span class="nav-number">4.</span> <span class="nav-text">代码覆盖率工具</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#运行方法"><span class="nav-number">4.1.</span> <span class="nav-text">运行方法</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#总结"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li></ol></div>
             
 
           </div>
@@ -883,6 +894,113 @@
 
 
   
+
+  
+  <script src="https://cdn1.lncld.net/static/js/av-core-mini-0.6.1.js"></script>
+  <script>AV.initialize("3Vbe2UCzbY41yP5dtkxpWd5G-gzGzoHsz", "EeVqL4YwIANsoGT9sJXoTgjp");</script>
+  <script>
+    function showTime(Counter) {
+      var query = new AV.Query(Counter);
+      var entries = [];
+      var $visitors = $(".leancloud_visitors");
+
+      $visitors.each(function () {
+        entries.push( $(this).attr("id").trim() );
+      });
+
+      query.containedIn('url', entries);
+      query.find()
+        .done(function (results) {
+          var COUNT_CONTAINER_REF = '.leancloud-visitors-count';
+
+          if (results.length === 0) {
+            $visitors.find(COUNT_CONTAINER_REF).text(0);
+            return;
+          }
+
+          for (var i = 0; i < results.length; i++) {
+            var item = results[i];
+            var url = item.get('url');
+            var time = item.get('time');
+            var element = document.getElementById(url);
+
+            $(element).find(COUNT_CONTAINER_REF).text(time);
+          }
+          for(var i = 0; i < entries.length; i++) {
+            var url = entries[i];
+            var element = document.getElementById(url);
+            var countSpan = $(element).find(COUNT_CONTAINER_REF);
+            if( countSpan.text() == '') {
+              countSpan.text(0);
+            }
+          }
+        })
+        .fail(function (object, error) {
+          console.log("Error: " + error.code + " " + error.message);
+        });
+    }
+
+    function addCount(Counter) {
+      var $visitors = $(".leancloud_visitors");
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+      var query = new AV.Query(Counter);
+
+      query.equalTo("url", url);
+      query.find({
+        success: function(results) {
+          if (results.length > 0) {
+            var counter = results[0];
+            counter.fetchWhenSave(true);
+            counter.increment("time");
+            counter.save(null, {
+              success: function(counter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.get('time'));
+              },
+              error: function(counter, error) {
+                console.log('Failed to save Visitor num, with error message: ' + error.message);
+              }
+            });
+          } else {
+            var newcounter = new Counter();
+            /* Set ACL */
+            var acl = new AV.ACL();
+            acl.setPublicReadAccess(true);
+            acl.setPublicWriteAccess(true);
+            newcounter.setACL(acl);
+            /* End Set ACL */
+            newcounter.set("title", title);
+            newcounter.set("url", url);
+            newcounter.set("time", 1);
+            newcounter.save(null, {
+              success: function(newcounter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(newcounter.get('time'));
+              },
+              error: function(newcounter, error) {
+                console.log('Failed to create');
+              }
+            });
+          }
+        },
+        error: function(error) {
+          console.log('Error:' + error.code + " " + error.message);
+        }
+      });
+    }
+
+    $(function() {
+      var Counter = AV.Object.extend("Counter");
+      if ($('.leancloud_visitors').length == 1) {
+        addCount(Counter);
+      } else if ($('.post-title-link').length > 1) {
+        showTime(Counter);
+      }
+    });
+  </script>
+
+
 
   
 

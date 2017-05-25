@@ -95,7 +95,7 @@
 <meta name="description" content="一个Java程序员日常学习、技术总结博客">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Dawell的博客">
-<meta property="og:url" content="https://dawell.github.io/tags/日常/index.html">
+<meta property="og:url" content="https://dawell.github.io/categories/博客/index.html">
 <meta property="og:site_name" content="Dawell的博客">
 <meta property="og:description" content="一个Java程序员日常学习、技术总结博客">
 <meta name="twitter:card" content="summary">
@@ -128,13 +128,13 @@
 
 
 
-  <link rel="canonical" href="https://dawell.github.io/tags/日常/"/>
+  <link rel="canonical" href="https://dawell.github.io/categories/博客/"/>
 
 
 
 
 
-  <title>标签: 日常 | Dawell的博客</title>
+  <title>分类: 博客 | Dawell的博客</title>
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
@@ -264,9 +264,9 @@
           <div id="content" class="content">
             
 
-  <div id="posts" class="posts-collapse">
+  <section id="posts" class="posts-collapse">
     <div class="collection-title">
-      <h1>日常<small>标签</small>
+      <h1>博客<small>分类</small>
       </h1>
     </div>
 
@@ -278,9 +278,9 @@
 
       <h2 class="post-title">
         
-            <a class="post-title-link" href="/2016/12/11/20161211我的博客/" itemprop="url">
+            <a class="post-title-link" href="/2017/05/21/20170521博客评论插件/" itemprop="url">
               
-                <span itemprop="name">Dawell的博客</span>
+                <span itemprop="name">博客评论插件</span>
               
             </a>
         
@@ -288,9 +288,9 @@
 
       <div class="post-meta">
         <time class="post-time" itemprop="dateCreated"
-              datetime="2016-12-11T15:17:39+08:00"
-              content="2016-12-11" >
-          12-11
+              datetime="2017-05-21T21:00:00+08:00"
+              content="2017-05-21" >
+          05-21
         </time>
       </div>
 
@@ -299,9 +299,10 @@
 
 
     
-  </div>
+  </section>
 
   
+
 
 
           </div>
@@ -344,7 +345,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">3</span>
+                <span class="site-state-item-count">4</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -366,7 +367,7 @@
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">3</span>
+                <span class="site-state-item-count">4</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
@@ -572,6 +573,113 @@
 
 
   
+
+  
+  <script src="https://cdn1.lncld.net/static/js/av-core-mini-0.6.1.js"></script>
+  <script>AV.initialize("3Vbe2UCzbY41yP5dtkxpWd5G-gzGzoHsz", "EeVqL4YwIANsoGT9sJXoTgjp");</script>
+  <script>
+    function showTime(Counter) {
+      var query = new AV.Query(Counter);
+      var entries = [];
+      var $visitors = $(".leancloud_visitors");
+
+      $visitors.each(function () {
+        entries.push( $(this).attr("id").trim() );
+      });
+
+      query.containedIn('url', entries);
+      query.find()
+        .done(function (results) {
+          var COUNT_CONTAINER_REF = '.leancloud-visitors-count';
+
+          if (results.length === 0) {
+            $visitors.find(COUNT_CONTAINER_REF).text(0);
+            return;
+          }
+
+          for (var i = 0; i < results.length; i++) {
+            var item = results[i];
+            var url = item.get('url');
+            var time = item.get('time');
+            var element = document.getElementById(url);
+
+            $(element).find(COUNT_CONTAINER_REF).text(time);
+          }
+          for(var i = 0; i < entries.length; i++) {
+            var url = entries[i];
+            var element = document.getElementById(url);
+            var countSpan = $(element).find(COUNT_CONTAINER_REF);
+            if( countSpan.text() == '') {
+              countSpan.text(0);
+            }
+          }
+        })
+        .fail(function (object, error) {
+          console.log("Error: " + error.code + " " + error.message);
+        });
+    }
+
+    function addCount(Counter) {
+      var $visitors = $(".leancloud_visitors");
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+      var query = new AV.Query(Counter);
+
+      query.equalTo("url", url);
+      query.find({
+        success: function(results) {
+          if (results.length > 0) {
+            var counter = results[0];
+            counter.fetchWhenSave(true);
+            counter.increment("time");
+            counter.save(null, {
+              success: function(counter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.get('time'));
+              },
+              error: function(counter, error) {
+                console.log('Failed to save Visitor num, with error message: ' + error.message);
+              }
+            });
+          } else {
+            var newcounter = new Counter();
+            /* Set ACL */
+            var acl = new AV.ACL();
+            acl.setPublicReadAccess(true);
+            acl.setPublicWriteAccess(true);
+            newcounter.setACL(acl);
+            /* End Set ACL */
+            newcounter.set("title", title);
+            newcounter.set("url", url);
+            newcounter.set("time", 1);
+            newcounter.save(null, {
+              success: function(newcounter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(newcounter.get('time'));
+              },
+              error: function(newcounter, error) {
+                console.log('Failed to create');
+              }
+            });
+          }
+        },
+        error: function(error) {
+          console.log('Error:' + error.code + " " + error.message);
+        }
+      });
+    }
+
+    $(function() {
+      var Counter = AV.Object.extend("Counter");
+      if ($('.leancloud_visitors').length == 1) {
+        addCount(Counter);
+      } else if ($('.post-title-link').length > 1) {
+        showTime(Counter);
+      }
+    });
+  </script>
+
+
 
   
 
