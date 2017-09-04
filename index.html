@@ -276,6 +276,785 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2017/09/04/20170904用户中心/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dawell">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Dawell的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/09/04/20170904用户中心/" itemprop="url">用户中心</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-04T23:30:00+08:00">
+                2017-09-04
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/业务/" itemprop="url" rel="index">
+                    <span itemprop="name">业务</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+             <span id="/2017/09/04/20170904用户中心/" class="leancloud_visitors" data-flag-title="用户中心">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><img src="https://timgsa.baidu.com/timg?image&amp;quality=80&amp;size=b9999_10000&amp;sec=1504546211663&amp;di=2abfeebbce6670f8442681cf19dead67&amp;imgtype=0&amp;src=http%3A%2F%2Fupload.chinaz.com%2F2016%2F1020%2F201610201727406806.jpg" alt="用户中心"></p>
+<h1 id="用户中心导论"><a href="#用户中心导论" class="headerlink" title="用户中心导论"></a>用户中心导论</h1><p>在互联网中，一切都是围绕用户来服务的，为了提供一系列服务，需要在服务中识别自然人个体，所以服务系统中出现了账号的概念来代表自然人，因为现在还不能把自然人通过某种方式直接在服务媒介上识别，所以互联网服务都是在用户想使用服务时引导用户注册一个账号的方式来创建账号。</p>
+<ul>
+<li>如果不是一系列服务而是一个服务，其实可以让用户直接输入需要填写的信息一次提交进行服务，如：调查问卷</li>
+<li>自然人与系统中的账号最好的一一对应关系</li>
+</ul>
+<h2 id="业务对象（领域对象）"><a href="#业务对象（领域对象）" class="headerlink" title="业务对象（领域对象）"></a>业务对象（领域对象）</h2><p>账号要有唯一性，信息一部分是基本信息，另一部分是扩展的用户信息</p>
+<h3 id="唯一标识"><a href="#唯一标识" class="headerlink" title="唯一标识"></a>唯一标识</h3><p>账号在内必须有唯一性，而对用户他不需要非常明确的唯一，只要长久不变的唯一即可</p>
+<ul>
+<li>对内的账号，会有uid或者userId的概念来代表唯一，不对外暴露</li>
+<li>对外的账号会有account来标识唯一，每家公司最account的规则不一样<ul>
+<li>微信是用户自己设置的，如果不设置就是空</li>
+<li>有的公司会要求必须有账户字段，如果不要求用户输入则自动生成一个账号唯一标识，如 账号xxx</li>
+<li>account一旦设置不允许更改</li>
+</ul>
+</li>
+</ul>
+<h3 id="基本信息"><a href="#基本信息" class="headerlink" title="基本信息"></a>基本信息</h3><p>用户注册时的必须信息+个性化信息</p>
+<ul>
+<li>系统账号信息：uid、account、类型、状态</li>
+<li>个人账号信息：手机号、邮箱、昵称、头像、个性化信息</li>
+<li>企业账号信息：企业邮箱、代理人手机号、企业图标</li>
+</ul>
+<h3 id="用户信息"><a href="#用户信息" class="headerlink" title="用户信息"></a>用户信息</h3><p>用户信息是用户自己填写的信息</p>
+<ul>
+<li>个人不变的自然人信息：姓名、身份证号、性别、生日、教育历史、工作历史、血型、籍贯</li>
+<li>个人易变的信息：国籍、学历、当前工作、当前住址、婚姻、收入</li>
+<li>企业信息：企业编码、企业名称、法人姓名、企业地址、企业logo</li>
+</ul>
+<h3 id="账号的分类"><a href="#账号的分类" class="headerlink" title="账号的分类"></a>账号的分类</h3><p>账号在多个系统中都有其存在，所以会有很多种类</p>
+<ul>
+<li>对外<ul>
+<li>通行证个人账号</li>
+<li>企业账号</li>
+</ul>
+</li>
+<li>对内<ul>
+<li>内部员工账号</li>
+<li>外包人员账号</li>
+</ul>
+</li>
+</ul>
+<h3 id="账号属性的区别"><a href="#账号属性的区别" class="headerlink" title="账号属性的区别"></a>账号属性的区别</h3><ul>
+<li>uid/userid 内部唯一id</li>
+<li>account 用户所知的唯一标识</li>
+<li>昵称 用户对外的展示名称</li>
+</ul>
+<h2 id="业务行为（领域行为）"><a href="#业务行为（领域行为）" class="headerlink" title="业务行为（领域行为）"></a>业务行为（领域行为）</h2><p>围绕账号有一系列服务，不过本质要解决的问题是认证、授权与会话。</p>
+<h3 id="认证"><a href="#认证" class="headerlink" title="认证"></a>认证</h3><p>认证分为2个阶段，首先要创建一个账号，称作“注册”，要进行自然人与服务的映射认证绑定，然后使用这个账号完成认证叫做“登录”。</p>
+<p>注册往往需要自然人的唯一性标识，注册认证成功后，用户就可以拿此账号进行登录完成登录认证</p>
+<ul>
+<li>也可以每次都使用自然人的真实信息认证，在认证的第一次自动完成注册环节。<ul>
+<li>因为如果每次认证都使用真实信息会比较麻烦，要让用户输入过多信息，体验不好，所以采用第一种的比较多，比如一般账号都会设置一个密码，下次使用服务，只需要认证账户名+密码即可以完成。</li>
+<li>不过现在由于手机验证码方式验证方便出现了登录也使用验证码进行登录的方式。</li>
+</ul>
+</li>
+<li>有的服务为了用户体验，注册完成时就自动登录成功了。</li>
+<li>注册时认证最好的信息是自然人中最具有唯一性的标识，比如国内的身份证，国外的驾驶证护照之类信息。而这些信息往往比较长，而且过于隐私，对于用户来说心里门槛高，所以往往可以通过用户的手机号或者邮箱进行认证完成注册认证。<ul>
+<li>国内由于手机的普及倾向于使用手机号，而国外倾向于使用邮箱。</li>
+<li>支付宝是强金融属性应用，使用身份证号进行注册</li>
+<li>银行网银一般通过柜台认证的银行卡或者使用身份证号进行注册</li>
+<li>手机号与邮箱都是可变更的，所以用这种方式容易导致用户注册多个账号的情况，为了避免可以在客户端记录上一次登录方式或者服务器记录设备信息对应的登录账号提醒用户</li>
+<li>如果是注册or登录的流程，流程中可以在手机号验证后要注册新账号的时候提示用户是否注册或者要登录，这样登录后替换手机号码或者设置</li>
+</ul>
+</li>
+</ul>
+<p>认证中有个特别认证方式叫做第三方认证，本质是可信第三方授权+补充认证</p>
+<ul>
+<li>如果第三方授权后第三方提供的信息足以满足本系统注册要求可直接生成账号并登录</li>
+<li>如果不满足一般会在第一次三方授权后要求补充账号认证或账号信息后才能完成注册</li>
+</ul>
+<h4 id="业务形态"><a href="#业务形态" class="headerlink" title="业务形态"></a>业务形态</h4><ul>
+<li>认证前<ul>
+<li>注册</li>
+<li>登录</li>
+<li>通过XXX找回密码</li>
+<li>三方登录</li>
+<li>完善账号信息</li>
+<li>激活验证信息交互</li>
+</ul>
+</li>
+<li>认证后<ul>
+<li>修改登录信息</li>
+<li>修改三方授权绑定</li>
+<li>认证登录记录</li>
+</ul>
+</li>
+</ul>
+<h3 id="授权"><a href="#授权" class="headerlink" title="授权"></a>授权</h3><p>授权在认证之后，如果使用一项服务都需要先进行授权，同时使用一个授权服务往往还需要显示一份使用服务法律协议需用户同意</p>
+<ul>
+<li>有些场景可以避免授权界面，比如使用一系列的服务时在注册或者登陆的协议中全部写入，即可免授权，不过这种在认证中绑定过多协议的做法可能是不合规的，尤其是金融行业，捆绑授权</li>
+<li>比如工具服务中要使用一项P2P服务需要进行授权，支付宝中第一次使用花呗、借呗都需要单独授权同意后</li>
+<li>还有一种对外授权，比如你的账号可以提供开放的能力，在其它平台中使用此账号可以登录认证并经过用户授权后把此账号的部分信息提供给第三方使用。</li>
+</ul>
+<p>对内部账号的授权都是通过权限管理员分配的，所以与前台用户交互流程不一样</p>
+<ul>
+<li>一般使用RBAC权限模型，即账号-角色-资源，把所有的CRUD操作设置为资源，然后一个角色包含多个资源，一个用户可以分配多个角色，角色相当于资源包的存在</li>
+<li>超级管理员一般是不受权限限制的特例</li>
+<li>资源的申请尽量自动化，所以一般使用工作流申请</li>
+<li>有一种特殊的资源叫做菜单，从而菜单显示也通过权限来控制</li>
+<li>资源的管理往往会增加应用这一级别用于隔离，为了同时操作多个资源每个应用会有资源包，而角色会作为跨资源包与资源的汇集方</li>
+</ul>
+<h4 id="业务形态-1"><a href="#业务形态-1" class="headerlink" title="业务形态"></a>业务形态</h4><ul>
+<li>同意授权与协议</li>
+<li>授权管理，协议查看</li>
+</ul>
+<h3 id="会话"><a href="#会话" class="headerlink" title="会话"></a>会话</h3><p>会话是指用户从登录后用户持续使用服务一直到退出整个登录状态，与服务器中的session概念差不多，不过这里在登录后产生的</p>
+<ul>
+<li>为了保持登录认证状态持续，最简单的做法是用户在输入用户名密码后将用户名密码保存在cookie中，以后每次请求都去校验cookie中的信息</li>
+<li>但是这样非常不安全，所以一般在登录认证成功后会生成一个令牌，放到cookie中，每次请求都去校验令牌</li>
+<li>为了防止令牌因为意外泄露后的风险，会给令牌设置一个有效期，客户端APP的有效期会更短，而通过刷新令牌机制来换取令牌保持会话持续</li>
+</ul>
+<p>针对一些多应用或者跨域的情况会提供单点登录功能，即SSO</p>
+<ul>
+<li>用户在同企业的一个平台认证后，则其他平台会自动认证成功</li>
+<li>如果退出，也会全部退出</li>
+</ul>
+<h4 id="业务形态-2"><a href="#业务形态-2" class="headerlink" title="业务形态"></a>业务形态</h4><ul>
+<li>登录成功后生成会话</li>
+<li>退出</li>
+<li>自动登录</li>
+<li>刷新令牌</li>
+</ul>
+<h3 id="业务行为附带信息"><a href="#业务行为附带信息" class="headerlink" title="业务行为附带信息"></a>业务行为附带信息</h3><p>这种附带信息不止是用户中心，应该说对于所有业务行为都会有这些信息</p>
+<ul>
+<li>通过设备请求获取的信息：设备唯一号、请求IP地址</li>
+<li>通过来源APP请求的信息：平台号、版本号、投放标识</li>
+<li>身份识别信息：用户令牌（认证前为空）</li>
+</ul>
+<h2 id="关注点"><a href="#关注点" class="headerlink" title="关注点"></a>关注点</h2><h3 id="安全"><a href="#安全" class="headerlink" title="安全"></a>安全</h3><p>安全分为通用技术安全与业务安全</p>
+<p>通用技术安全</p>
+<ul>
+<li>CSRF攻击</li>
+<li>cookie安全</li>
+<li>XSS攻击</li>
+</ul>
+<p>业务安全：注册、登录、找回密码因为数据验证前操作，需要重点关注安全问题</p>
+<ul>
+<li>短信验证码、邮箱验证码攻击安全</li>
+<li>多业务步骤安全</li>
+</ul>
+<h3 id="账号集成"><a href="#账号集成" class="headerlink" title="账号集成"></a>账号集成</h3><p>比如将2个公司账号系统进行整合集成打通的业务场景</p>
+<h3 id="自然人通过某种方式直接在服务媒介上识别YY：相当于一个第三方登录授权注册登录"><a href="#自然人通过某种方式直接在服务媒介上识别YY：相当于一个第三方登录授权注册登录" class="headerlink" title="自然人通过某种方式直接在服务媒介上识别YY：相当于一个第三方登录授权注册登录"></a>自然人通过某种方式直接在服务媒介上识别YY：相当于一个第三方登录授权注册登录</h3><ul>
+<li>PC通过信息传入识别<ul>
+<li><del>PC上比如指纹识别需要从硬件-操作系统-浏览器打通，非常麻烦，而且还要在设备上绑定好用户信息</del></li>
+<li><del>PC人脸识别操作系统是支持了，不过需要浏览器可以调用，且需要电脑配备摄像头，也比较麻烦</del></li>
+</ul>
+</li>
+<li>PC通过信息传出识别<ul>
+<li><del>通过文字、声音不是太方便</del></li>
+<li>通过图片可以，比如通过二维码图片，然后通过手机设备扫描然后通过认证</li>
+</ul>
+</li>
+<li>手机通过信息传入识别<ul>
+<li>指纹，如指纹支付已经有了，估计登录也可以 注册的话需要本地设备设置个人信息 需要手机软件支持</li>
+<li>通过PC或者某个非手机设备生产的二维码这里用摄像头对准后识别注册or登录</li>
+<li>手机的话通过APP唤醒其他第三方授权注册登录 就是普通的三方登录</li>
+<li>通过摄像头人脸识别 可以有 登录 但是不能注册 除非人脸库有你的信息</li>
+<li>通过SIM卡信息或者网络基站获取本机手机号码进行注册，并通过手机号码获取实名信息</li>
+</ul>
+</li>
+</ul>
+<h1 id="用户中心技术"><a href="#用户中心技术" class="headerlink" title="用户中心技术"></a>用户中心技术</h1><p>技术主要集中在业务行为上</p>
+<p>认证<br>认证技术：第三方Oauth2</p>
+<p>授权<br>授权协议</p>
+<p>会话<br>token技术：刷新令牌<br>SSO技术：CAS、前埋后埋</p>
+<p>安全<br>客户端安全<br>token安全<br>密码安全</p>
+<p>未完待续。。。</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+	<div>
+	 
+	</div>
+	
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+	
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2017/07/22/20170722Selenium爬虫/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dawell">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Dawell的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/07/22/20170722Selenium爬虫/" itemprop="url">Selenium爬虫</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-07-22T23:30:00+08:00">
+                2017-07-22
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/个人/" itemprop="url" rel="index">
+                    <span itemprop="name">个人</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+             <span id="/2017/07/22/20170722Selenium爬虫/" class="leancloud_visitors" data-flag-title="Selenium爬虫">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="爬虫研究"><a href="#爬虫研究" class="headerlink" title="爬虫研究"></a>爬虫研究</h3><p>Selenium是一个浏览器自动化测试API，不过目前也可以作为爬虫使用<br>早在2013年的时候就在自动化测试中使用过Selenium，所以对他的API也算熟悉</p>
+<p>不过目前Selenium针对浏览器的开发支持程度不一样，一般都需要插件进行辅助</p>
+<ul>
+<li>chrome 开发最佳</li>
+<li>firefox 开发也不错</li>
+<li>IE 没有xpath获取的插件，开发困难</li>
+</ul>
+<p>除了网站登录认证，其实用HttpClient直接请求就可以爬取数据<br>但是有时候这种方式并不直接，直接网站上的信息所见即所得，还能截图看个清楚</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+	<div>
+	 
+	</div>
+	
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+	
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2017/05/29/20170529西塘乌镇一人游/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dawell">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Dawell的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/05/29/20170529西塘乌镇一人游/" itemprop="url">西塘乌镇一日游</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-05-29T23:30:00+08:00">
+                2017-05-29
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/个人/" itemprop="url" rel="index">
+                    <span itemprop="name">个人</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+             <span id="/2017/05/29/20170529西塘乌镇一人游/" class="leancloud_visitors" data-flag-title="西塘乌镇一日游">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="经历"><a href="#经历" class="headerlink" title="经历"></a>经历</h1><p>端午节一共3天，是在房价前一天晚上突然想到要去的，但是第一天假期的旅游票已经订不上了，所以定了第二天的</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+	<div>
+	 
+	</div>
+	
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+	
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2017/05/27/20170527监控系统/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dawell">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Dawell的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/05/27/20170527监控系统/" itemprop="url">监控系统</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-05-27T20:00:00+08:00">
+                2017-05-27
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/技术/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+             <span id="/2017/05/27/20170527监控系统/" class="leancloud_visitors" data-flag-title="监控系统">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="经历"><a href="#经历" class="headerlink" title="经历"></a>经历</h1><p>记得14年的时候我在公司负责支付资金对账系统，整体逻辑类似定时跑批比对，如果数据对账成功要通知支付系统，如果发现差错账后要进行告警<br>由于整个系统在拉取数据时存在多种方式与各种不可靠情况，比如第三方的对账数据没有在约定时间内放置，数据拉取失败，数据放置错误。还有数据中各种长短账的情况处理，状态与异常情况比较多<br>由于那时候公司也没有监控系统，所以那时候为了方便排查问题，自己做了一个<br>不过现在看来那时候的监控手段还是比较挫的，不过当时不想天天因为排查问题而浪费一上午时间的我能做出这么一个东西也是很有意义的，哈哈</p>
+<h2 id="整体设计"><a href="#整体设计" class="headerlink" title="整体设计"></a>整体设计</h2><p>为了不影响线上的对账程序，在后台上开发了这个功能，其实这也是现在监控系统设计的要素之一，就是绝对不能影响核心业务系统的运行<br>开发了一个页面，上面在页面加载的时候会去将各种异常与正常的情况通过SQL去查询数据库，然后将数据统计结果显示在页面上，因为是定时任务，所以为了方便修复数据，在每个统计点都提供了一个按钮可以重新调度定时任务执行一次<br>这个按钮就是一个数据修复的能力了，所以准确说这不止是个监控系统，还是个灰度控制系统<br>整个系统起名叫：上帝模式（当时同事听说这个名字后，都为之称赞~）<br>这个系统在初期帮了我很大的忙，每次排查问题，先看这个界面，上面数字对不上的我都会去确认，一个不漏，非常方便排查问题，而且如果排查完问题，就要重新对某个环节重新执行，只要点一下那个环节的按钮就可以了，so easy！<br>不过之后就发现这个页面要很久才能打开，因为上面执行了太多的SQL，而且越来越慢，这些SQL查询有些字段需要优化：限制时间范围、增加索引 于是又可以继续使用了</p>
+<h2 id="反思"><a href="#反思" class="headerlink" title="反思"></a>反思</h2><p>可以说这是一个简单的看板系统，就是通过SQL语句查询数据库，然后判断异常的数据显示而已，但是足够当时的检查数据的需求<br>真实的监控系统是可以告警，处理业务执行中的数据的，比如打点与异常的监视，不依赖业务方数据库存储的<br>所以真实的监控系统都是采用业务逻辑层主动发送监控数据到监控系统中的，而不是像我这种设计思路，通过扫描存储的数据来监控</p>
+<ol>
+<li>业务存储的数据只为了业务场景而优化查询，而监控可能是有多维度的需求，不适合在业务库中加索引优化</li>
+<li>直接在业务库中查询也会影响真实业务使用，顶多查下从库</li>
+<li>如果业务改变了表结构，监控的逻辑也要跟着改</li>
+<li>业务数据中很多监控的数据不会存储，而监控需要的数据也只是业务字段的一部分<br>可能最重要的还是第4点，业务落地的数据并不能满足监控需要的数据，比如调用异常，不落地的数据，存储在redis缓存中的业务场景，所以监控系统还是不要基于业务表进行监控<br>基于表的数据分析其实是BI（数据智能）他们的方式，他们其实解决了前3个问题，通过大数据中的Hadoop、HDFS、Hbase、Hive、离线数据分析等技术通过ETL（抽取、过滤、清洗）把业务表变为BI表数据用于统计分析，毕竟落地的数据才是有价值的业务数据<br>而监控关注的是产生这些业务数据的过程，业务逻辑调用过程中的问题，所以要通过业务逻辑层植入监控的逻辑</li>
+</ol>
+<h1 id="监控系统"><a href="#监控系统" class="headerlink" title="监控系统"></a>监控系统</h1><p>现在监控通过业务监控指标日志打印、日志采集、消息系统、日志信息入库、日志加工分析存储这样的方式</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+	<div>
+	 
+	</div>
+	
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+	
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2017/05/23/20170523Sonarlint插件/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -840,6 +1619,317 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2017/01/02/20170102人的未来，我的人生观/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dawell">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Dawell的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/01/02/20170102人的未来，我的人生观/" itemprop="url">人的未来，我的人生观</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-01-02T00:00:00+08:00">
+                2017-01-02
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/个人/" itemprop="url" rel="index">
+                    <span itemprop="name">个人</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+             <span id="/2017/01/02/20170102人的未来，我的人生观/" class="leancloud_visitors" data-flag-title="人的未来，我的人生观">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="人的未来，我的价值观"><a href="#人的未来，我的价值观" class="headerlink" title="人的未来，我的价值观"></a>人的未来，我的价值观</h2><p>偶尔看到了一些机器人发展的新闻，这块日本玩的最6，说造出了美女机器人，使用最好的皮肤，可以模拟人说话，微笑等等</p>
+<p>其实我对日本一直想造出真实模拟人类的机器一直保持不看好的态度<br>因为人与机器其实差异还挺大的，人是生物，机器是非生物，他们的工作原理不同，人注定要进行吃喝拉撒睡的过程，而机器不需要<br>如果想让机器完全变为人，那就要有人类的一切功能，包括生理的<br>就算用上了机器学习给机器一个与人类工作原理一样的大脑，那也没必要给机器配置上吃喝拉撒睡的功能，因为对于机器来说是多余的，他们可以去掉这些功能也可以正常运作，这些功能对他们没有任何意义，有的只是看上去更像人类罢了<br>机器应该有机器特别的地方，他应该做人类做不到的事情，而不是做人可以做的事情，这才是一个好的方向<br>所以机器发展最终肯定不是模拟人操作的方式，不要认为人就是上帝创造最好的设计，我们用机器堆出一个自己完全没什么软用</p>
+<p>我倒是觉得超人总动员中微型机器人黑科技肯定是最终形态，这种完全突破人肉身的限制随意组合的小东西可以做任何事情<br>所以材料与设计问题是要解决的问题</p>
+<p>未来的人类肯定与机器各有所长，机器有了人工智能AI也会很聪明，人类受大脑与身体的限制肯定达不到AI的进化程度，到最后人类肯定要依靠机器来进化<br>我觉得人类可能先做出机器人工智能的外设，然后外设效率不如直接大脑联通，所以给大脑植入芯片，最后人类身体逐渐老化，为了意识存留，肯定会将意识上传机器中，人工智能AI去尝试改造基因组，通过制造更聪明的生物来进行辅助进化，最后生物与非生物的结合体组合为主宰IA的载体，意识可以下载到人造载体中，形成真正的“互联网”<br>最终机器与人造生物就是人类的载体，意识与思想才能代表人类，最终的人类也许就没有了吃喝拉撒睡，七情六欲的问题，只会发展科技，但是为了保留人类的情感，肯定会有一个模拟系统来体验过去的人类功能<br>一切就和黑客帝国那样，一些都是为了让你体验而已</p>
+<p>也许这个世界就是假的，人类早就发展到了终点，看到了宇宙的谎言，目前的世界只是一个体验系统，等你死后你的意识流就会回归主宰AI，想知道这个世界的一切都在那里。<br>所以我的三观上就认为反正都是假的，人的一生就是要开心嘛，有身体的时候就要让身体愉悦，吃喝拉撒睡，挣钱来更好的体验这原始的人类生活<br>而且最好要丰富的人生经历，好好体验一把，不要干一辈子一样的事情，因为那就浪费了作为原始人类的机会</p>
+<p>一切都是为了可以享受生活，不害怕死亡，只是不想遗憾的死去~</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+	<div>
+	 
+	</div>
+	
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+	
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2017/01/01/20170101利率研究/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dawell">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Dawell的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/01/01/20170101利率研究/" itemprop="url">利率研究</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-01-01T00:00:00+08:00">
+                2017-01-01
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/个人/" itemprop="url" rel="index">
+                    <span itemprop="name">个人</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+             <span id="/2017/01/01/20170101利率研究/" class="leancloud_visitors" data-flag-title="利率研究">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="花呗分期的真实利率"><a href="#花呗分期的真实利率" class="headerlink" title="花呗分期的真实利率"></a>花呗分期的真实利率</h2><p>为了方便看利率，先统一时间，都换算为年化利率</p>
+<h3 id="花呗分期"><a href="#花呗分期" class="headerlink" title="花呗分期"></a>花呗分期</h3><p>花呗分期可以申请3、6、9、12个月的分期还款，费率分别为2.5%，4.5%，6.5%，8.8%，如果直接换算年化为10%，9%，8.67%,8.8%<br>注意这里是费率，并非利率，因为分期每月都会还款，但是按总费率平均每月还的钱不会变化，与实际银行的利率规则不同</p>
+<h3 id="银行利率"><a href="#银行利率" class="headerlink" title="银行利率"></a>银行利率</h3><p>银行利率是按照剩余本金计算的，每月还款后会递减。而这里相当于利息一直按贷款最开始的总额计算，利息每月不变了，这样相当于交的利息更多了，一般这种算法比普通的算法大约高出3/2的手续费<br>如果大约计算实际年化利率为15%，13.5%，13.17%，13.2%，这个才算是花呗实际收益利率数据，可以看到花呗的分期还款利率很高，还是非常不划算的。</p>
+<h3 id="借呗利率"><a href="#借呗利率" class="headerlink" title="借呗利率"></a>借呗利率</h3><p>借呗的贷款利率与银行一致，有些人的借呗利率是万四，那年化0.0004*365=14.6%，利率也是比较高的<br>借呗我个人之前利率是每日万三，也就是年化10.95%的利率，目前是万2.5，相当于年化9.125%，0.75分利息，1w块钱1年2块5利息</p>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>所以看以看出，如果买商品，分期要支付很多利息，而如果自己的借呗日利率低于万4，那使用借呗先借出来分期还款花呗要比直接花呗分期要划算<br>总体来说借呗借的钱可以随便使用，而且利率相对其他网络平台算低的，实时到账，还是非常不错的产品。</p>
+<h2 id="P2P平台的利率"><a href="#P2P平台的利率" class="headerlink" title="P2P平台的利率"></a>P2P平台的利率</h2><p>现在有很多P2P网贷平台，也许今年国家要像去年P2P理财平台一样开始整治，不过还没有开始<br>国家的套路一向是先撒网再收网，先让你自由发展，睁一只眼闭一只眼，大批创业公司诞生，然后出个政策，最后只留下100来家同类平台<br>既然国家还没有整治，具体要求还没有下来，那必然这些P2P网贷平台的会有一些猫腻，尤其是利息计算方式</p>
+<h3 id="“费率”并非“利率”"><a href="#“费率”并非“利率”" class="headerlink" title="“费率”并非“利率”"></a>“费率”并非“利率”</h3><p>比如现在很多平台并不直接使用“利率”提示用户该还多少利息，而是通过“费率”<br>费率也就是手续费，为啥不叫利率呢，因为利率其实应该与银行利率概念一样，按照每月本金计算，还款也应该是银行借款等额本金、等额本息的分期还款方式<br>但是有些P2P平台依然是让用户选择分期，但是每月还的利息却不是按照剩余本金计算的，要按照贷款时的“费率”算好然后每月还相同的利息，这就相当于每月还款的利息要按照最初借款的总金额计算，每月都还第一个月最大金额的利息</p>
+<p>比如一些平台费率都标注到1%，也就是说一年看上去应该就是12%的利率了，但实际上换算为银行的还款利率（大致3/2）就已经20%多了<br>举个实际例子，1w元1年，年化12%，银行利息一年实际只有661.85元，而用这个平台看上去年化12%实际利息要1200元，实际利率达到21.5%了</p>
+<h3 id="总结-1"><a href="#总结-1" class="headerlink" title="总结"></a>总结</h3><p>目前来说我知道的蚂蚁借呗、小米贷款、微信的微粒贷应该都是按照银行贷款利率计算的，还算良心<br>但是很多P2P贷款的利率就不好说了，所以借钱的话，费率一定看清楚是如何计算的，可以用房贷计算器之类的算算实际利率是多少</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+	<div>
+	 
+	</div>
+	
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+	
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2016/12/11/20161211我的博客/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1046,7 +2136,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">4</span>
+                <span class="site-state-item-count">10</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -1057,7 +2147,7 @@
             
             <div class="site-state-item site-state-categories">
               <a href="/categories/index.html">
-                <span class="site-state-item-count">3</span>
+                <span class="site-state-item-count">4</span>
                 <span class="site-state-item-name">分类</span>
               </a>
             </div>
@@ -1068,7 +2158,7 @@
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">4</span>
+                <span class="site-state-item-count">11</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
@@ -1103,8 +2193,8 @@
         
         
           <div class="cc-license motion-element" itemprop="license">
-            <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" target="_blank">
-              <img src="/images/cc-by-nc-sa.svg" alt="Creative Commons" />
+            <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" class="cc-opacity" target="_blank">
+              <img src="/images/cc-by-nc-nd.svg" alt="Creative Commons" />
             </a>
           </div>
         

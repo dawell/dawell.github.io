@@ -74,7 +74,7 @@
 <link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="杂谈," />
+  <meta name="keywords" content="监控," />
 
 
 
@@ -92,54 +92,16 @@
 
 
 
-<meta name="description" content="网名Dawell，第一个公开的博客站点，分享自己的观点与学到的技术！
-自我介绍
-Java架构师
-喜欢编程、动漫、游戏
-就职于一家大型互联网金融公司
-
-目的
-过去记录笔记都在本地使用OneNote记录，有很多知识经验不如拿出来分享下，网络公开可以促使自己更加Open。
-为了达成每日学习2小时的目标，每周写一篇博文总结，更好的消化知识，督促自己学习。
-可以结交更多志同道合的人
-
-计划
-技术博文每周1">
+<meta name="description" content="经历记得14年的时候我在公司负责支付资金对账系统，整体逻辑类似定时跑批比对，如果数据对账成功要通知支付系统，如果发现差错账后要进行告警由于整个系统在拉取数据时存在多种方式与各种不可靠情况，比如第三方的对账数据没有在约定时间内放置，数据拉取失败，数据放置错误。还有数据中各种长短账的情况处理，状态与异常情况比较多由于那时候公司也没有监控系统，所以那时候为了方便排查问题，自己做了一个不过现在看来那时候的">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Dawell的博客">
-<meta property="og:url" content="https://dawell.github.io/2016/12/11/20161211我的博客/index.html">
+<meta property="og:title" content="监控系统">
+<meta property="og:url" content="https://dawell.github.io/2017/05/27/20170527监控系统/index.html">
 <meta property="og:site_name" content="Dawell的博客">
-<meta property="og:description" content="网名Dawell，第一个公开的博客站点，分享自己的观点与学到的技术！
-自我介绍
-Java架构师
-喜欢编程、动漫、游戏
-就职于一家大型互联网金融公司
-
-目的
-过去记录笔记都在本地使用OneNote记录，有很多知识经验不如拿出来分享下，网络公开可以促使自己更加Open。
-为了达成每日学习2小时的目标，每周写一篇博文总结，更好的消化知识，督促自己学习。
-可以结交更多志同道合的人
-
-计划
-技术博文每周1">
-<meta property="og:image" content="http://ww4.sinaimg.cn/mw690/712a7015jw1famyj9sbqfj21hc0u0n2u.jpg">
-<meta property="og:updated_time" content="2017-05-25T08:31:21.331Z">
+<meta property="og:description" content="经历记得14年的时候我在公司负责支付资金对账系统，整体逻辑类似定时跑批比对，如果数据对账成功要通知支付系统，如果发现差错账后要进行告警由于整个系统在拉取数据时存在多种方式与各种不可靠情况，比如第三方的对账数据没有在约定时间内放置，数据拉取失败，数据放置错误。还有数据中各种长短账的情况处理，状态与异常情况比较多由于那时候公司也没有监控系统，所以那时候为了方便排查问题，自己做了一个不过现在看来那时候的">
+<meta property="og:updated_time" content="2017-05-27T09:32:25.917Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Dawell的博客">
-<meta name="twitter:description" content="网名Dawell，第一个公开的博客站点，分享自己的观点与学到的技术！
-自我介绍
-Java架构师
-喜欢编程、动漫、游戏
-就职于一家大型互联网金融公司
-
-目的
-过去记录笔记都在本地使用OneNote记录，有很多知识经验不如拿出来分享下，网络公开可以促使自己更加Open。
-为了达成每日学习2小时的目标，每周写一篇博文总结，更好的消化知识，督促自己学习。
-可以结交更多志同道合的人
-
-计划
-技术博文每周1">
-<meta name="twitter:image" content="http://ww4.sinaimg.cn/mw690/712a7015jw1famyj9sbqfj21hc0u0n2u.jpg">
+<meta name="twitter:title" content="监控系统">
+<meta name="twitter:description" content="经历记得14年的时候我在公司负责支付资金对账系统，整体逻辑类似定时跑批比对，如果数据对账成功要通知支付系统，如果发现差错账后要进行告警由于整个系统在拉取数据时存在多种方式与各种不可靠情况，比如第三方的对账数据没有在约定时间内放置，数据拉取失败，数据放置错误。还有数据中各种长短账的情况处理，状态与异常情况比较多由于那时候公司也没有监控系统，所以那时候为了方便排查问题，自己做了一个不过现在看来那时候的">
 
 
 
@@ -167,13 +129,13 @@ Java架构师
 
 
 
-  <link rel="canonical" href="https://dawell.github.io/2016/12/11/20161211我的博客/"/>
+  <link rel="canonical" href="https://dawell.github.io/2017/05/27/20170527监控系统/"/>
 
 
 
 
 
-  <title>Dawell的博客 | Dawell的博客</title>
+  <title>监控系统 | Dawell的博客</title>
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
@@ -313,7 +275,7 @@ Java架构师
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2016/12/11/20161211我的博客/">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2017/05/27/20170527监控系统/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Dawell">
@@ -330,7 +292,7 @@ Java架构师
 
         
         
-          <h1 class="post-title" itemprop="name headline">Dawell的博客</h1>
+          <h1 class="post-title" itemprop="name headline">监控系统</h1>
         
 
         <div class="post-meta">
@@ -342,8 +304,8 @@ Java架构师
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2016-12-11T15:17:39+08:00">
-                2016-12-11
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-05-27T20:00:00+08:00">
+                2017-05-27
               </time>
             
 
@@ -365,8 +327,8 @@ Java架构师
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/个人/" itemprop="url" rel="index">
-                    <span itemprop="name">个人</span>
+                  <a href="/categories/技术/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
                   </a>
                 </span>
 
@@ -383,7 +345,7 @@ Java架构师
                 <span class="post-meta-item-icon">
                   <i class="fa fa-comment-o"></i>
                 </span>
-                <a class="cloud-tie-join-count" href="/2016/12/11/20161211我的博客/#comments" itemprop="discussionUrl">
+                <a class="cloud-tie-join-count" href="/2017/05/27/20170527监控系统/#comments" itemprop="discussionUrl">
                   <span class="post-comments-count join-count" itemprop="commentCount"></span>
                 </a>
               </span>
@@ -392,7 +354,7 @@ Java架构师
 
           
           
-             <span id="/2016/12/11/20161211我的博客/" class="leancloud_visitors" data-flag-title="Dawell的博客">
+             <span id="/2017/05/27/20170527监控系统/" class="leancloud_visitors" data-flag-title="监控系统">
                <span class="post-meta-divider">|</span>
                <span class="post-meta-item-icon">
                  <i class="fa fa-eye"></i>
@@ -420,28 +382,16 @@ Java架构师
       
 
       
-        <p><img src="http://ww4.sinaimg.cn/mw690/712a7015jw1famyj9sbqfj21hc0u0n2u.jpg" alt="img"></p>
-<p>网名Dawell，第一个公开的博客站点，分享自己的观点与学到的技术！</p>
-<h2 id="自我介绍"><a href="#自我介绍" class="headerlink" title="自我介绍"></a>自我介绍</h2><ul>
-<li>Java架构师</li>
-<li>喜欢编程、动漫、游戏</li>
-<li>就职于一家大型互联网金融公司</li>
-</ul>
-<h2 id="目的"><a href="#目的" class="headerlink" title="目的"></a>目的</h2><ul>
-<li>过去记录笔记都在本地使用OneNote记录，有很多知识经验不如拿出来分享下，网络公开可以促使自己更加Open。</li>
-<li>为了达成每日学习2小时的目标，每周写一篇博文总结，更好的消化知识，督促自己学习。</li>
-<li>可以结交更多志同道合的人</li>
-</ul>
-<h2 id="计划"><a href="#计划" class="headerlink" title="计划"></a>计划</h2><ul>
-<li>技术博文每周1篇</li>
-<li>专题总结每月1篇</li>
-<li>非技术博文每年?篇</li>
-</ul>
-<h2 id="时间"><a href="#时间" class="headerlink" title="时间"></a>时间</h2><ul>
-<li>2016年12月各种环境准备</li>
-<li>2017年1月正式开始</li>
-</ul>
-<p>Best Wishes!</p>
+        <h1 id="经历"><a href="#经历" class="headerlink" title="经历"></a>经历</h1><p>记得14年的时候我在公司负责支付资金对账系统，整体逻辑类似定时跑批比对，如果数据对账成功要通知支付系统，如果发现差错账后要进行告警<br>由于整个系统在拉取数据时存在多种方式与各种不可靠情况，比如第三方的对账数据没有在约定时间内放置，数据拉取失败，数据放置错误。还有数据中各种长短账的情况处理，状态与异常情况比较多<br>由于那时候公司也没有监控系统，所以那时候为了方便排查问题，自己做了一个<br>不过现在看来那时候的监控手段还是比较挫的，不过当时不想天天因为排查问题而浪费一上午时间的我能做出这么一个东西也是很有意义的，哈哈</p>
+<h2 id="整体设计"><a href="#整体设计" class="headerlink" title="整体设计"></a>整体设计</h2><p>为了不影响线上的对账程序，在后台上开发了这个功能，其实这也是现在监控系统设计的要素之一，就是绝对不能影响核心业务系统的运行<br>开发了一个页面，上面在页面加载的时候会去将各种异常与正常的情况通过SQL去查询数据库，然后将数据统计结果显示在页面上，因为是定时任务，所以为了方便修复数据，在每个统计点都提供了一个按钮可以重新调度定时任务执行一次<br>这个按钮就是一个数据修复的能力了，所以准确说这不止是个监控系统，还是个灰度控制系统<br>整个系统起名叫：上帝模式（当时同事听说这个名字后，都为之称赞~）<br>这个系统在初期帮了我很大的忙，每次排查问题，先看这个界面，上面数字对不上的我都会去确认，一个不漏，非常方便排查问题，而且如果排查完问题，就要重新对某个环节重新执行，只要点一下那个环节的按钮就可以了，so easy！<br>不过之后就发现这个页面要很久才能打开，因为上面执行了太多的SQL，而且越来越慢，这些SQL查询有些字段需要优化：限制时间范围、增加索引 于是又可以继续使用了</p>
+<h2 id="反思"><a href="#反思" class="headerlink" title="反思"></a>反思</h2><p>可以说这是一个简单的看板系统，就是通过SQL语句查询数据库，然后判断异常的数据显示而已，但是足够当时的检查数据的需求<br>真实的监控系统是可以告警，处理业务执行中的数据的，比如打点与异常的监视，不依赖业务方数据库存储的<br>所以真实的监控系统都是采用业务逻辑层主动发送监控数据到监控系统中的，而不是像我这种设计思路，通过扫描存储的数据来监控</p>
+<ol>
+<li>业务存储的数据只为了业务场景而优化查询，而监控可能是有多维度的需求，不适合在业务库中加索引优化</li>
+<li>直接在业务库中查询也会影响真实业务使用，顶多查下从库</li>
+<li>如果业务改变了表结构，监控的逻辑也要跟着改</li>
+<li>业务数据中很多监控的数据不会存储，而监控需要的数据也只是业务字段的一部分<br>可能最重要的还是第4点，业务落地的数据并不能满足监控需要的数据，比如调用异常，不落地的数据，存储在redis缓存中的业务场景，所以监控系统还是不要基于业务表进行监控<br>基于表的数据分析其实是BI（数据智能）他们的方式，他们其实解决了前3个问题，通过大数据中的Hadoop、HDFS、Hbase、Hive、离线数据分析等技术通过ETL（抽取、过滤、清洗）把业务表变为BI表数据用于统计分析，毕竟落地的数据才是有价值的业务数据<br>而监控关注的是产生这些业务数据的过程，业务逻辑调用过程中的问题，所以要通过业务逻辑层植入监控的逻辑</li>
+</ol>
+<h1 id="监控系统"><a href="#监控系统" class="headerlink" title="监控系统"></a>监控系统</h1><p>现在监控通过业务监控指标日志打印、日志采集、消息系统、日志信息入库、日志加工分析存储这样的方式</p>
 
       
     </div>
@@ -513,7 +463,7 @@ Java架构师
       
         <div class="post-tags">
           
-            <a href="/tags/杂谈/" rel="tag"># 杂谈</a>
+            <a href="/tags/监控/" rel="tag"># 监控</a>
           
         </div>
       
@@ -526,14 +476,18 @@ Java架构师
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
+              <a href="/2017/05/23/20170523Sonarlint插件/" rel="next" title="Sonarlint插件">
+                <i class="fa fa-chevron-left"></i> Sonarlint插件
+              </a>
+            
           </div>
 
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/2017/01/01/20170101利率研究/" rel="prev" title="利率研究">
-                利率研究 <i class="fa fa-chevron-right"></i>
+              <a href="/2017/05/29/20170529西塘乌镇一人游/" rel="prev" title="西塘乌镇一日游">
+                西塘乌镇一日游 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -689,7 +643,7 @@ Java架构师
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#自我介绍"><span class="nav-number">1.</span> <span class="nav-text">自我介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#目的"><span class="nav-number">2.</span> <span class="nav-text">目的</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#计划"><span class="nav-number">3.</span> <span class="nav-text">计划</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#时间"><span class="nav-number">4.</span> <span class="nav-text">时间</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#经历"><span class="nav-number">1.</span> <span class="nav-text">经历</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#整体设计"><span class="nav-number">1.1.</span> <span class="nav-text">整体设计</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#反思"><span class="nav-number">1.2.</span> <span class="nav-text">反思</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#监控系统"><span class="nav-number">2.</span> <span class="nav-text">监控系统</span></a></li></ol></div>
             
 
           </div>

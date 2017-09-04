@@ -74,7 +74,7 @@
 <link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="Hexo, NexT" />
+  <meta name="keywords" content="爬虫," />
 
 
 
@@ -92,15 +92,37 @@
 
 
 
-<meta name="description" content="一个Java程序员日常学习、技术总结博客">
-<meta property="og:type" content="website">
-<meta property="og:title" content="Dawell的博客">
-<meta property="og:url" content="https://dawell.github.io/archives/2017/index.html">
+<meta name="description" content="爬虫研究Selenium是一个浏览器自动化测试API，不过目前也可以作为爬虫使用早在2013年的时候就在自动化测试中使用过Selenium，所以对他的API也算熟悉
+不过目前Selenium针对浏览器的开发支持程度不一样，一般都需要插件进行辅助
+
+chrome 开发最佳
+firefox 开发也不错
+IE 没有xpath获取的插件，开发困难
+
+除了网站登录认证，其实用HttpClient直接请求就可">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Selenium爬虫">
+<meta property="og:url" content="https://dawell.github.io/2017/07/22/20170722Selenium爬虫/index.html">
 <meta property="og:site_name" content="Dawell的博客">
-<meta property="og:description" content="一个Java程序员日常学习、技术总结博客">
+<meta property="og:description" content="爬虫研究Selenium是一个浏览器自动化测试API，不过目前也可以作为爬虫使用早在2013年的时候就在自动化测试中使用过Selenium，所以对他的API也算熟悉
+不过目前Selenium针对浏览器的开发支持程度不一样，一般都需要插件进行辅助
+
+chrome 开发最佳
+firefox 开发也不错
+IE 没有xpath获取的插件，开发困难
+
+除了网站登录认证，其实用HttpClient直接请求就可">
+<meta property="og:updated_time" content="2017-07-23T10:19:41.446Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Dawell的博客">
-<meta name="twitter:description" content="一个Java程序员日常学习、技术总结博客">
+<meta name="twitter:title" content="Selenium爬虫">
+<meta name="twitter:description" content="爬虫研究Selenium是一个浏览器自动化测试API，不过目前也可以作为爬虫使用早在2013年的时候就在自动化测试中使用过Selenium，所以对他的API也算熟悉
+不过目前Selenium针对浏览器的开发支持程度不一样，一般都需要插件进行辅助
+
+chrome 开发最佳
+firefox 开发也不错
+IE 没有xpath获取的插件，开发困难
+
+除了网站登录认证，其实用HttpClient直接请求就可">
 
 
 
@@ -128,13 +150,13 @@
 
 
 
-  <link rel="canonical" href="https://dawell.github.io/archives/2017/"/>
+  <link rel="canonical" href="https://dawell.github.io/2017/07/22/20170722Selenium爬虫/"/>
 
 
 
 
 
-  <title>归档 | Dawell的博客</title>
+  <title>Selenium爬虫 | Dawell的博客</title>
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
@@ -170,7 +192,7 @@
     
   
 
-  <div class="container sidebar-position-left  page-archive  ">
+  <div class="container sidebar-position-left page-post-detail ">
     <div class="headband"></div>
 
     <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
@@ -264,362 +286,244 @@
           <div id="content" class="content">
             
 
-  <section id="posts" class="posts-collapse">
-    <span class="archive-move-on"></span>
-
-    <span class="archive-page-counter">
-      
-      
-      
-        
-      
-      嗯..! 目前共计 10 篇日志。 继续努力。
-    </span>
-
+  <div id="posts" class="posts-expand">
     
-
-      
-      
-      
-
-      
-        
-        <div class="collection-title">
-          <h2 class="archive-year motion-element" id="archive-year-2017">2017</h2>
-        </div>
-      
-      
-
-      
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/2017/09/04/20170904用户中心/" itemprop="url">
-              
-                <span itemprop="name">用户中心</span>
-              
-            </a>
-        
-      </h2>
-
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated"
-              datetime="2017-09-04T23:30:00+08:00"
-              content="2017-09-04" >
-          09-04
-        </time>
-      </div>
-
-    </header>
-  </article>
-
-
-
-    
-
-      
-      
-      
-
-      
-      
-
-      
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/2017/07/22/20170722Selenium爬虫/" itemprop="url">
-              
-                <span itemprop="name">Selenium爬虫</span>
-              
-            </a>
-        
-      </h2>
-
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated"
-              datetime="2017-07-22T23:30:00+08:00"
-              content="2017-07-22" >
-          07-22
-        </time>
-      </div>
-
-    </header>
-  </article>
-
-
-
-    
-
-      
-      
-      
-
-      
-      
-
-      
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/2017/05/29/20170529西塘乌镇一人游/" itemprop="url">
-              
-                <span itemprop="name">西塘乌镇一日游</span>
-              
-            </a>
-        
-      </h2>
-
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated"
-              datetime="2017-05-29T23:30:00+08:00"
-              content="2017-05-29" >
-          05-29
-        </time>
-      </div>
-
-    </header>
-  </article>
-
-
-
-    
-
-      
-      
-      
-
-      
-      
-
-      
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/2017/05/27/20170527监控系统/" itemprop="url">
-              
-                <span itemprop="name">监控系统</span>
-              
-            </a>
-        
-      </h2>
-
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated"
-              datetime="2017-05-27T20:00:00+08:00"
-              content="2017-05-27" >
-          05-27
-        </time>
-      </div>
-
-    </header>
-  </article>
-
-
-
-    
-
-      
-      
-      
-
-      
-      
-
-      
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/2017/05/23/20170523Sonarlint插件/" itemprop="url">
-              
-                <span itemprop="name">Sonarlint插件</span>
-              
-            </a>
-        
-      </h2>
-
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated"
-              datetime="2017-05-23T21:30:00+08:00"
-              content="2017-05-23" >
-          05-23
-        </time>
-      </div>
-
-    </header>
-  </article>
-
-
-
-    
-
-      
-      
-      
-
-      
-      
-
-      
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/2017/05/22/20170522静态代码扫描工具/" itemprop="url">
-              
-                <span itemprop="name">静态代码扫描工具</span>
-              
-            </a>
-        
-      </h2>
-
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated"
-              datetime="2017-05-22T21:57:00+08:00"
-              content="2017-05-22" >
-          05-22
-        </time>
-      </div>
-
-    </header>
-  </article>
-
-
-
-    
-
-      
-      
-      
-
-      
-      
-
-      
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/2017/05/21/20170521博客评论插件/" itemprop="url">
-              
-                <span itemprop="name">博客评论插件</span>
-              
-            </a>
-        
-      </h2>
-
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated"
-              datetime="2017-05-21T21:00:00+08:00"
-              content="2017-05-21" >
-          05-21
-        </time>
-      </div>
-
-    </header>
-  </article>
-
-
-
-    
-
-      
-      
-      
-
-      
-      
-
-      
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/2017/01/02/20170102人的未来，我的人生观/" itemprop="url">
-              
-                <span itemprop="name">人的未来，我的人生观</span>
-              
-            </a>
-        
-      </h2>
-
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated"
-              datetime="2017-01-02T00:00:00+08:00"
-              content="2017-01-02" >
-          01-02
-        </time>
-      </div>
-
-    </header>
-  </article>
-
-
-
-    
-
-      
-      
-      
-
-      
-      
-
-      
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/2017/01/01/20170101利率研究/" itemprop="url">
-              
-                <span itemprop="name">利率研究</span>
-              
-            </a>
-        
-      </h2>
-
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated"
-              datetime="2017-01-01T00:00:00+08:00"
-              content="2017-01-01" >
-          01-01
-        </time>
-      </div>
-
-    </header>
-  </article>
-
-
-
-    
-
-  </section>
 
   
 
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2017/07/22/20170722Selenium爬虫/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dawell">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Dawell的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Selenium爬虫</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-07-22T23:30:00+08:00">
+                2017-07-22
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/个人/" itemprop="url" rel="index">
+                    <span itemprop="name">个人</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a class="cloud-tie-join-count" href="/2017/07/22/20170722Selenium爬虫/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count join-count" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+             <span id="/2017/07/22/20170722Selenium爬虫/" class="leancloud_visitors" data-flag-title="Selenium爬虫">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="爬虫研究"><a href="#爬虫研究" class="headerlink" title="爬虫研究"></a>爬虫研究</h3><p>Selenium是一个浏览器自动化测试API，不过目前也可以作为爬虫使用<br>早在2013年的时候就在自动化测试中使用过Selenium，所以对他的API也算熟悉</p>
+<p>不过目前Selenium针对浏览器的开发支持程度不一样，一般都需要插件进行辅助</p>
+<ul>
+<li>chrome 开发最佳</li>
+<li>firefox 开发也不错</li>
+<li>IE 没有xpath获取的插件，开发困难</li>
+</ul>
+<p>除了网站登录认证，其实用HttpClient直接请求就可以爬取数据<br>但是有时候这种方式并不直接，直接网站上的信息所见即所得，还能截图看个清楚</p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+	<div>
+	 
+	   
+<div style="text-align:center;color: #ccc;font-size:14px;">
+------ 本文结束 ------</div>
+<br/>
+<div style="border: 1px solid black">
+<div style="margin-left:10px">
+<span style="font-weight:blod">版权声明</span>
+<img src="http://wx4.sinaimg.cn/mw690/712a7015gy1ffwqkthgrlj20e9026gm4.jpg" >
+<br/>
+<p style="font-size: 10px;line-height: 30px"><a href="http://dawell.cc" style="color:#258FC6">dawell's Notes</a> by <a href="http://dawell.cc" style="color:#258FC6">Dawell</a> is licensed under a <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" style="color:#258FC6">Creative Commons BY-NC-ND 4.0 International License</a>.<br/>
+由<a href="http://dawell.cc" style="color:#258FC6">Dawell</a>创作并维护的<a href="http://dawell.cc" style="color:#258FC6">dawell's Notes</a>博客采用<a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" style="color:#258FC6">创作共用保留署名-非商业-禁止演绎4.0国际许可证</a>。<br/>
+本文首发于<a href="http://dawell.cc" style="color:#258FC6">dawell's Notes</a> 博客（ <a href="http://dawell.cc" style="color:#258FC6">http://dawell.cc</a> ），版权所有，侵权必究。</p>
+</div>
+</div>
+
+
+	 
+	</div>
+	
+    <div>
+      
+        
+  <div style="padding: 10px 0; margin: 20px auto; width: 90%; text-align: center;">
+    <div>坚持原创技术分享，您的支持将鼓励我继续创作！</div>
+    <button id="rewardButton" disable="enable" onclick="var qr = document.getElementById('QR'); if (qr.style.display === 'none') {qr.style.display='block';} else {qr.style.display='none'}">
+      <span>赏</span>
+    </button>
+    <div id="QR" style="display: none;">
+      
+        <div id="wechat" style="display: inline-block">
+          <img id="wechat_qr" src="http://wx3.sinaimg.cn/mw690/712a7015gy1ffwq5phr1rj208j08imxp.jpg" alt="Dawell WeChat Pay"/>
+          <p>微信打赏</p>
+        </div>
+      
+      
+        <div id="alipay" style="display: inline-block">
+          <img id="alipay_qr" src="http://wx1.sinaimg.cn/mw690/712a7015gy1ffwq4f2m3kj208x08w74w.jpg" alt="Dawell Alipay"/>
+          <p>支付宝打赏</p>
+        </div>
+      
+    </div>
+  </div>
+
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+	
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/爬虫/" rel="tag"># 爬虫</a>
+          
+        </div>
+      
+
+      
+        
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/05/29/20170529西塘乌镇一人游/" rel="next" title="西塘乌镇一日游">
+                <i class="fa fa-chevron-left"></i> 西塘乌镇一日游
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/09/04/20170904用户中心/" rel="prev" title="用户中心">
+                用户中心 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
 
 
           </div>
@@ -627,6 +531,12 @@
 
 
           
+  <div class="comments" id="comments">
+    
+      <div id="cloud-tie-wrapper" class="cloud-tie-wrapper"></div>
+    
+  </div>
+
 
         </div>
         
@@ -646,8 +556,17 @@
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
 
-      <section class="site-overview sidebar-panel sidebar-panel-active">
+      <section class="site-overview sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
           <img class="site-author-image" itemprop="image"
                src="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg"
@@ -733,6 +652,22 @@
 
       </section>
 
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#爬虫研究"><span class="nav-number">1.</span> <span class="nav-text">爬虫研究</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
       
 
       
@@ -839,11 +774,9 @@
   
 
   
-  
-    <script type="text/javascript" id="motion.page.archive">
-      $('.archive-year').velocity('transition.slideLeftIn');
-    </script>
-  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.1"></script>
+
 
 
   
