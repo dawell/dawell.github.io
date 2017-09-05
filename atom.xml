@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://dawell.github.io/"/>
-  <updated>2017-09-04T14:44:04.132Z</updated>
+  <updated>2017-09-05T02:15:06.087Z</updated>
   <id>https://dawell.github.io/</id>
   
   <author>
@@ -20,7 +20,7 @@
     <link href="https://dawell.github.io/2017/09/04/20170904%E7%94%A8%E6%88%B7%E4%B8%AD%E5%BF%83/"/>
     <id>https://dawell.github.io/2017/09/04/20170904用户中心/</id>
     <published>2017-09-04T15:30:00.000Z</published>
-    <updated>2017-09-04T14:44:04.132Z</updated>
+    <updated>2017-09-05T02:15:06.087Z</updated>
     
     <content type="html"><![CDATA[<p><img src="https://timgsa.baidu.com/timg?image&amp;quality=80&amp;size=b9999_10000&amp;sec=1504546211663&amp;di=2abfeebbce6670f8442681cf19dead67&amp;imgtype=0&amp;src=http%3A%2F%2Fupload.chinaz.com%2F2016%2F1020%2F201610201727406806.jpg" alt="用户中心"></p>
 <h1 id="用户中心导论"><a href="#用户中心导论" class="headerlink" title="用户中心导论"></a>用户中心导论</h1><p>在互联网中，一切都是围绕用户来服务的，为了提供一系列服务，需要在服务中识别自然人个体，所以服务系统中出现了账号的概念来代表自然人，因为现在还不能把自然人通过某种方式直接在服务媒介上识别，所以互联网服务都是在用户想使用服务时引导用户注册一个账号的方式来创建账号。</p>
@@ -139,6 +139,11 @@
 <li>用户在同企业的一个平台认证后，则其他平台会自动认证成功</li>
 <li>如果退出，也会全部退出</li>
 </ul>
+<p>APP中的单点登录会有挤出登录的情况，会话类型会有多种</p>
+<ul>
+<li>会话排他型：如果在同一个APP中，如果2个人用同样的账号在不同设备上登录，则前一个账号会被强制退出，一般针对金融类APP</li>
+<li>会话共享型：同一个账号可以同时在不同设备上登录成功，一般用于工具类APP</li>
+</ul>
 <h4 id="业务形态-2"><a href="#业务形态-2" class="headerlink" title="业务形态"></a>业务形态</h4><ul>
 <li>登录成功后生成会话</li>
 <li>退出</li>
@@ -163,7 +168,7 @@
 <li>短信验证码、邮箱验证码攻击安全</li>
 <li>多业务步骤安全</li>
 </ul>
-<h3 id="账号集成"><a href="#账号集成" class="headerlink" title="账号集成"></a>账号集成</h3><p>比如将2个公司账号系统进行整合集成打通的业务场景</p>
+<h3 id="账号集成"><a href="#账号集成" class="headerlink" title="账号集成"></a>账号集成</h3><p>比如将2个公司账号系统进行整合集成打通的业务场景，这里暂不展开</p>
 <h3 id="自然人通过某种方式直接在服务媒介上识别YY：相当于一个第三方登录授权注册登录"><a href="#自然人通过某种方式直接在服务媒介上识别YY：相当于一个第三方登录授权注册登录" class="headerlink" title="自然人通过某种方式直接在服务媒介上识别YY：相当于一个第三方登录授权注册登录"></a>自然人通过某种方式直接在服务媒介上识别YY：相当于一个第三方登录授权注册登录</h3><ul>
 <li>PC通过信息传入识别<ul>
 <li><del>PC上比如指纹识别需要从硬件-操作系统-浏览器打通，非常麻烦，而且还要在设备上绑定好用户信息</del></li>
