@@ -1,0 +1,1002 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="SpringCloud," />
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="Dawell的博客" type="application/atom+xml" />
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.1" />
+
+
+
+
+
+
+<meta name="description" content="SpringCloud文章系列 SpringCloud SpringCloud-注册中心 【当前文章】SpringCloud-配置中心 SpringCloud-链路跟踪 SpringCloud-消息总线 SpringCloud-API网关 SpringCloud-异步消息 SpringCloud-同步调用 SpringCloud-断路降级 SpringCloud-监控管理 SpringCloud-">
+<meta name="keywords" content="SpringCloud">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SpringCloud-配置中心">
+<meta property="og:url" content="https://dawell.github.io/2018/08/03/SpringCloud-配置中心/index.html">
+<meta property="og:site_name" content="Dawell的博客">
+<meta property="og:description" content="SpringCloud文章系列 SpringCloud SpringCloud-注册中心 【当前文章】SpringCloud-配置中心 SpringCloud-链路跟踪 SpringCloud-消息总线 SpringCloud-API网关 SpringCloud-异步消息 SpringCloud-同步调用 SpringCloud-断路降级 SpringCloud-监控管理 SpringCloud-">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2018-08-17T07:54:41.490Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="SpringCloud-配置中心">
+<meta name="twitter:description" content="SpringCloud文章系列 SpringCloud SpringCloud-注册中心 【当前文章】SpringCloud-配置中心 SpringCloud-链路跟踪 SpringCloud-消息总线 SpringCloud-API网关 SpringCloud-异步消息 SpringCloud-同步调用 SpringCloud-断路降级 SpringCloud-监控管理 SpringCloud-">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    sidebar: {"position":"left","display":"post","offset":12,"offset_float":0,"b2t":false,"scrollpercent":false},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://dawell.github.io/2018/08/03/SpringCloud-配置中心/"/>
+
+
+
+
+
+  <title>SpringCloud-配置中心 | Dawell的博客</title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+  <script type="text/javascript">
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?8fcd00f1a6db3573f9ae6e885fa6b71e";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Dawell的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">我不是一个简单的少年~</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2018/08/03/SpringCloud-配置中心/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dawell">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Dawell的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">SpringCloud-配置中心</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-08-03T20:10:50+08:00">
+                2018-08-03
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/技术/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a class="cloud-tie-join-count" href="/2018/08/03/SpringCloud-配置中心/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count join-count" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+             <span id="/2018/08/03/SpringCloud-配置中心/" class="leancloud_visitors" data-flag-title="SpringCloud-配置中心">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="SpringCloud文章系列"><a href="#SpringCloud文章系列" class="headerlink" title="SpringCloud文章系列"></a>SpringCloud文章系列</h1><ol>
+<li><a href="http://dawell.cc/2018/08/01/SpringCloud/" target="_blank" rel="noopener">SpringCloud</a></li>
+<li><a href="http://dawell.cc/2018/08/02/SpringCloud-%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83/" target="_blank" rel="noopener">SpringCloud-注册中心</a></li>
+<li>【当前文章】<a href="http://dawell.cc/2018/08/03/SpringCloud-%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83/" target="_blank" rel="noopener">SpringCloud-配置中心</a></li>
+<li><a href="http://dawell.cc/2018/08/04/SpringCloud-%E9%93%BE%E8%B7%AF%E8%B7%9F%E8%B8%AA/" target="_blank" rel="noopener">SpringCloud-链路跟踪</a></li>
+<li><a href="http://dawell.cc/2018/08/05/SpringCloud-%E6%B6%88%E6%81%AF%E6%80%BB%E7%BA%BF/" target="_blank" rel="noopener">SpringCloud-消息总线</a></li>
+<li><a href="http://dawell.cc/2018/08/06/SpringCloud-API%E7%BD%91%E5%85%B3/" target="_blank" rel="noopener">SpringCloud-API网关</a></li>
+<li><a href="http://dawell.cc/2018/08/07/SpringCloud-%E5%BC%82%E6%AD%A5%E6%B6%88%E6%81%AF/" target="_blank" rel="noopener">SpringCloud-异步消息</a></li>
+<li><a href="http://dawell.cc/2018/08/08/SpringCloud-%E5%90%8C%E6%AD%A5%E8%B0%83%E7%94%A8/" target="_blank" rel="noopener">SpringCloud-同步调用</a></li>
+<li><a href="http://dawell.cc/2018/08/09/SpringCloud-%E6%96%AD%E8%B7%AF%E9%99%8D%E7%BA%A7/" target="_blank" rel="noopener">SpringCloud-断路降级</a></li>
+<li><a href="http://dawell.cc/2018/08/10/SpringCloud-%E7%9B%91%E6%8E%A7%E7%AE%A1%E7%90%86/" target="_blank" rel="noopener">SpringCloud-监控管理</a></li>
+<li><a href="http://dawell.cc/2018/08/11/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E4%B8%B4%E6%97%B6%E4%BB%BB%E5%8A%A1/" target="_blank" rel="noopener">SpringCloud-番外篇-临时任务</a></li>
+<li><a href="http://dawell.cc/2018/08/12/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E6%96%87%E6%A1%A3%E7%94%9F%E6%88%90/" target="_blank" rel="noopener">SpringCloud-番外篇-文档生成</a></li>
+<li><a href="http://dawell.cc/2018/08/13/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" target="_blank" rel="noopener">SpringCloud-番外篇-源码解析</a></li>
+</ol>
+<h3 id="接入说明"><a href="#接入说明" class="headerlink" title="接入说明"></a>接入说明</h3><ol>
+<li>目前采用最新的1.xRelease版本：1.5.15.RELEASE</li>
+<li>SpringCloud项目可以在start.spring.io下载，不过更方便的应该是通过idea新建项目，建立Spring Initializr项目</li>
+<li>我一般习惯将具体实现服务用具体的服务名，而公共组件用service-xxx来命名，当然还有一些比较固定名字的公共组件</li>
+</ol>
+<h3 id="Config"><a href="#Config" class="headerlink" title="Config"></a>Config</h3><h4 id="1-新建项目"><a href="#1-新建项目" class="headerlink" title="1. 新建项目"></a>1. 新建项目</h4><p>新建artifactId为service-config的服务</p>
+<h4 id="2-导入依赖"><a href="#2-导入依赖" class="headerlink" title="2. 导入依赖"></a>2. 导入依赖</h4><p>依赖说明</p>
+<ol>
+<li>actuator用于暴露监控的接口</li>
+<li>config-server是Config服务器的依赖</li>
+<li>eureka是Eureka客户端，这里配置中心依赖于注册中心</li>
+</ol>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-actuator<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-config-server<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-netflix-eureka-client<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h4 id="3-编写启动类"><a href="#3-编写启动类" class="headerlink" title="3. 编写启动类"></a>3. 编写启动类</h4><p>打开ServiceConfigApplication，在class上加入@EnableConfigServer注解<br>并且加上@EnableEurekaClient，注册到注册中心</p>
+<h4 id="4-修改配置"><a href="#4-修改配置" class="headerlink" title="4. 修改配置"></a>4. 修改配置</h4><h5 id="建立git仓库"><a href="#建立git仓库" class="headerlink" title="建立git仓库"></a>建立git仓库</h5><p>可以是本地仓库，也可以是远程仓库，我们用本地仓库来模拟</p>
+<ol>
+<li>找到一个目录E:/config</li>
+<li>git init 初始化仓库</li>
+<li>新建文件application.properties</li>
+<li>git add .</li>
+<li>git commit -m ‘init’</li>
+<li>git push origin master</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">server.port=8888</span><br><span class="line">spring.application.name=service-config</span><br><span class="line">spring.cloud.config.server.git.uri=E:/config</span><br><span class="line"></span><br><span class="line"># public</span><br><span class="line">spring.cloud.config.discovery.enabled=true</span><br><span class="line">spring.cloud.config.discovery.service-id=service-config</span><br><span class="line">eureka.client.serviceUrl.defaultZone=http://localhost:8761/eureka,http://localhost:8762/eureka</span><br><span class="line">management.security.enabled=false</span><br></pre></td></tr></table></figure>
+<p>配置中心默认端口8888</p>
+<p>config.server.git.uri设置为git的本地地址</p>
+<ol>
+<li>注意spring.cloud.config.server.git.uri必须配置在应用本地，否则不知道远程配置的地址，而其他服务的配置都可以放到配置中心，这个是特别的</li>
+</ol>
+<p>discovery.enabled与discovery.service-id其实是客户端的配置，配置中心自己是服务端也是客户端，作为客户端与其他服务一样，都需要通过配置中心去发现配置服务启动，读取公共配置</p>
+<ol>
+<li>discovery.enabled设置为通过注册中心暴露服务</li>
+<li>discovery.service-id是配置中心对在注册中心外暴露的id一致，与server端配置的spring.application.name一致</li>
+</ol>
+<p>defaultZone注册中心地址<br>management.security.enabled用于关闭一些校验权限</p>
+<h5 id="抽出公共配置–其他微服务共享"><a href="#抽出公共配置–其他微服务共享" class="headerlink" title="抽出公共配置–其他微服务共享"></a>抽出公共配置–其他微服务共享</h5><p>application.properties文件添加以下配置，并去掉service-config配置中的配置<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">eureka.client.serviceUrl.defaultZone=http://localhost:8761/eureka,http://localhost:8762/eureka</span><br><span class="line">management.security.enabled=false</span><br><span class="line">spring.cloud.config.discovery.enabled=true</span><br><span class="line">spring.cloud.config.discovery.service-id=service-config</span><br></pre></td></tr></table></figure></p>
+<h4 id="5-启动main"><a href="#5-启动main" class="headerlink" title="5. 启动main"></a>5. 启动main</h4><h4 id="6-验证"><a href="#6-验证" class="headerlink" title="6. 验证"></a>6. 验证</h4><p>访问 <a href="http://localhost:8761/" target="_blank" rel="noopener">http://localhost:8761/</a> 看到service-config已经注册了一台<br>访问 <a href="http://localhost:8888/service-config/default" target="_blank" rel="noopener">http://localhost:8888/service-config/default</a> 就可以访问到配置中心加载的配置了，中间改其他服务名，default是指配置的profile</p>
+<h3 id="Config集群"><a href="#Config集群" class="headerlink" title="Config集群"></a>Config集群</h3><h4 id="1-修改配置文件"><a href="#1-修改配置文件" class="headerlink" title="1. 修改配置文件"></a>1. 修改配置文件</h4><p>配置2个server，server1使用端口8888，server2使用端口8889</p>
+<p>server1<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">server.port=8888</span><br><span class="line">spring.application.name=service-config</span><br><span class="line">spring.cloud.config.server.git.uri=E:/IdeaProjects/springcloud-test/config</span><br><span class="line"></span><br><span class="line"># public</span><br><span class="line">spring.cloud.config.discovery.enabled=true</span><br><span class="line">spring.cloud.config.discovery.service-id=service-config</span><br><span class="line">eureka.client.serviceUrl.defaultZone=http://localhost:8761/eureka,http://localhost:8762/eureka</span><br><span class="line">management.security.enabled=false</span><br></pre></td></tr></table></figure></p>
+<p>server2<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">server.port=8889</span><br><span class="line">spring.application.name=service-config</span><br><span class="line">spring.cloud.config.server.git.uri=E:/IdeaProjects/springcloud-test/config</span><br><span class="line"></span><br><span class="line"># public</span><br><span class="line">spring.cloud.config.discovery.enabled=true</span><br><span class="line">spring.cloud.config.discovery.service-id=service-config</span><br><span class="line">eureka.client.serviceUrl.defaultZone=http://localhost:8761/eureka,http://localhost:8762/eureka</span><br><span class="line">management.security.enabled=false</span><br></pre></td></tr></table></figure></p>
+<p>除了端口号不一样，其他都一样，本质上配置中心只要保证读取的git地址一样就可以了，客户端只是过来拉配置，git相当于数据库</p>
+<h4 id="2-启动"><a href="#2-启动" class="headerlink" title="2. 启动"></a>2. 启动</h4><p>启动server1<br>启动server2</p>
+<h4 id="3-验证"><a href="#3-验证" class="headerlink" title="3. 验证"></a>3. 验证</h4><p>访问 <a href="http://localhost:8761/" target="_blank" rel="noopener">http://localhost:8761/</a> 看到service-config已经注册了2台<br>访问 <a href="http://localhost:8888/service-config/default" target="_blank" rel="noopener">http://localhost:8888/service-config/default</a> 就可以访问到配置中心加载的配置了<br>访问 <a href="http://localhost:8889/service-config/default" target="_blank" rel="noopener">http://localhost:8889/service-config/default</a> 就可以访问到配置中心加载的配置了</p>
+<h3 id="客户端使用"><a href="#客户端使用" class="headerlink" title="客户端使用"></a>客户端使用</h3><h4 id="1-添加依赖"><a href="#1-添加依赖" class="headerlink" title="1. 添加依赖"></a>1. 添加依赖</h4><p>客户端要通过注册中心查找注册中心服务，所以需要依赖注册中心</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-netflix-eureka-client<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-config<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h4 id="2-开启注解"><a href="#2-开启注解" class="headerlink" title="2. 开启注解"></a>2. 开启注解</h4><p>开启注册中心的配置即可@EnableDiscoveryClient，配置中心不需要额外的注解</p>
+<h4 id="3-修改配置"><a href="#3-修改配置" class="headerlink" title="3. 修改配置"></a>3. 修改配置</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">eureka.client.serviceUrl.defaultZone=http://localhost:8761/eureka,http://localhost:8762/eureka</span><br><span class="line">spring.cloud.config.discovery.enabled=true</span><br><span class="line">spring.cloud.config.discovery.service-id=service-config</span><br></pre></td></tr></table></figure>
+<p>config.discovery.enabled与config.discovery.service-id是依赖配置中心启动的核心配置，指定配置中心暴露的名称</p>
+<h4 id="4-编写代码"><a href="#4-编写代码" class="headerlink" title="4. 编写代码"></a>4. 编写代码</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@RefreshScope</span></span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MessageController</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> String msg;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">MessageController</span><span class="params">(@Value(<span class="string">"$&#123;message&#125;"</span>)</span> String msg)</span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.msg=msg;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@RequestMapping</span>(<span class="string">"/msg"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">read</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> msg;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>@RefreshScope 注意这里如果想通过/refresh接口能实时刷新配置的话，需要加这个注解，没有加的只是启动时加载的数据不会更新<br>注意这里进来保持好的使用习惯，使用final来保存数据</p>
+<h3 id="疑问"><a href="#疑问" class="headerlink" title="疑问"></a>疑问</h3><h4 id="1-为什么一定通过注册中心暴露配置中心服务？"><a href="#1-为什么一定通过注册中心暴露配置中心服务？" class="headerlink" title="1. 为什么一定通过注册中心暴露配置中心服务？"></a>1. 为什么一定通过注册中心暴露配置中心服务？</h4><p>如果不通过注册中心，客户端的配置如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spring.cloud.config.uri=http://localhost:8888</span><br></pre></td></tr></table></figure></p>
+<p>如果修改修改了域名或者端口，增加减少机器都需要去修改此启动配置，则通过注册中心就可以用其各种好处，减少依赖</p>
+<h4 id="2-配置中心为什么依赖注册中心？怎么我看有的是注册中心依赖配置中心？"><a href="#2-配置中心为什么依赖注册中心？怎么我看有的是注册中心依赖配置中心？" class="headerlink" title="2. 配置中心为什么依赖注册中心？怎么我看有的是注册中心依赖配置中心？"></a>2. 配置中心为什么依赖注册中心？怎么我看有的是注册中心依赖配置中心？</h4><p>其实目前2种配置都有</p>
+<ol>
+<li>注册中心依赖配置中心的解释：就是注册中心也是一个服务，启动所需要的配置从配置中心拉取，同时可以动态变更，启动顺序：先配置中心，再注册中心，配置中心不能依赖注册中心，否则无法启动。</li>
+<li>配置中心依赖注册中心的解释：配置中心如果注册为集群模式那必然让客户端通过服务发现找到从注册中心找到配置中心，所以配置中心一定要注册到注册中心启动服务发现。启动顺序：注册中心，再配置中心，这样注册中心的配置是不经过配置中心的，而注册中心的配置一般也是固定不变的<br>针对第一种还有一种解：先启动配置中心，开启注册失败仍然可以启动的配置，只是第一次注册失败依然可以启动，然后再启动注册中心，可以两全<br>总体来说第二种更加合理一点，因为一般注册中心的defaultZone与其他应用不一样，注册中心的要排除掉自己的地址，而其他服务是全量，这样我在做公共配置时比较统一，不用开启注册中心的本地配置优先<br>不过其他解决方案中注册中心与配置中心一般都是一体的，所以也就没有这种相互依赖的尴尬，不过领域上确实是2个东西</li>
+</ol>
+<h4 id="3-为什么配置中心读取的配置变量声明为final的，但是调用-refresh后带-RefreshScope的对象里的final值还会发生变化？"><a href="#3-为什么配置中心读取的配置变量声明为final的，但是调用-refresh后带-RefreshScope的对象里的final值还会发生变化？" class="headerlink" title="3. 为什么配置中心读取的配置变量声明为final的，但是调用/refresh后带@RefreshScope的对象里的final值还会发生变化？"></a>3. 为什么配置中心读取的配置变量声明为final的，但是调用/refresh后带@RefreshScope的对象里的final值还会发生变化？</h4><p>首先final是不会变的，所以spring是把整个@RefreshScope标注的bean重新创建了一遍<br>final的好处是</p>
+<ol>
+<li>控制只有配置中心才可以更改变量，在程序中是无法赋值替换的</li>
+<li>配置中心的数据都是很少去变化的，应该当做常量处理，final虚拟机有优化</li>
+<li>可以保证线程安全，无状态类与不可变类多线程安全</li>
+</ol>
+<h3 id="其他注册中心"><a href="#其他注册中心" class="headerlink" title="其他注册中心"></a>其他注册中心</h3><p>因为consul与zookeeper本身具备配置存储的能力，所以这2个注册中心的配置中心一般用他们定制的，而非用SpringCloudConfig</p>
+<h4 id="快速接入"><a href="#快速接入" class="headerlink" title="快速接入"></a>快速接入</h4><p>暂略…</p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+	<div>
+	 
+	   
+<div style="text-align:center;color: #ccc;font-size:14px;">
+------ 本文结束 ------</div>
+<br/>
+<div style="border: 1px solid black">
+<div style="margin-left:10px">
+<span style="font-weight:blod">版权声明</span>
+<img src="http://wx4.sinaimg.cn/mw690/712a7015gy1ffwqkthgrlj20e9026gm4.jpg" >
+<br/>
+<p style="font-size: 10px;line-height: 30px"><a href="http://dawell.cc" style="color:#258FC6">dawell's Notes</a> by <a href="http://dawell.cc" style="color:#258FC6">Dawell</a> is licensed under a <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" style="color:#258FC6">Creative Commons BY-NC-ND 4.0 International License</a>.<br/>
+由<a href="http://dawell.cc" style="color:#258FC6">Dawell</a>创作并维护的<a href="http://dawell.cc" style="color:#258FC6">dawell's Notes</a>博客采用<a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" style="color:#258FC6">创作共用保留署名-非商业-禁止演绎4.0国际许可证</a>。<br/>
+本文首发于<a href="http://dawell.cc" style="color:#258FC6">dawell's Notes</a> 博客（ <a href="http://dawell.cc" style="color:#258FC6">http://dawell.cc</a> ），版权所有，侵权必究。</p>
+</div>
+</div>
+
+
+	 
+	</div>
+	
+    <div>
+      
+        
+  <div style="padding: 10px 0; margin: 20px auto; width: 90%; text-align: center;">
+    <div>坚持原创技术分享，您的支持将鼓励我继续创作！</div>
+    <button id="rewardButton" disable="enable" onclick="var qr = document.getElementById('QR'); if (qr.style.display === 'none') {qr.style.display='block';} else {qr.style.display='none'}">
+      <span>赏</span>
+    </button>
+    <div id="QR" style="display: none;">
+      
+        <div id="wechat" style="display: inline-block">
+          <img id="wechat_qr" src="http://wx3.sinaimg.cn/mw690/712a7015gy1ffwq5phr1rj208j08imxp.jpg" alt="Dawell WeChat Pay"/>
+          <p>微信打赏</p>
+        </div>
+      
+      
+        <div id="alipay" style="display: inline-block">
+          <img id="alipay_qr" src="http://wx1.sinaimg.cn/mw690/712a7015gy1ffwq4f2m3kj208x08w74w.jpg" alt="Dawell Alipay"/>
+          <p>支付宝打赏</p>
+        </div>
+      
+    </div>
+  </div>
+
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+	
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/SpringCloud/" rel="tag"># SpringCloud</a>
+          
+        </div>
+      
+
+      
+        
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/08/02/SpringCloud-注册中心/" rel="next" title="SpringCloud-注册中心">
+                <i class="fa fa-chevron-left"></i> SpringCloud-注册中心
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2018/08/04/SpringCloud-链路跟踪/" rel="prev" title="SpringCloud-链路跟踪">
+                SpringCloud-链路跟踪 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+      <div id="cloud-tie-wrapper" class="cloud-tie-wrapper"></div>
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg"
+               alt="Dawell" />
+          <p class="site-author-name" itemprop="name">Dawell</p>
+           
+              <p class="site-description motion-element" itemprop="description">一个Java程序员日常学习、技术总结博客</p>
+          
+        </div>
+        <nav class="site-state motion-element">
+
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">47</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-categories">
+              <a href="/categories/index.html">
+                <span class="site-state-item-count">5</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-tags">
+              <a href="/tags/index.html">
+                <span class="site-state-item-count">23</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+          <div class="feed-link motion-element">
+            <a href="/atom.xml" rel="alternate">
+              <i class="fa fa-rss"></i>
+              RSS
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/Dawell" target="_blank" title="GitHub">
+                  
+                    <i class="fa fa-fw fa-github"></i>
+                  
+                  GitHub
+                </a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+          <div class="cc-license motion-element" itemprop="license">
+            <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" class="cc-opacity" target="_blank">
+              <img src="/images/cc-by-nc-nd.svg" alt="Creative Commons" />
+            </a>
+          </div>
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#SpringCloud文章系列"><span class="nav-number">1.</span> <span class="nav-text">SpringCloud文章系列</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#接入说明"><span class="nav-number">1.0.1.</span> <span class="nav-text">接入说明</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Config"><span class="nav-number">1.0.2.</span> <span class="nav-text">Config</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-新建项目"><span class="nav-number">1.0.2.1.</span> <span class="nav-text">1. 新建项目</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-导入依赖"><span class="nav-number">1.0.2.2.</span> <span class="nav-text">2. 导入依赖</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-编写启动类"><span class="nav-number">1.0.2.3.</span> <span class="nav-text">3. 编写启动类</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-修改配置"><span class="nav-number">1.0.2.4.</span> <span class="nav-text">4. 修改配置</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#建立git仓库"><span class="nav-number">1.0.2.4.1.</span> <span class="nav-text">建立git仓库</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#抽出公共配置–其他微服务共享"><span class="nav-number">1.0.2.4.2.</span> <span class="nav-text">抽出公共配置–其他微服务共享</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5-启动main"><span class="nav-number">1.0.2.5.</span> <span class="nav-text">5. 启动main</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#6-验证"><span class="nav-number">1.0.2.6.</span> <span class="nav-text">6. 验证</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Config集群"><span class="nav-number">1.0.3.</span> <span class="nav-text">Config集群</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-修改配置文件"><span class="nav-number">1.0.3.1.</span> <span class="nav-text">1. 修改配置文件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-启动"><span class="nav-number">1.0.3.2.</span> <span class="nav-text">2. 启动</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-验证"><span class="nav-number">1.0.3.3.</span> <span class="nav-text">3. 验证</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#客户端使用"><span class="nav-number">1.0.4.</span> <span class="nav-text">客户端使用</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-添加依赖"><span class="nav-number">1.0.4.1.</span> <span class="nav-text">1. 添加依赖</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-开启注解"><span class="nav-number">1.0.4.2.</span> <span class="nav-text">2. 开启注解</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-修改配置"><span class="nav-number">1.0.4.3.</span> <span class="nav-text">3. 修改配置</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-编写代码"><span class="nav-number">1.0.4.4.</span> <span class="nav-text">4. 编写代码</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#疑问"><span class="nav-number">1.0.5.</span> <span class="nav-text">疑问</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-为什么一定通过注册中心暴露配置中心服务？"><span class="nav-number">1.0.5.1.</span> <span class="nav-text">1. 为什么一定通过注册中心暴露配置中心服务？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-配置中心为什么依赖注册中心？怎么我看有的是注册中心依赖配置中心？"><span class="nav-number">1.0.5.2.</span> <span class="nav-text">2. 配置中心为什么依赖注册中心？怎么我看有的是注册中心依赖配置中心？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-为什么配置中心读取的配置变量声明为final的，但是调用-refresh后带-RefreshScope的对象里的final值还会发生变化？"><span class="nav-number">1.0.5.3.</span> <span class="nav-text">3. 为什么配置中心读取的配置变量声明为final的，但是调用/refresh后带@RefreshScope的对象里的final值还会发生变化？</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#其他注册中心"><span class="nav-number">1.0.6.</span> <span class="nav-text">其他注册中心</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#快速接入"><span class="nav-number">1.0.6.1.</span> <span class="nav-text">快速接入</span></a></li></ol></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Dawell</span>
+</div>
+
+
+<div class="theme-info">
+  Best Wishes! <a href="mailto:dawell@aliyun.com">联系我</a>
+</div>
+
+
+        
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.1"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.1"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+    
+    <script>
+      var cloudTieConfig = {
+        url: document.location.href, 
+        sourceId: "",
+        productKey: "71e66c8b757244f387b143ce9b977a78",
+        target: "cloud-tie-wrapper"
+      };
+    </script>
+    <script src="https://img1.ws.126.net/f2e/tie/yun/sdk/loader.js"></script>
+  
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+  <script src="https://cdn1.lncld.net/static/js/av-core-mini-0.6.1.js"></script>
+  <script>AV.initialize("3Vbe2UCzbY41yP5dtkxpWd5G-gzGzoHsz", "EeVqL4YwIANsoGT9sJXoTgjp");</script>
+  <script>
+    function showTime(Counter) {
+      var query = new AV.Query(Counter);
+      var entries = [];
+      var $visitors = $(".leancloud_visitors");
+
+      $visitors.each(function () {
+        entries.push( $(this).attr("id").trim() );
+      });
+
+      query.containedIn('url', entries);
+      query.find()
+        .done(function (results) {
+          var COUNT_CONTAINER_REF = '.leancloud-visitors-count';
+
+          if (results.length === 0) {
+            $visitors.find(COUNT_CONTAINER_REF).text(0);
+            return;
+          }
+
+          for (var i = 0; i < results.length; i++) {
+            var item = results[i];
+            var url = item.get('url');
+            var time = item.get('time');
+            var element = document.getElementById(url);
+
+            $(element).find(COUNT_CONTAINER_REF).text(time);
+          }
+          for(var i = 0; i < entries.length; i++) {
+            var url = entries[i];
+            var element = document.getElementById(url);
+            var countSpan = $(element).find(COUNT_CONTAINER_REF);
+            if( countSpan.text() == '') {
+              countSpan.text(0);
+            }
+          }
+        })
+        .fail(function (object, error) {
+          console.log("Error: " + error.code + " " + error.message);
+        });
+    }
+
+    function addCount(Counter) {
+      var $visitors = $(".leancloud_visitors");
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+      var query = new AV.Query(Counter);
+
+      query.equalTo("url", url);
+      query.find({
+        success: function(results) {
+          if (results.length > 0) {
+            var counter = results[0];
+            counter.fetchWhenSave(true);
+            counter.increment("time");
+            counter.save(null, {
+              success: function(counter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.get('time'));
+              },
+              error: function(counter, error) {
+                console.log('Failed to save Visitor num, with error message: ' + error.message);
+              }
+            });
+          } else {
+            var newcounter = new Counter();
+            /* Set ACL */
+            var acl = new AV.ACL();
+            acl.setPublicReadAccess(true);
+            acl.setPublicWriteAccess(true);
+            newcounter.setACL(acl);
+            /* End Set ACL */
+            newcounter.set("title", title);
+            newcounter.set("url", url);
+            newcounter.set("time", 1);
+            newcounter.save(null, {
+              success: function(newcounter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(newcounter.get('time'));
+              },
+              error: function(newcounter, error) {
+                console.log('Failed to create');
+              }
+            });
+          }
+        },
+        error: function(error) {
+          console.log('Error:' + error.code + " " + error.message);
+        }
+      });
+    }
+
+    $(function() {
+      var Counter = AV.Object.extend("Counter");
+      if ($('.leancloud_visitors').length == 1) {
+        addCount(Counter);
+      } else if ($('.post-title-link').length > 1) {
+        showTime(Counter);
+      }
+    });
+  </script>
+
+
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
