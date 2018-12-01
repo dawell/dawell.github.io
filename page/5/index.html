@@ -277,6 +277,403 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2017/05/23/Sonarlint插件/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dawell">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Dawell的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/05/23/Sonarlint插件/" itemprop="url">Sonarlint插件</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-05-23T21:30:00+08:00">
+                2017-05-23
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/技术/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+             <span id="/2017/05/23/Sonarlint插件/" class="leancloud_visitors" data-flag-title="Sonarlint插件">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h1><p>sonar与idea集成的相关步骤：</p>
+<ol>
+<li><p>安装插件<br>idea–plugns中查找sonarLint插件，并安装；安装完成后，重启idea；<br><img src="http://wx3.sinaimg.cn/mw690/712a7015gy1ffxpq8n40dj20at047glk.jpg" alt="image"></p>
+</li>
+<li><p>配置sonarlint插件<br>第一次添加时，需要到General中配置使用的sonar平台地址，一般是公司内部搭建的地址<br><img src="http://wx4.sinaimg.cn/mw690/712a7015gy1ffxpq9bjadj20rr0fk3zv.jpg" alt="image"><br>配置项目信息，在上面那个环节时，下面有个“UPdate bingding”，必须要点击下；看解释就很清楚了。从服务器获取项目列表、规则、配置等；必须在选择项目前完成这事儿。<br><img src="http://wx1.sinaimg.cn/mw690/712a7015gy1ffxpq9xwpuj20id028web.jpg" alt="image"></p>
+</li>
+<li><p>配置项目：<br>选择你们的项目<br>如果项目，要在SonarQube在配置下你们的项目，导入checkstyle、pmd、findbugs的配置，或者用默认的<br><img src="http://wx4.sinaimg.cn/mw690/712a7015gy1ffxpqafpqvj20s00h50tq.jpg" alt="image"></p>
+</li>
+<li><p>使用插件<br>配置完成后，在当前项目环境下，idea的左下角就可以看到sonar扩展了，注意选Project files后选择scope<br><img src="http://wx2.sinaimg.cn/mw690/712a7015gy1ffxpqaxrguj20n009bmxm.jpg" alt="image"></p>
+</li>
+</ol>
+<p>至此，idea与sonar插件集成完毕</p>
+<h2 id="插件拉去项目列表时报错"><a href="#插件拉去项目列表时报错" class="headerlink" title="插件拉去项目列表时报错"></a>插件拉去项目列表时报错</h2><p>不过使用起来遇到一个问题，如果SonarQube的子项目比较多时，插件拉去项目的api会超时timeout，导致无法使用<br><img src="http://wx2.sinaimg.cn/mw690/712a7015gy1ffue2o52c4j20hd03r74d.jpg" alt="img"><br>解决：<br>问题就是<code>http://xxx:9000/api/projects/index?format=json&amp;subprojects=true</code>这个URL请求时timeout，如果浏览器请求会报如下错误：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;&quot;err_code&quot;:500,&quot;err_msg&quot;:&quot;ActiveRecord::JDBCError: Can not read response from server. Expected to read 255 bytes, read 0 bytes before connection was unexpectedly lost.: SELECT id,uuid,kee,name,language,long_name,scope,qualifier,root_uuid,project_uuid FROM `projects` WHERE (enabled=1 AND scope in (&apos;PRJ&apos;) AND qualifier in (&apos;TRK&apos;,&apos;BRC&apos;))  ORDER BY name&quot;&#125;</span><br></pre></td></tr></table></figure></p>
+<p>问题SQL：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="keyword">id</span>,<span class="keyword">uuid</span>,kee,<span class="keyword">name</span>,<span class="keyword">language</span>,long_name,<span class="keyword">scope</span>,qualifier,root_uuid,project_uuid</span><br><span class="line"><span class="keyword">FROM</span> <span class="string">`projects`</span></span><br><span class="line"><span class="keyword">WHERE</span> (enabled=<span class="number">1</span> <span class="keyword">AND</span> <span class="keyword">scope</span> <span class="keyword">in</span> (<span class="string">'PRJ'</span>) <span class="keyword">AND</span> qualifier <span class="keyword">in</span> (<span class="string">'TRK'</span>,<span class="string">'BRC'</span>))</span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> <span class="keyword">name</span></span><br></pre></td></tr></table></figure></p>
+<p>实际测试发现：问题出在order by name上，如果只使用order by，执行就会慢到没结果甚至报<code>[Err] 2000 - Unknown MySQL error</code>错误，之后看表结构发现问题<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">`name` varchar(2000) COLLATE utf8_bin DEFAULT NULL,</span><br></pre></td></tr></table></figure></p>
+<p>name这个字段竟然有2000的长度，然后看数据库实际数据长度没有超过160的，所以修改为300，查询就非常快了，问题解决！</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+	<div>
+	 
+	</div>
+	
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+	
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2017/05/22/静态代码扫描工具/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dawell">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Dawell的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/05/22/静态代码扫描工具/" itemprop="url">静态代码扫描工具</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-05-22T21:57:00+08:00">
+                2017-05-22
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/技术/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+             <span id="/2017/05/22/静态代码扫描工具/" class="leancloud_visitors" data-flag-title="静态代码扫描工具">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><img src="http://wx3.sinaimg.cn/mw690/712a7015gy1ffuejerhtrj20xc0i0wgr.jpg" alt="img"></p>
+<p>优秀的团队为了保证可读性、可维护性、避免重复踩坑与保证代码质量，都会推出一些开发规范来遵守。<br>开发规范是前置主动要求团队成员遵守的，而光靠意识是难以保证完全遵守规范的，所以还需要一些工具辅助。<br>当然即使有工具做这些事情，规范也是必须推广的，让大家先仔细读读，毕竟直接写出优秀的代码是最好的，然后再辅助工具乃最佳实践。</p>
+<h1 id="开发规范"><a href="#开发规范" class="headerlink" title="开发规范"></a>开发规范</h1><p>一流公司制定规范，二流公司申请专利，三流公司生产产品。<br>所以目前公开规范的大多是大厂的规范。</p>
+<p>目前知道大厂公开的Java开发规范</p>
+<ul>
+<li>Google开发规范 github markdown格式 <a href="http://google.github.io/styleguide/javaguide.html" target="_blank" rel="noopener">点我查看</a></li>
+<li>阿里巴巴开发规范 PDF格式 <a href="https://yq.aliyun.com/articles/69327" target="_blank" rel="noopener">点我查看最新版</a></li>
+<li>华为开发规范</li>
+<li>Oracle开发规范</li>
+</ul>
+<p>阿里巴巴的开发规范，虽然不是单纯的规范，还包括了开发中的各种坑从主观上的一些强制规定，但是总体上还是很有用的，可以拿来部分or全部直接执行。</p>
+<h1 id="独立的组件"><a href="#独立的组件" class="headerlink" title="独立的组件"></a>独立的组件</h1><h2 id="FindBugs"><a href="#FindBugs" class="headerlink" title="FindBugs"></a>FindBugs</h2><p>只寻找可能存在bug的地方，不注重样式或者格式，它试图只寻找真正的缺陷或者潜在的性能问题。</p>
+<h3 id="特点"><a href="#特点" class="headerlink" title="特点"></a>特点</h3><ul>
+<li>基于class分析，如果你clean了再去执行发现没有执行生成报告，所以需要编译后才能执行分析</li>
+<li>有maven插件，有IDE插件（eclipse插件，也有idea插件）</li>
+<li>开发时不用使用maven插件，要编译执行检测生成xml然后再生成网页查看结果，挺麻烦。如果要与Jenkins集成的时候，maven插件就有用了，<a href="http://www.tuicool.com/articles/QB7nqqF" target="_blank" rel="noopener">集成方式点我</a></li>
+<li>开发时使用IDE插件非常方便</li>
+<li>插件中Bug Explorer 中的灰色图标处为 Bug 类型，红色图标表示 bug 较为严重，黄色的图标表示 bug 为警告程度</li>
+</ul>
+<h3 id="代码缺陷分类"><a href="#代码缺陷分类" class="headerlink" title="代码缺陷分类"></a>代码缺陷分类</h3><p>根据缺陷的性质，大致可以分为下列几类</p>
+<ul>
+<li>Bad practice  不好的做法</li>
+<li>Correctness   可能有不正确</li>
+<li>Dodgy code     糟糕的代码</li>
+<li>Experimental  实验</li>
+<li>Internationalization  国际化</li>
+<li>Malicious code vulnerility 恶意的代码漏洞</li>
+<li>Multithreaded correctness 多线程问题</li>
+<li>Performance  性能问题</li>
+</ul>
+<p>FindBugs官方网站上也给出了一些案例：<a href="http://findbugs.sourceforge.net/bugDescriptions.html" target="_blank" rel="noopener">案例点我</a></p>
+<h3 id="缺陷列表"><a href="#缺陷列表" class="headerlink" title="缺陷列表"></a>缺陷列表</h3><p><a href="">缺陷列表</a></p>
+<h3 id="排除单个规则"><a href="#排除单个规则" class="headerlink" title="排除单个规则"></a>排除单个规则</h3><p>如果是排除一类规则，点击IDE旁边的提示选择排除类型就行</p>
+<p>可以针对规则排除单独类中的接触限制，使用注解<code>@edu.umd.cs.findbugs.annotations.SuppressFBWarnings</code><br>要加入依赖  provided代表只在编译时依赖，打包后就没有这个依赖了<br>IDE旁边提示也有这种，不过不会加入以下依赖，需要手动在POM中加入</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.google.code.findbugs<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>annotations<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>3.0.1<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">scope</span>&gt;</span>provided<span class="tag">&lt;/<span class="name">scope</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.google.code.findbugs<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>jsr305<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>3.0.1<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">scope</span>&gt;</span>provided<span class="tag">&lt;/<span class="name">scope</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h2 id="CheckStyle"><a href="#CheckStyle" class="headerlink" title="CheckStyle"></a>CheckStyle</h2><p>代码样式风格检查，专门check代码规范风格的，比如缩进，换行操作，命名<br>大项目往往是有很多人一起完成的，然而每个人都有自己的style，导致整个项目的代码不仅存在不符合语言规范的情况，而且读起来非常困难。因此，这样的项目中都会引入Checkstyle，来规范大家的编码风格，尽量做到统一和合理。<br>所以使用checkStyle检查到问题</p>
+<p>官方文档：<a href="http://checkstyle.sourceforge.net/checks.html" target="_blank" rel="noopener">http://checkstyle.sourceforge.net/checks.html</a></p>
+<h3 id="工具界面"><a href="#工具界面" class="headerlink" title="工具界面"></a>工具界面</h3><p>插件<br><img src="http://wx3.sinaimg.cn/mw690/712a7015gy1ffue2cdu0qj20fa06aq3l.jpg" alt="img"></p>
+<p>单个文件check<br><img src="http://wx3.sinaimg.cn/mw690/712a7015gy1ffue2fumooj20eq0d3jt3.jpg" alt="img"></p>
+<h3 id="特点-1"><a href="#特点-1" class="headerlink" title="特点"></a>特点</h3><ul>
+<li>基于源码，无需编译</li>
+<li>有maven插件，与IDE插件（eclipse插件，也有idea插件）。<a href="http://checkstyle.sourceforge.net/idea.html" target="_blank" rel="noopener">idea的一些细节配置</a></li>
+<li>可以自定义规则</li>
+<li>CheckStyle底层基于antlr对源码进行处理</li>
+<li>可以配置哪些文件不检查</li>
+</ul>
+<h3 id="规范配置"><a href="#规范配置" class="headerlink" title="规范配置"></a>规范配置</h3><p>配置位置<br><img src="http://wx3.sinaimg.cn/mw690/712a7015gy1ffue2ixrz0j20su0jhmxs.jpg" alt="img"></p>
+<ul>
+<li>sun_checks.xml 默认自带sun公司的开发规范，有点严格</li>
+<li>google_checks.xml 下载下来好像有点问题，可能与版本有关 <a href="http://checkstyle.sourceforge.net/google_style.html" target="_blank" rel="noopener">查看</a></li>
+<li>华为的规范 很多公司都会用华为的规范改改</li>
+<li>自定义的规范 比较了解配置规则的情况下配置</li>
+</ul>
+<h3 id="技巧"><a href="#技巧" class="headerlink" title="技巧"></a>技巧</h3><p>我们在代码写完之后，还要花时间去手动解决Checkstyle提示的问题，这是一个非常无聊和耗时的工作。<br>其实很多问题使用IDE的格式化已经能解决一部分，所以最好能提供一个IDE的formatter配置，整个团队都用这个配置导入IDE，这样用用快捷键就能解决一些问题，非常easy。</p>
+<h2 id="PMD"><a href="#PMD" class="headerlink" title="PMD"></a>PMD</h2><p>与findbug类似找bug用，还有规范，比如说注释不全</p>
+<h3 id="特点-2"><a href="#特点-2" class="headerlink" title="特点"></a>特点</h3><ul>
+<li>有maven插件，与IDE插件（eclipse插件，也有idea插件）</li>
+<li>增强代码质量和修改代码的功能</li>
+</ul>
+<h3 id="错误分类"><a href="#错误分类" class="headerlink" title="错误分类"></a>错误分类</h3><ul>
+<li>可能的bug——空的try/catch/finally/switch块。</li>
+<li>无用代码(Dead code)：无用的本地变量，方法参数和私有方法。</li>
+<li>空的if/while语句。</li>
+<li>过度复杂的表达式——不必要的if语句，本来可以用while循环但是却用了for循环。</li>
+<li>可优化的代码：浪费性能的String/StringBuffer的使用。</li>
+</ul>
+<h1 id="集合组件"><a href="#集合组件" class="headerlink" title="集合组件"></a>集合组件</h1><h2 id="IdeaIDE的QAPlug"><a href="#IdeaIDE的QAPlug" class="headerlink" title="IdeaIDE的QAPlug"></a>IdeaIDE的QAPlug</h2><p>这个插件是汇集这前面说的3个插件的结果，不用每次都运行3个插件分别排错，1键运行3个同时汇总整合，非常方便，所以其他的不用装了，就用这个就行了！<br>与sonar平台的功能类似！<br>如果公司没有搭建sonarqube平台的话，本地使用这个最佳</p>
+<h3 id="插件下载安装"><a href="#插件下载安装" class="headerlink" title="插件下载安装"></a>插件下载安装</h3><p>依次下载 QAPlug、QAPlug-Checkstyle、QAPlug-FindBugs、QAPlug-PMD<br><img src="http://wx2.sinaimg.cn/mw690/712a7015gy1ffue2lstwvj20b706rdfv.jpg" alt="img"></p>
+<h3 id="分类"><a href="#分类" class="headerlink" title="分类"></a>分类</h3><p>这个插件会把3个插件的错误分类汇总</p>
+<ul>
+<li>Efficiency 效能</li>
+<li>Maintainability 可维护性</li>
+<li>Reliability 可靠性</li>
+<li>Usability 可用性</li>
+</ul>
+<h2 id="SonarQube"><a href="#SonarQube" class="headerlink" title="SonarQube"></a>SonarQube</h2><p>代码质量管理系统<br>相当于QAPlug的工程独立出一个服务器部署，可以配置规则，扫描代码，集成了很多静态扫描工具<br>2015年3月的时候就看到一篇文章介绍这个平台了，那时候还没有太过关注，后来发现这个是个很好的平台</p>
+<h3 id="Sonarlint"><a href="#Sonarlint" class="headerlink" title="Sonarlint"></a>Sonarlint</h3><p>是SonarQube的配套的IDE插件，配置远程服务器的地址,选取要拉去规则的项目，然后本地就可以执行校验了，用的远程的规则<br>这样还是很方便的，规则可以同一在SonarQube维护，不用每个人本地导入，团队的话用这个最适合</p>
+<p>Sonarlint安装与拉取列表失败问题解决见 </p>
+<h3 id="扩充-Lint概念"><a href="#扩充-Lint概念" class="headerlink" title="扩充-Lint概念"></a>扩充-Lint概念</h3><p>Sonarlint是一个Lint工具，其实Lint的含义就代表代码静态分析的工具，协助开发的工具，尤其是前端经常使用，比如插件eslint：检查JavaScript错误非常方便</p>
+<h2 id="JArchitect"><a href="#JArchitect" class="headerlink" title="JArchitect"></a>JArchitect</h2><p>多种分析工具的聚合工具<br>是一个商业性的收费的分析工具<br>可以汇聚checkstyle、findbugs、pmd的xml，然后分类总结生成图表<br>不过是收费的，也没有idea插件，不用</p>
+<h1 id="代码覆盖率工具"><a href="#代码覆盖率工具" class="headerlink" title="代码覆盖率工具"></a>代码覆盖率工具</h1><p>idea自带了代码覆盖率插件还不错<br>跑单元测试的时候以代码覆盖率的方式运行就行了<br>一般逻辑覆盖率60%就差不多了，核心模块80%覆盖标准即可</p>
+<h2 id="运行方法"><a href="#运行方法" class="headerlink" title="运行方法"></a>运行方法</h2><p><img src="http://wx2.sinaimg.cn/mw690/712a7015gy1ffue9vkviqj208r0jumxx.jpg" alt="img"></p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>首先要从意识上要遵守规范，风格统一，需要制定一份Java开发规范，我比较倾向于直接使用阿里的Java规范吧，简单实用，也不过分严格<br>其次要选择静态代码工具，没有SonarQube的话用QAPlug是很好的选择，有的话装个Sonarlint插件就可以了<br>代码覆盖率通过idea自带的即可</p>
+<p>有些人可能很排斥规范，总感觉条条框框太多，不符合自己的自由风格，但是软件不是开发完上线就结束的过程，而是需要持续迭代维护升级的过程，新人会接手，要有可读性可维护性。项目大了，人多了也是需要规范化才能更好的融合协作，让混乱变得有序<br>一个人的优秀靠的是经验，一个团队的优秀靠的是规范。<br>有了这些规范与工具，就可以大大的提高团队的整体素质与水平，尤其是大厂开发人员，这个是必须有的。</p>
+<p>Best Wishes!</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+	<div>
+	 
+	</div>
+	
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+	
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2017/05/21/博客评论插件/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -331,8 +728,8 @@
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/博客/" itemprop="url" rel="index">
-                    <span itemprop="name">博客</span>
+                  <a href="/categories/个人/" itemprop="url" rel="index">
+                    <span itemprop="name">个人</span>
                   </a>
                 </span>
 
@@ -1408,7 +1805,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">47</span>
+                <span class="site-state-item-count">49</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -1419,7 +1816,7 @@
             
             <div class="site-state-item site-state-categories">
               <a href="/categories/index.html">
-                <span class="site-state-item-count">5</span>
+                <span class="site-state-item-count">4</span>
                 <span class="site-state-item-name">分类</span>
               </a>
             </div>
