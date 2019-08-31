@@ -1,0 +1,936 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="Hexo, NexT" />
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="Dawell的博客" type="application/atom+xml" />
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.1" />
+
+
+
+
+
+
+<meta name="description" content="背景平常时间不多，看书断断续续，这本书基本从18年年末看起，看到现在才看完，作者花了半年写书我花了半年才看完，惭愧~整本书450页，前面偏作者总结的理论知识，大章后面会带有小案例，后面讲京东的商品页偏实践，也算是理论+实践了不过读前半段总感觉例子比较牵强，直到后面看到商品页时发展原来都是这个大例子中拆出来的小例子，所以前面的例子很别扭，后面很重复，也算作本书的缺点之一全篇知识比较硬，作者不开玩笑不">
+<meta property="og:type" content="article">
+<meta property="og:title" content="亿级流量网站架构核心技术-读书笔记">
+<meta property="og:url" content="https://dawell.github.io/2019/03/01/亿级流量网站架构核心技术-读书笔记/index.html">
+<meta property="og:site_name" content="Dawell的博客">
+<meta property="og:description" content="背景平常时间不多，看书断断续续，这本书基本从18年年末看起，看到现在才看完，作者花了半年写书我花了半年才看完，惭愧~整本书450页，前面偏作者总结的理论知识，大章后面会带有小案例，后面讲京东的商品页偏实践，也算是理论+实践了不过读前半段总感觉例子比较牵强，直到后面看到商品页时发展原来都是这个大例子中拆出来的小例子，所以前面的例子很别扭，后面很重复，也算作本书的缺点之一全篇知识比较硬，作者不开玩笑不">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-03-02T09:40:15.452Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="亿级流量网站架构核心技术-读书笔记">
+<meta name="twitter:description" content="背景平常时间不多，看书断断续续，这本书基本从18年年末看起，看到现在才看完，作者花了半年写书我花了半年才看完，惭愧~整本书450页，前面偏作者总结的理论知识，大章后面会带有小案例，后面讲京东的商品页偏实践，也算是理论+实践了不过读前半段总感觉例子比较牵强，直到后面看到商品页时发展原来都是这个大例子中拆出来的小例子，所以前面的例子很别扭，后面很重复，也算作本书的缺点之一全篇知识比较硬，作者不开玩笑不">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    sidebar: {"position":"left","display":"post","offset":12,"offset_float":0,"b2t":false,"scrollpercent":false},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://dawell.github.io/2019/03/01/亿级流量网站架构核心技术-读书笔记/"/>
+
+
+
+
+
+  <title>亿级流量网站架构核心技术-读书笔记 | Dawell的博客</title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+  <script type="text/javascript">
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?8fcd00f1a6db3573f9ae6e885fa6b71e";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Dawell的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">我不是一个简单的少年~</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2019/03/01/亿级流量网站架构核心技术-读书笔记/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dawell">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Dawell的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">亿级流量网站架构核心技术-读书笔记</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-01T20:15:04+08:00">
+                2019-03-01
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a class="cloud-tie-join-count" href="/2019/03/01/亿级流量网站架构核心技术-读书笔记/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count join-count" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+             <span id="/2019/03/01/亿级流量网站架构核心技术-读书笔记/" class="leancloud_visitors" data-flag-title="亿级流量网站架构核心技术-读书笔记">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><p>平常时间不多，看书断断续续，这本书基本从18年年末看起，看到现在才看完，作者花了半年写书我花了半年才看完，惭愧~<br>整本书450页，前面偏作者总结的理论知识，大章后面会带有小案例，后面讲京东的商品页偏实践，也算是理论+实践了<br>不过读前半段总感觉例子比较牵强，直到后面看到商品页时发展原来都是这个大例子中拆出来的小例子，所以前面的例子很别扭，后面很重复，也算作本书的缺点之一<br>全篇知识比较硬，作者不开玩笑不举现实例子全篇抽象与代码例子，内容相对死板一点，不过也有不少干货小点</p>
+<h1 id="说说作者"><a href="#说说作者" class="headerlink" title="说说作者"></a>说说作者</h1><p>其实我在15年工作的时候就经常看开涛的博客，原因是我搜索时百度给我的头几个帖子都是他的博客内容，看来那时候他就很知名了<br>记得最初看他的博客是关于「跟我学Shiro」的系列文章，因为那时候正好在负责公司多业务线的基础平台整合需要用到Shiro框架，看他博客带入门了<br>感觉他博客学习技术由浅入深还不错，所以后面还看过他的「跟我学Spring」「跟我学SpringMVC」系列回顾了下基础知识颇有意思<br>后面再关注时发现他在发一些nginx与lua技术的文章就不太感兴趣了，原来他15年去了京东，就开始搞这块东西了<br>总体来说，我当时只是觉得他写基础入门博客还是挺好的，直到他出书发现当了京东资深架构师才发现这家伙成长真够快的，原来他还能写一些架构的知识，不过就是写的一般=。=</p>
+<h1 id="内容"><a href="#内容" class="headerlink" title="内容"></a>内容</h1><p>全篇围绕互联网架构技术中的特点，把所有关键字基本过了一遍<br>包括了单机能力的提升与分布式领域能力提升多个维度，我把其点重新分分类，这样看起来会更加清晰<br>同时作者对高可用高并发的分离也有些混乱与错乱，我也稍微调整了下顺序更加合理</p>
+<h2 id="流程与原则"><a href="#流程与原则" class="headerlink" title="流程与原则"></a>流程与原则</h2><ol>
+<li>经验规律：墨菲定律、康威定律、最小产品、二八原则</li>
+<li>设计原则</li>
+</ol>
+<h2 id="主题达成"><a href="#主题达成" class="headerlink" title="主题达成"></a>主题达成</h2><ol>
+<li>高并发：TPS，多短时间内请求量、增加吞吐，降低延迟<ol>
+<li>吞吐：扩容、负载均衡、反向代理、池化</li>
+<li>查：缓存、并发、异构</li>
+<li>写：队列、批量</li>
+</ol>
+</li>
+<li>高可用：3个9，4个9，多长时间内成功率<ol>
+<li>隔离</li>
+<li>部分可用兜底：降级、限流</li>
+<li>循环执行：超时、重试</li>
+<li>灾备：冗余、回滚、压测、预案</li>
+<li>人肉高可用：告警</li>
+</ol>
+</li>
+</ol>
+<h2 id="高并发方法论"><a href="#高并发方法论" class="headerlink" title="高并发方法论"></a>高并发方法论</h2><ol>
+<li>扩容、负责均衡、反向代理</li>
+<li>池化技术</li>
+<li>缓存技术</li>
+<li>异步并发</li>
+<li>队列</li>
+</ol>
+<h2 id="高可用方法论"><a href="#高可用方法论" class="headerlink" title="高可用方法论"></a>高可用方法论</h2><ol>
+<li>隔离</li>
+<li>限流</li>
+<li>降级</li>
+<li>超时与重试</li>
+</ol>
+<h2 id="具体技术"><a href="#具体技术" class="headerlink" title="具体技术"></a>具体技术</h2><ol>
+<li>Servlet3</li>
+<li>Nginx</li>
+<li>OpenResty：Nginx+lua</li>
+</ol>
+<h1 id="总结与思考"><a href="#总结与思考" class="headerlink" title="总结与思考"></a>总结与思考</h1><p>其实高并发在业务实践中有更多的可玩性与灵活性，往往是提供可靠的中间件与运维组件，而业务方依赖这些组件定制策略，灵活度高，这个往往是业务线的专家做的事情<br>而高可用往往会做到环境与中间件中，往往高可用是需要上下文联动才能达到高可用，所以只有环境做的不好周边设施不完善时才有业务自己去定制开发，这个往往是平台架构师做的事情<br>高并发是多短时间内请求量，高可用是多长时间内成功率，简单总结一下就是要让系统又猛又持久</p>
+<p>整体书的内容对于自己的架构还是有能引起思考的，书中提到的东西基本也是技术老生常谈并不新鲜但是很实用，由于加了实践的经验还是值得一读，最终采用nginx做网关的设计虽然我不是太赞同作者架构观点，但就像开篇点评说的一样，虽然内容不一定是对的但是经过推演假设实践后不断优化就越接近本质，设计也就更合理，做一个有思想的架构师很重要，所以我还是比较欣赏作者的，很有思想自成体系，内容则可去其糟粕取其精华</p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+	<div>
+	 
+	   
+<div style="text-align:center;color: #ccc;font-size:14px;">
+------ 本文结束 ------</div>
+<br/>
+<div style="border: 1px solid black">
+<div style="margin-left:10px">
+<span style="font-weight:blod">版权声明</span>
+<img src="http://wx4.sinaimg.cn/mw690/712a7015gy1ffwqkthgrlj20e9026gm4.jpg" >
+<br/>
+<p style="font-size: 10px;line-height: 30px"><a href="http://dawell.cc" style="color:#258FC6">dawell's Notes</a> by <a href="http://dawell.cc" style="color:#258FC6">Dawell</a> is licensed under a <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" style="color:#258FC6">Creative Commons BY-NC-ND 4.0 International License</a>.<br/>
+由<a href="http://dawell.cc" style="color:#258FC6">Dawell</a>创作并维护的<a href="http://dawell.cc" style="color:#258FC6">dawell's Notes</a>博客采用<a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" style="color:#258FC6">创作共用保留署名-非商业-禁止演绎4.0国际许可证</a>。<br/>
+本文首发于<a href="http://dawell.cc" style="color:#258FC6">dawell's Notes</a> 博客（ <a href="http://dawell.cc" style="color:#258FC6">http://dawell.cc</a> ），版权所有，侵权必究。</p>
+</div>
+</div>
+
+
+	 
+	</div>
+	
+    <div>
+      
+        
+  <div style="padding: 10px 0; margin: 20px auto; width: 90%; text-align: center;">
+    <div>坚持原创技术分享，您的支持将鼓励我继续创作！</div>
+    <button id="rewardButton" disable="enable" onclick="var qr = document.getElementById('QR'); if (qr.style.display === 'none') {qr.style.display='block';} else {qr.style.display='none'}">
+      <span>赏</span>
+    </button>
+    <div id="QR" style="display: none;">
+      
+        <div id="wechat" style="display: inline-block">
+          <img id="wechat_qr" src="http://wx3.sinaimg.cn/mw690/712a7015gy1ffwq5phr1rj208j08imxp.jpg" alt="Dawell WeChat Pay"/>
+          <p>微信打赏</p>
+        </div>
+      
+      
+        <div id="alipay" style="display: inline-block">
+          <img id="alipay_qr" src="http://wx1.sinaimg.cn/mw690/712a7015gy1ffwq4f2m3kj208x08w74w.jpg" alt="Dawell Alipay"/>
+          <p>支付宝打赏</p>
+        </div>
+      
+    </div>
+  </div>
+
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+	
+    <footer class="post-footer">
+      
+
+      
+        
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/09/过年味道/" rel="next" title="过年味道">
+                <i class="fa fa-chevron-left"></i> 过年味道
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/05/06/龙珠/" rel="prev" title="龙珠">
+                龙珠 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+      <div id="cloud-tie-wrapper" class="cloud-tie-wrapper"></div>
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg"
+               alt="Dawell" />
+          <p class="site-author-name" itemprop="name">Dawell</p>
+           
+              <p class="site-description motion-element" itemprop="description">一个Java程序员日常学习、技术总结博客</p>
+          
+        </div>
+        <nav class="site-state motion-element">
+
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">58</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-categories">
+              <a href="/categories/index.html">
+                <span class="site-state-item-count">8</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-tags">
+              <a href="/tags/index.html">
+                <span class="site-state-item-count">34</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+          <div class="feed-link motion-element">
+            <a href="/atom.xml" rel="alternate">
+              <i class="fa fa-rss"></i>
+              RSS
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/Dawell" target="_blank" title="GitHub">
+                  
+                    <i class="fa fa-fw fa-github"></i>
+                  
+                  GitHub
+                </a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+          <div class="cc-license motion-element" itemprop="license">
+            <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" class="cc-opacity" target="_blank">
+              <img src="/images/cc-by-nc-nd.svg" alt="Creative Commons" />
+            </a>
+          </div>
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#说说作者"><span class="nav-number">2.</span> <span class="nav-text">说说作者</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#内容"><span class="nav-number">3.</span> <span class="nav-text">内容</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#流程与原则"><span class="nav-number">3.1.</span> <span class="nav-text">流程与原则</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#主题达成"><span class="nav-number">3.2.</span> <span class="nav-text">主题达成</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#高并发方法论"><span class="nav-number">3.3.</span> <span class="nav-text">高并发方法论</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#高可用方法论"><span class="nav-number">3.4.</span> <span class="nav-text">高可用方法论</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#具体技术"><span class="nav-number">3.5.</span> <span class="nav-text">具体技术</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#总结与思考"><span class="nav-number">4.</span> <span class="nav-text">总结与思考</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Dawell</span>
+</div>
+
+
+<div class="theme-info">
+  Best Wishes! <a href="mailto:dawell@aliyun.com">联系我</a>
+</div>
+
+
+        
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.1"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.1"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+    
+    <script>
+      var cloudTieConfig = {
+        url: document.location.href, 
+        sourceId: "",
+        productKey: "71e66c8b757244f387b143ce9b977a78",
+        target: "cloud-tie-wrapper"
+      };
+    </script>
+    <script src="https://img1.ws.126.net/f2e/tie/yun/sdk/loader.js"></script>
+  
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+  <script src="https://cdn1.lncld.net/static/js/av-core-mini-0.6.1.js"></script>
+  <script>AV.initialize("3Vbe2UCzbY41yP5dtkxpWd5G-gzGzoHsz", "EeVqL4YwIANsoGT9sJXoTgjp");</script>
+  <script>
+    function showTime(Counter) {
+      var query = new AV.Query(Counter);
+      var entries = [];
+      var $visitors = $(".leancloud_visitors");
+
+      $visitors.each(function () {
+        entries.push( $(this).attr("id").trim() );
+      });
+
+      query.containedIn('url', entries);
+      query.find()
+        .done(function (results) {
+          var COUNT_CONTAINER_REF = '.leancloud-visitors-count';
+
+          if (results.length === 0) {
+            $visitors.find(COUNT_CONTAINER_REF).text(0);
+            return;
+          }
+
+          for (var i = 0; i < results.length; i++) {
+            var item = results[i];
+            var url = item.get('url');
+            var time = item.get('time');
+            var element = document.getElementById(url);
+
+            $(element).find(COUNT_CONTAINER_REF).text(time);
+          }
+          for(var i = 0; i < entries.length; i++) {
+            var url = entries[i];
+            var element = document.getElementById(url);
+            var countSpan = $(element).find(COUNT_CONTAINER_REF);
+            if( countSpan.text() == '') {
+              countSpan.text(0);
+            }
+          }
+        })
+        .fail(function (object, error) {
+          console.log("Error: " + error.code + " " + error.message);
+        });
+    }
+
+    function addCount(Counter) {
+      var $visitors = $(".leancloud_visitors");
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+      var query = new AV.Query(Counter);
+
+      query.equalTo("url", url);
+      query.find({
+        success: function(results) {
+          if (results.length > 0) {
+            var counter = results[0];
+            counter.fetchWhenSave(true);
+            counter.increment("time");
+            counter.save(null, {
+              success: function(counter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.get('time'));
+              },
+              error: function(counter, error) {
+                console.log('Failed to save Visitor num, with error message: ' + error.message);
+              }
+            });
+          } else {
+            var newcounter = new Counter();
+            /* Set ACL */
+            var acl = new AV.ACL();
+            acl.setPublicReadAccess(true);
+            acl.setPublicWriteAccess(true);
+            newcounter.setACL(acl);
+            /* End Set ACL */
+            newcounter.set("title", title);
+            newcounter.set("url", url);
+            newcounter.set("time", 1);
+            newcounter.save(null, {
+              success: function(newcounter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(newcounter.get('time'));
+              },
+              error: function(newcounter, error) {
+                console.log('Failed to create');
+              }
+            });
+          }
+        },
+        error: function(error) {
+          console.log('Error:' + error.code + " " + error.message);
+        }
+      });
+    }
+
+    $(function() {
+      var Counter = AV.Object.extend("Counter");
+      if ($('.leancloud_visitors').length == 1) {
+        addCount(Counter);
+      } else if ($('.post-title-link').length > 1) {
+        showTime(Counter);
+      }
+    });
+  </script>
+
+
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

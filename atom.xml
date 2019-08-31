@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://dawell.github.io/"/>
-  <updated>2019-01-07T09:16:16.442Z</updated>
+  <updated>2019-08-31T15:37:37.884Z</updated>
   <id>https://dawell.github.io/</id>
   
   <author>
@@ -14,6 +14,575 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>netty与nio揭秘</title>
+    <link href="https://dawell.github.io/2019/08/31/netty%E4%B8%8Enio%E6%8F%AD%E7%A7%98/"/>
+    <id>https://dawell.github.io/2019/08/31/netty与nio揭秘/</id>
+    <published>2019-08-31T15:36:01.000Z</published>
+    <updated>2019-08-31T15:37:37.884Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="netty与nio"><a href="#netty与nio" class="headerlink" title="netty与nio"></a>netty与nio</h1><p>感觉很多文章都讲不到重点，很多都是API层面怎么用，很多同学搞IO这块看的也是一头雾水</p>
+<p>今天来了兴致写一篇吧，一气呵成，前篇没有去查任何资料，全靠记忆与理解回顾，后篇是很早之前学习过程的笔记贴上，如有问题欢迎指正~</p>
+<p>Netty用于高并发服务开发，基于NIO，要想明白Netty，要先知道NIO的情况，然后多了解下操作系统就OK了，不想说netty你的性能优化真的是各种数组替换hash结构的骚操作太多~</p>
+<p>PS：这篇涉及IO模型、堆外内存、Netty分析、操作系统IO原理、内存分配、并发实践等内容，后续有空配图</p>
+<h2 id="NIO"><a href="#NIO" class="headerlink" title="NIO"></a>NIO</h2><p>在Java1.4的时候就提供了nio的支持，non-blocking I/O，好多也叫new I/O，主要是非阻塞的实现，本质还是同步的通信模型</p>
+<p>这里就会有人问了，非阻塞不应该是异步么？这就是没分清楚的表现，这种问题还经常出现在面试题中（其实是我经常问。。。）</p>
+<h3 id="首先概念要先搞清楚"><a href="#首先概念要先搞清楚" class="headerlink" title="首先概念要先搞清楚"></a>首先概念要先搞清楚</h3><ol>
+<li>阻塞与非阻塞指的是调用方的情况，同步与异步指的是通信的模型</li>
+<li>本质上你调用的IO通信接口都是操作系统提供的，操作系统的接口你调用之后就阻塞住了还是立即返回这叫阻塞非阻塞</li>
+<li>而你调用系统之后，系统又与TCP与网卡交互，有数据之后操作系统会把数据传输到应用程序中的过程是通信过程，如果操作系统只提供了查询有没有数据的接口，你只能去拉数据确认有没有那这就是同步，如果系统提供回调通知的方式，来了数据会主动回调你，避免了你不停的去轮询这个就是异步通信，是个推的过程</li>
+<li>其实IO上的阻塞总是有的，只是说应用处理上是不是阻塞的，如果可以把数据处理与接收请求2个事情分开这个事情就解了</li>
+</ol>
+<h3 id="先看看Java吧"><a href="#先看看Java吧" class="headerlink" title="先看看Java吧"></a>先看看Java吧</h3><ol>
+<li>1.4之前都是用BIO模式，还记得那些讨厌的装饰器模式的InputStream与OutputStream之间的嵌套使用么，那个就是，在Socket编程中基本都是服务端Socket调用accept方法来返回Socket对象才能操作客户端的请求，如果没有请求，那就要阻塞。这有2个问题，1是主线程只能卡主不能干别的，2是主线程accept到socket进来了还要去执行任务，这样下个socket请求就只能卡在TCP缓冲区里了要等这个处理完才能处理，服务端瞬间变为同步模式排队处理请求，所以BIO时代处理都是用线程池玩儿，这样虽然服务端监听accept还在卡主，但是多少是可以并发处理</li>
+<li>1.4之后的nio，提供了一个selector方法，open一下，然后监听accept事件，虽然没有事件也是阻塞的，但是一旦有了事件会返回一个<code>List&lt;SelectKey&gt;</code>，这是一组Socket请求，然后你就可以while循环一个个去处理，当然你不是直接去处理，这就跟刚才没区别了，而是NIO中accept与用户读写事件完全分离了，accept之后如果想去读写数据可以再单独去订阅读写事件，那刚才接收到accept的主线程就直接用另一个selector去订阅read事件，这样刚才那个selector就可以独立去处理请求了。重要的是读写的时候也是一批<code>List&lt;SelectKey&gt;</code>去拉取处理，这样相当于术业有专攻，有专门批量处理请求的，也有专门批量处理读写的，谁也可以不等着谁的流程。底层其实还是同步去确认系统数据的，只是API上通过监听分开，达到了非阻塞的目的，同时采用的是多路复用的IO模型，这个后续会讲</li>
+<li>1.7之后提供了aio，这个就是刚才说的非阻塞异步模型了，不过使用的人真不多，netty曾经用过不过效率还没nio好，所以也弃用了，以我的感知认为其实在推拉模型中跨单元调用拉可能是大部分设计比较好的方式（不过也有特例，比如现在的Reactive模式，Disrupter模型）</li>
+</ol>
+<h3 id="说下NIO底层"><a href="#说下NIO底层" class="headerlink" title="说下NIO底层"></a>说下NIO底层</h3><ol>
+<li>其实nio底层采用的操作系统的epoll方法，这个epoll相当于在每个socket的队列中都插入epoll指针，自己也维护一个用户测注册epoll的回调，当网卡收到数据会中断操作系统来接收数据（中断是操作系统的机制，就是IO总是有限的，CPU忙到中间IO有读写CPU就要中断程序优先响应IO处理），操作系统会读取数据写入socket文件中（linux中设备、网络都相当于是文件，fd），这时候epoll就发现来数据了，它给每个socket都增加了队列监听，来了数据就去从系统的socket数据登记列表中查哪些socket有数据（操作系统维护了一个数据通知的表避免epoll把所有socket遍历一遍，低效），然后去拉取数据然后再通知到自己的队列中监听者回调数据通知，返回一批的selectKey事件告知来数据可以来取了</li>
+<li>其实在epoll之前，还有select，与poll，select方法比较笨，监听与读写是一体的，而且要遍历socket才知道有哪些socket有数据，poll稍微优化了下，2002年诞生的epoll目前基本都在用，比如redis、netty、kafka，底层都是epoll。这里需要注意的是Java的API总是在说selector，但是底层是epoll不是select，此select非彼select，不要混淆。</li>
+<li>epoll也有2种触发模式，水平触发与边缘出发，边缘就是快到了就通知准备，JDK提供的NIO是采用水平出发方式，在netty中就提供了底层的边缘出发，效果更好，在netty中就是EventLoop是Epoll开头的那些类</li>
+</ol>
+<h3 id="理解IO模型"><a href="#理解IO模型" class="headerlink" title="理解IO模型"></a>理解IO模型</h3><p>再来看看操作系统的IO模型吧</p>
+<ol>
+<li>nio刚才讲了其实是非阻塞同步，那与操作系统打交道，操作系统到底提供了几种，答案是5种，4种同步，1种异步</li>
+<li>同步阻塞、同步非阻塞、多路复用、？、信号异步</li>
+<li>其中多路复用是同步非阻塞的升级，同时监听多个Socket，也就是刚才说的epoll的模式，而信号异步就是aio，同步阻塞就是那个bio了，其他2种都是鸡肋</li>
+</ol>
+<p>说白了，其实JDK中关于IO它自己还真没怎么去搞什么优化，大部分还就是包装操作系统的方法而已，要想学好IO，包括文件IO、网络IO，那还是学好操作系统才能完全搞明白</p>
+<h3 id="Channel与ByteBuf"><a href="#Channel与ByteBuf" class="headerlink" title="Channel与ByteBuf"></a>Channel与ByteBuf</h3><p>接下来还要给大家介绍2个概念</p>
+<p>1个是channel、1是个bytebuf对象，有时候是不是困惑这个堆外内存的情况？因为它不属于JVM堆管理的范畴，是直接操作系统中的内存，那为啥高性能的框架组件总喜欢直接操作操作系统的内存呢？这就涉及到进程与系统之间IO交互的问题了，一步步说明吧</p>
+<ol>
+<li>操作系统与进程的内存是分开的2部分，一部分是内核态，一部分是用户态，所谓用户态就是每次分配一个进程的时候给你开辟一块进程的内存空间让你自己去玩，比如Java进程就开辟一块JVM用去分了栈私有空间与堆私有空间，这个就是Java的内存模型JMM，这都是一个进程自个儿定义的，怎么玩都没关系，而IO就不一样了，如果进程想去碰一个文件，或者一个网络上的传输的数据，那就要通过磁盘，然后到内存，内存还是先在内核内存，然后要copy到用户进程内存中才能使用，这个过程好处就是因为每个进程内存模型自己玩的，一旦数据跑到用户态内存中，比如Java中就变为堆上的对象了，可以用GC回收处理了，不用管太多，用户操作也简单，但是效率低，至少要copy一次，所以就诞生了直接去内核态里去读取内存与分配内存的骚操作，比如文件写入的缓存直接写到内存分配的内存中，或者读取直接读取内核内存中的数据，这样就减少了copy的过程，这就是大家一直在讲的零拷贝优化了。但是有个缺点，就是内核中的内存使用就要按操作系统的内存玩法去玩（一会提到指针问题），而且稍有不慎可能就堆外内存溢出了，所以一般提供的API都有一些限制，在Java中，这个东西就放在ByteBuffer对象中，可以通过ByteBuffer#allocateDirect分配，JVM还会限制堆外内存分配总大小，Unsafe#allocateMemory也是直接可以分配的，不过这东西更底层，Unsafe只能用特殊方法调用（我其他博客中有讲）</li>
+<li>不过这个ByteBuffer操作是真的挺难用的，因为总要控制几个指针，一个是read，一个是write，还有一个总共的大小，还要各种重置清空的方法，read&lt;write&lt;总大小，这样来控制你写入多少读取多少，如果读过头了其实是错误的数据，JDK中也不允许这么玩，而且JDK还会保持一个引用好进行一定程度的回收，总之这个ByteBuffer就是可以用于操作系统内存了，其实也可以分配的堆中，相当于2个实现。这个回收相对而言netty做的就比较贴心，有个兜底的方式给你回收掉，后面会提</li>
+<li>读取文件还有更多骚操作，比如直接把文件映射为内存映射，就是虚拟内存，在程序中读取虚拟内存加快速度</li>
+<li>Channel的理解：操作系统层面有channel，是为了避免CPU直接与IO打交道，直接开辟的内存读取的方式形成一个Channel通道，Java中的FileChannel，还有Nio中的网络Channel都是这个东西</li>
+</ol>
+<p>所以要想真的让NIO更快，那必须用channel+对外内存ByteBuffer来处理，这个netty都是有的</p>
+<p>PS：关于文件句柄限制、内存区域与优化的东西还有一些问题，netty章节会讲</p>
+<h2 id="Netty"><a href="#Netty" class="headerlink" title="Netty"></a>Netty</h2><p>大约3年前我还一直简单的认为netty只是对JavaNIO太难用的封装+个reactor模型而已，后来看了下源码与资料，发现果真如此（说好的转折呢？），不过netty对性能细节的把握真的是独到的，而且API还是比较灵活易用的</p>
+<h3 id="核心组件"><a href="#核心组件" class="headerlink" title="核心组件"></a>核心组件</h3><ol>
+<li>NioEventLoop/xxxEventLoop：事件循环，包含一个group里的公用线程池、selector引用</li>
+<li>Channel：是对socket请求的抽象概念，netty中的channel又对javanio的channel包装了一层概念</li>
+<li>Pipeline：可以理解为责任链中的chain的作用，里面可以添加ChannelHandler</li>
+<li>ChannelHandler：就是责任链中的比如filter的实现，来处理read数据与write数据</li>
+<li>ByteBuf：对JDK的ByteBuffer的封装，带有自动回收与复用的性能神器</li>
+</ol>
+<h3 id="程序流程"><a href="#程序流程" class="headerlink" title="程序流程"></a>程序流程</h3><h4 id="总结流程"><a href="#总结流程" class="headerlink" title="总结流程"></a>总结流程</h4><p>Netty的整体流程可以分为服务端与请求处理端2部分</p>
+<p>其中在执行服务端启动的时候，bind方法时就把服务端的EventLoopGroup，对应的Channel与pipeline触发完毕，调用服务端eventloop.execute方法启动执行监听</p>
+<p>在bind中的init的时候也会去调用请求处理端Work的eventloop的execute方法启动监听</p>
+<p>服务端eventloop在监听到selector有请求的时候会请求到请求处理端Work的eventloop中经过pipeline处理</p>
+<p>监听请求：EventLoopGroup持有多个NioEventLoop，会无限循环找任务并监听端口的selector的请求</p>
+<ol>
+<li>通过路由器chooser#next方法依次轮训选择，多个EventLoop共用一个ThreadPerTaskExecutor线程池，每个EventLoop并持有一个优化后的selector对象</li>
+<li>在channel执行eventloop.execute的时候，内部会持有thread的引用，在非当前thread执行时封装task丢入到queue中，这样EventLoopGroup在执行的时候会先检查queue来执行，然后才去selector任务</li>
+</ol>
+<p>发现请求，转换工作：当检测到有请求到来时会受到SelectKey，然后调用processSelectKey方法，内部用unsafe读取，最大读取16个channel，并且逐个包装为Netty的NioSocketChannel对象，workEventLoopGroup会去注册这个channel，然后读取byte数组遍历使用pipeline的fireChannelRead传递byte数据</p>
+<p>业务处理：work的pipeline通过head、ServerBootstrapAcceptor、tail的调用完成请求处理，其中ServerBootstrapAcceptor包含了用户的ChannelHandler经过，每个ChannelHandler都持有ChannelHandlerContext来操作传播</p>
+<ol>
+<li>读请求正向，写请求逆向，异常请求正向</li>
+</ol>
+<h4 id="Boss流程"><a href="#Boss流程" class="headerlink" title="Boss流程"></a>Boss流程</h4><h5 id="bind接口"><a href="#bind接口" class="headerlink" title="bind接口"></a>bind接口</h5><p>服务端启动主要流程就在bind接口中</p>
+<ol>
+<li>initAndRegister初始化：<ol>
+<li><strong>newChannel</strong>：通过用户传入的Channel，如NioServerSocketChannel反射实例<ol>
+<li>构造方法：初始化pipeline、config、unsafe，channel对象设置非阻塞configureBlocking(false)</li>
+</ol>
+</li>
+<li><strong>init</strong>：对channel设置options、attr、pipeline最后添加一个channelInitializer<ol>
+<li>pipeline添加ServerHandler</li>
+<li>channel的<strong>eventloop.execute</strong>一个函数，pipeline最后添加<strong>ServerBootstrapAcceptor</strong>对象，传入childOptions，还要用户定义的childHandler（channelInitializer对象）</li>
+</ol>
+</li>
+<li><strong>register</strong>：调用group（childGroup，就是最初传入的NioEventLoop）的register这个channel对象<ol>
+<li>把channel中的eventloop=这个NioEventLoop</li>
+<li>NioChannel实现中就是启动Java的selector对象注册0兴趣，不关心任何事件，只是做个selector与channel的绑定，传递了this用于java selector回调channel方法用</li>
+<li>然后触发2个回调，handlerRegisted、handlerAdded2个方法（要ServerHandler实现ChannelInboundHandlerAdapter），这里由于还没actived，所以不会触发激活</li>
+</ol>
+</li>
+</ol>
+</li>
+<li><strong>doBind</strong>方法<ol>
+<li>doBind变为actived<ol>
+<li>NioServerSocketChannel实现<ol>
+<li><strong>eventloop.execute</strong>添加一个bind绑定端口的任务</li>
+</ol>
+</li>
+</ol>
+</li>
+<li>pipeline的fireChannelActive<ol>
+<li>通知激活后，还会触发read绑定selector的操作，从0变为read</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<h4 id="Work流程"><a href="#Work流程" class="headerlink" title="Work流程"></a>Work流程</h4><p>work的主要流程开始就是在服务端接收到请求时对work分配工作时操作的，关注pipeline</p>
+<h5 id="pipeline"><a href="#pipeline" class="headerlink" title="pipeline"></a>pipeline</h5><p>NioEventLoop中有processSelectKey方法</p>
+<ol>
+<li>用unsafe读取，while循环只要继续读，内部通过JavaNio获取JavaChannel个数，读取while条件中最大读取16条，如果中途读不到数据也会break跳出，读取的Channel会包装为Netty的NioSocketChannel，内部会做一些事情<ol>
+<li>设置非阻塞，创建unsafe、id、pipeline</li>
+<li>parent就是通过那个通过反射创建的channel</li>
+<li>setTcpNoDelay(true)：如果是false tcp会将小数据包转换为大数据包才发送，不过netty想尽可能快的让收到数据，所以禁止了，默认非android的默认都是禁止的</li>
+</ol>
+</li>
+<li>读取数据后，遍历readByte，然后调用pipeline的<strong>fireChannelRead</strong>方法传递byte数据</li>
+<li>pipeline调用顺序：head-&gt;<strong>ServerBootstrapAcceptor</strong>-&gt;tail，channel创建是诞生的pipeline<ol>
+<li>head与tail是创建pipeline的时候就有了，tail是outbound处理，如果异常没处理，信息没处理这个就是兜底收尾的事情，head是个inbound，写都是用unsafe操作</li>
+<li>ChannelHandlerContext中具备属性存储，读事件传播，写事件传播的3个接口实现</li>
+<li>在<strong>fireChannelRead</strong>方法中，用户编写时使用chilidHandler的ChannelInitializer的ch.pipeline去添加ChannelHandler实现，添加完后会把ChannelInitializer自己删除，用户自己设置的options与attrs都会设置到channel的config对象中（也是用户侧设置的），然后workgroup去注册这个Channel，注册方法内部会调用next函数找到一个NioEventLoop去执行，最终注册调用的是底层javanio的selector的注册0感兴趣事件，然后后面就是开始调用pipeline的head节点传播了，head会去注册读事件（这个逻辑与服务端启动的逻辑相似，dobind方法中在监听端口后也会触发一次读请求）<ol>
+<li>会先判断是否重复添加，添加是基于双向链表尾部操作，删除要先找到节点然后删除，添加删除都有回调</li>
+<li>ChannelHandler分为Outbound与Inbound，还有对应的adapter实现</li>
+<li>inbound是next正向传播到tail（tail也是in），<strong>如果buffer会自动释放，考虑周全</strong>，而outbound是逆向传播到head（head是out），而异常传播是inboundoutbound都是正向传播</li>
+<li>context.channel.write是从头传播（更常用），而直接context.write是从当前节点传播</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<h4 id="公共部分"><a href="#公共部分" class="headerlink" title="公共部分"></a>公共部分</h4><h5 id="Channel"><a href="#Channel" class="headerlink" title="Channel"></a>Channel</h5><ol>
+<li>AbstractChannel：持有unsafe、Pipeline、channel<ol>
+<li>AbstractNioChannel：持有selectKey、selector<ol>
+<li>AbstractNioByteChannel持有NioByteUnsafe，客户端的，监听read<ol>
+<li>NioSocketChannel持有NioSocketChannelConfig</li>
+</ol>
+</li>
+<li>AbstractNioMessageChannel持有NioMessageUnsafe，服务端的，监听accept<ol>
+<li>NioServerSocketChannel持有NioServerSocketChannelConfig</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<p>客户端 服务端 都继承 说明都是基于selector</p>
+<ol>
+<li>不过监听事件不一样，服务端监听accept、客户端监听read</li>
+<li>还一个对应Unsafe不一样，主要是读写抽象不一样，客户端读数据byte，服务端读连接</li>
+</ol>
+<h5 id="EventLoopGroup"><a href="#EventLoopGroup" class="headerlink" title="EventLoopGroup"></a>EventLoopGroup</h5><p>EventLoopGroup，默认不设置线程个数是0，会用2倍CPU线程数</p>
+<ol>
+<li>new 一个线程执行器ThreadPerTaskExecutor，实现Executor接口实现的线程池，factory里线程池开头小写命名线程名，创建的Thread是FastThreadLocalThread，这个Thread继承Thread，<strong>重写ThreadLocal为数组的实现，性能优化点之一</strong></li>
+<li>按线程个数初始化线程child<ol>
+<li>在NioEventLoopGroup中的newChild会new NioEventLoop，触发构造函数逻辑<ol>
+<li>provider，openSelector产生selector引用持有，一个selector对应一个NioEventLoop<ol>
+<li>通过Class.forName传入System类加载器+sun.nio.ch.</li>
+<li>SelectorImpl获取Class对象，然后针对selector对象中的<code>Set&lt;SelectKey&gt;</code>默认的HashSet<strong>替换为netty自己的实现</strong>，用数组替代时间复杂度从On降到O1</li>
+</ol>
+</li>
+<li>TaskQueue：newTaskQueue：mpscQueue，如果不是当前线程的任务会塞在队列里，代表外部线程用的任务队列</li>
+</ol>
+</li>
+</ol>
+</li>
+<li>chooser选择器构建，传入全部NioEventLoop对象<ol>
+<li>chooser会调用NioEventLoopGroup#next：NioEventLoop[]  ，每一个新连接是从0到N依次去绑定任务，最终从多个里面返回一个NioEventLoop</li>
+<li>特定优化：如果是<strong>2的幂次方性能优化的策略</strong>：每次next时自增id+1，然后要选择EventExecutor[]数组（NioEventLoop的父类）中的一个要取模，2的倍数直接用&amp;（长度-1）操作，可以二进制过滤出余数，如果是非2个倍数，直接%长度取模，&amp;比%高效</li>
+</ol>
+</li>
+<li>execute方法<ol>
+<li>EventLoopGroup中的executer线程池会调用execute，内部run方法，如果是第一次这个channel会保存这个thread的引用，如果是第二次则会判断执行是否是当前线程，如果不是当前线程就封装为一个task放到queue串行执行<ol>
+<li>方法执行一个SingleThreadEventExecutor.run<ol>
+<li>这个run里会无限循环，然后去调用selector对象找SelectKeys数据IO数据，每次会统计select的时间</li>
+<li>先检查任务按照截止时间排队是否到期，没有检查是否有队列任务，没有就执行真正的selector操作<strong>processSelectKey</strong><ol>
+<li>阻塞1s获取，如果selectKeys不为空、被唤醒、有任务了，就终止select操作</li>
+<li><strong>java的niobug就是不阻塞</strong> 然后就不停的轮训导致cpu100%。这里判断是否执行时间大于阻塞时间，如果小于阻塞时间说明 select 没有阻塞直接就返回了，超过512次就重新建立一个selector把所有事件转移到新的selector 这样可能就好了</li>
+</ol>
+</li>
+<li>处理异步队列中的任务<ol>
+<li>除了普通任务，还有定时任务，scheduled，有个PriorityQueue优先级队列，按照截止时间来排序</li>
+<li>因为queue不是线程安全的，如果是在事件循环中就直接queue.add，如果不是就execute一个run把queue.add添加进去来保证queue的线程安全（netty如何保证异步串行无锁化？）</li>
+<li>触发会把到期的定时任务放到taskQueue里面</li>
+<li>无限循环，任务执行，<strong>nanoTime也是耗时操作</strong>，所以每执行64次，才去计算时间如果没有结束</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<h5 id="内存分配"><a href="#内存分配" class="headerlink" title="内存分配"></a>内存分配</h5><p>read只能读取写入的数据，capacity是空间最大值</p>
+<p>Unsafe可以直接拿到对象内存地址，可以直接内存读写，非Unsafe是直接拿一个数组的一个索引值，Unsafe 这个是根据jdk来自动判断的，看是否能强行获取JDK内部的Unsafe来来操作，使用者不用关心。Unsafe的读写数据更快</p>
+<p>Heap不需要手工释放在堆，Direct需要手工释放</p>
+<p>另外2个维度是用实现来区分 Pool与Unpool，区别就是PooledByteBufAllcator，内部有PoolThreadCache，可以在Area上分配</p>
+<ol>
+<li>提供了内存分配管理器ByteBufAllcator，有堆、直接内存分配的方法，主要区分 堆内与对外的接口</li>
+<li>tiny、small、normal3个不同大小的bytebuf 缓存多少个，每个thread到时候分配是直接拿走用，不用用的时候才去分配，这样更快</li>
+<li>每个对象中持有一个handler用于回收，如果缓存没分配成功会直接分配</li>
+</ol>
+<p>内存规格：比较复杂，最终得到效果：分配内存规格然后缓存，防止分配耗费性能</p>
+<ol>
+<li>tiny（0-512b）、small（512b-8k：512、1k、2k、4k）、normal（8k-16M：8k、16k、32k）、huge（超过16M） 就是这4个区间</li>
+<li>操作系统规定16M要去申请一个Chunk，所有的内存申请向系统的单位是Chunk，分配1M也要先申请一个Chunk，然后再在Chunk里取一个</li>
+<li>8K是一个Page ，16M有点大，拆分就用Page来取，2^11次方2048个Page，所以一个Chunk包含2048个page，一个page是8k，16k就是2个page</li>
+<li>subpage就是0-8k之间 还很大，netty定义的small、tiny、normal，而huge是直接走的非缓存的分配，每种类型的每个一个小规格都有一个queue存储</li>
+<li>Chunk链表，netty会分析使用情况 组成chunklist用于分配，分析使用率，还是用到了ThreadLocal隔离</li>
+</ol>
+<h5 id="解码"><a href="#解码" class="headerlink" title="解码"></a>解码</h5><p>netty是基于TCP层之上的组件，这个与socket一样，客户端监听服务端IP+端口，而服务端需要绑定端口</p>
+<p>所以接收到的数据是一个byte[]通过协议转换为报文内容，然后再处理，最终再转换为报文，转换为byte[]的过程，这个过程其实就像生产处理流水线一样，所以是放在Pipeline中的一个个ChannelHandler来处理的</p>
+<p>ChannelHandler默认提供了一堆编解码的基础能力实现，比如</p>
+<ol>
+<li>基于byte长度分割字符</li>
+<li>基于\r\n或者\n的行分割字符</li>
+<li>基于分隔符号，比如逗号、分号这种分隔符处理器</li>
+<li>还有基于数据域的方式，先解析接下来数据长度，然后读取一段，再遇到一个长度数字再解析一段，里面有不少可以调节的参数</li>
+</ol>
+<p>整体上这些处理器都具备一定容错能力，主要是比如一直读取不到（可以设置上限）分隔符就会抛弃到下一个分隔符的一段数据，实现层面是通过一个byte累加器来实现，在他们父类中</p>
+<p>虽然整个业务逻辑都是ChannelHandler，但是也要区分下职责，比如有只负责读的，有只负责写的，也有读写都行的，那就是分别是inbound与outbound2个接口，inboud对应read的相关方法，outbound对应write的一些方法</p>
+<p>write操作</p>
+<ol>
+<li>如果直接是堆外就返回，否则就把内容 写到 堆外内存中的转换，写byte操作几个指针，一部分flush了，还有没有flush的，如果积累的没flush的数据超过64k就自旋锁+CAS阻塞不可写状态。每次flush就size-1，如果小于32k就设置为可写的状态，head会保证数据都塞到堆外内存去，最终数据转为JDK原生对象写入</li>
+</ol>
+<h5 id="性能工具"><a href="#性能工具" class="headerlink" title="性能工具"></a>性能工具</h5><p>这2个工具类 也可以单独去用</p>
+<ol>
+<li>FastThreadLocal是自己维护了一个map，继承Thread，内部的ThreadLocalMap底层用数组实现提高效率，自动扩容</li>
+<li>对象池Recycler，基于fastThreadlocal，bytebuf就是用这种方式回收，ThreadLocal中获取stack，然后pop，是个handler，如果handler没有会创建，里面包含value还有stack的引用，可以同线程 回收，也可以另一个线程会回收对象</li>
+<li>另一个零copy的点：CompositeByteBuf，用addComponent取代ByteBuf#writeByte，可以把2个内存直接当连续的读取，这样减少的内存copy的代价，内部实现也是先找到组件，然后再找空间</li>
+</ol>
+<h2 id="实践"><a href="#实践" class="headerlink" title="实践"></a>实践</h2><h3 id="百万并发调优"><a href="#百万并发调优" class="headerlink" title="百万并发调优"></a>百万并发调优</h3><ol>
+<li><p>模拟百万：用8000-8100端口，一个端口顶多6w请求，1024-65535 ，扣除常用端口，实际只有6w左右连接，单机也就6w，但是多客户端 连接 太费机器了，所以用多接口方案</p>
+</li>
+<li><p>一个文件一个句柄，突破</p>
+<ol>
+<li><p><code>ulimit -n</code> 查看句柄</p>
+<p><code>/etc/security/limits.conf</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">* hard nofile 1000000</span><br><span class="line">* soft nofile 1000000</span><br></pre></td></tr></table></figure>
+<p>*代表当前用户，hard是真正限制，soft是警告限制，nofile表示能打开的最大连接数<br>任何用户最终能打开100w文件</p>
+<p>需要重启</p>
+</li>
+</ol>
+</li>
+<li><p>一个系统的限制需要突破</p>
+<ol>
+<li><p><code>cat /proc/sys/fs/file-max</code></p>
+<p><code>/etc/sysctl.conf</code> 添加一行</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fs.file-max=1000000</span><br></pre></td></tr></table></figure>
+<p><code>sysctl -p /etc/sysctl.conf</code> 生效</p>
+</li>
+</ol>
+</li>
+<li><p>cpu可能会标满</p>
+</li>
+</ol>
+<h3 id="线程数可以调优"><a href="#线程数可以调优" class="headerlink" title="线程数可以调优"></a>线程数可以调优</h3><ol>
+<li>任务线程里自己搞个线程池把耗时代码隔离</li>
+<li>在pipeline.addLast中可以添加businessGroup新建一个，整个Handler逻辑隔离</li>
+<li>线程数要不停的尝试才能达到最优</li>
+</ol>
+<h3 id="技巧"><a href="#技巧" class="headerlink" title="技巧"></a>技巧</h3><ol>
+<li>telnet 127.0.0.1 8888 连接netty服务端，然后输入内容测试服务端</li>
+</ol>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;netty与nio&quot;&gt;&lt;a href=&quot;#netty与nio&quot; class=&quot;headerlink&quot; title=&quot;netty与nio&quot;&gt;&lt;/a&gt;netty与nio&lt;/h1&gt;&lt;p&gt;感觉很多文章都讲不到重点，很多都是API层面怎么用，很多同学搞IO这块看的也是一头雾
+    
+    </summary>
+    
+      <category term="技术" scheme="https://dawell.github.io/categories/%E6%8A%80%E6%9C%AF/"/>
+    
+    
+      <category term="netty" scheme="https://dawell.github.io/tags/netty/"/>
+    
+      <category term="操作系统" scheme="https://dawell.github.io/tags/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"/>
+    
+      <category term="NIO" scheme="https://dawell.github.io/tags/NIO/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>龙珠</title>
+    <link href="https://dawell.github.io/2019/05/06/%E9%BE%99%E7%8F%A0/"/>
+    <id>https://dawell.github.io/2019/05/06/龙珠/</id>
+    <published>2019-05-06T12:31:53.000Z</published>
+    <updated>2019-05-06T02:36:39.494Z</updated>
+    
+    <content type="html"><![CDATA[<p>最近看了龙珠的电影，发现跟小时候看的完全不一样了，各种新人物，各种赛亚人等级，于是查了下资料重新认识了下龙珠的世界观</p>
+<h3 id="龙珠设定"><a href="#龙珠设定" class="headerlink" title="龙珠设定"></a>龙珠设定</h3><p>龙神萨拉玛曾是和全王都是地位非常高的神，全王是宇宙万物破坏之神，而龙神萨拉玛则是宇宙万物创造之神</p>
+<p>龙神萨拉玛创造了超级龙珠，大神官当时应该是全王的天使监督</p>
+<p>萨拉玛要夺取全王的破坏宇宙能力，大战，最终萨拉玛被封印，而全王丧失心智</p>
+<p>大神官全宇宙的最高统治者全王的管家，对全王忠心耿耿，已知儿女有维斯，芭朵斯，科伦，都是天使</p>
+<p>原本一共有18个宇宙，其中的6个宇宙因惹怒全王已被全王消除，现在12个宇宙</p>
+<p>每个宇宙都有对应的破坏神，监督破坏神的天使，与创造神也就是界王神，天使是破坏神的师傅与监督</p>
+<p>天使维斯能力：创造物品、时间前进与倒退、灵魂复活</p>
+<p>第7宇宙就是地球与主角们所在宇宙，破坏神是，天使是维斯，界王神分为5个人，东西南北界王与大界王负责管理、界王下面还有一个星球管理者就是神（克比）</p>
+<p>孙悟空形态：赛亚人、猩猩、超级赛亚人1234、红色、蓝色（神）、玫瑰红（神）、白色（神）、自在空</p>
+<p>超强的赛亚人：布罗利、孙悟空、贝吉塔、孙悟饭、特兰克斯</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;最近看了龙珠的电影，发现跟小时候看的完全不一样了，各种新人物，各种赛亚人等级，于是查了下资料重新认识了下龙珠的世界观&lt;/p&gt;
+&lt;h3 id=&quot;龙珠设定&quot;&gt;&lt;a href=&quot;#龙珠设定&quot; class=&quot;headerlink&quot; title=&quot;龙珠设定&quot;&gt;&lt;/a&gt;龙珠设定&lt;/h3
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title>亿级流量网站架构核心技术-读书笔记</title>
+    <link href="https://dawell.github.io/2019/03/01/%E4%BA%BF%E7%BA%A7%E6%B5%81%E9%87%8F%E7%BD%91%E7%AB%99%E6%9E%B6%E6%9E%84%E6%A0%B8%E5%BF%83%E6%8A%80%E6%9C%AF-%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0/"/>
+    <id>https://dawell.github.io/2019/03/01/亿级流量网站架构核心技术-读书笔记/</id>
+    <published>2019-03-01T12:15:04.000Z</published>
+    <updated>2019-03-02T09:40:15.452Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><p>平常时间不多，看书断断续续，这本书基本从18年年末看起，看到现在才看完，作者花了半年写书我花了半年才看完，惭愧~<br>整本书450页，前面偏作者总结的理论知识，大章后面会带有小案例，后面讲京东的商品页偏实践，也算是理论+实践了<br>不过读前半段总感觉例子比较牵强，直到后面看到商品页时发展原来都是这个大例子中拆出来的小例子，所以前面的例子很别扭，后面很重复，也算作本书的缺点之一<br>全篇知识比较硬，作者不开玩笑不举现实例子全篇抽象与代码例子，内容相对死板一点，不过也有不少干货小点</p>
+<h1 id="说说作者"><a href="#说说作者" class="headerlink" title="说说作者"></a>说说作者</h1><p>其实我在15年工作的时候就经常看开涛的博客，原因是我搜索时百度给我的头几个帖子都是他的博客内容，看来那时候他就很知名了<br>记得最初看他的博客是关于「跟我学Shiro」的系列文章，因为那时候正好在负责公司多业务线的基础平台整合需要用到Shiro框架，看他博客带入门了<br>感觉他博客学习技术由浅入深还不错，所以后面还看过他的「跟我学Spring」「跟我学SpringMVC」系列回顾了下基础知识颇有意思<br>后面再关注时发现他在发一些nginx与lua技术的文章就不太感兴趣了，原来他15年去了京东，就开始搞这块东西了<br>总体来说，我当时只是觉得他写基础入门博客还是挺好的，直到他出书发现当了京东资深架构师才发现这家伙成长真够快的，原来他还能写一些架构的知识，不过就是写的一般=。=</p>
+<h1 id="内容"><a href="#内容" class="headerlink" title="内容"></a>内容</h1><p>全篇围绕互联网架构技术中的特点，把所有关键字基本过了一遍<br>包括了单机能力的提升与分布式领域能力提升多个维度，我把其点重新分分类，这样看起来会更加清晰<br>同时作者对高可用高并发的分离也有些混乱与错乱，我也稍微调整了下顺序更加合理</p>
+<h2 id="流程与原则"><a href="#流程与原则" class="headerlink" title="流程与原则"></a>流程与原则</h2><ol>
+<li>经验规律：墨菲定律、康威定律、最小产品、二八原则</li>
+<li>设计原则</li>
+</ol>
+<h2 id="主题达成"><a href="#主题达成" class="headerlink" title="主题达成"></a>主题达成</h2><ol>
+<li>高并发：TPS，多短时间内请求量、增加吞吐，降低延迟<ol>
+<li>吞吐：扩容、负载均衡、反向代理、池化</li>
+<li>查：缓存、并发、异构</li>
+<li>写：队列、批量</li>
+</ol>
+</li>
+<li>高可用：3个9，4个9，多长时间内成功率<ol>
+<li>隔离</li>
+<li>部分可用兜底：降级、限流</li>
+<li>循环执行：超时、重试</li>
+<li>灾备：冗余、回滚、压测、预案</li>
+<li>人肉高可用：告警</li>
+</ol>
+</li>
+</ol>
+<h2 id="高并发方法论"><a href="#高并发方法论" class="headerlink" title="高并发方法论"></a>高并发方法论</h2><ol>
+<li>扩容、负责均衡、反向代理</li>
+<li>池化技术</li>
+<li>缓存技术</li>
+<li>异步并发</li>
+<li>队列</li>
+</ol>
+<h2 id="高可用方法论"><a href="#高可用方法论" class="headerlink" title="高可用方法论"></a>高可用方法论</h2><ol>
+<li>隔离</li>
+<li>限流</li>
+<li>降级</li>
+<li>超时与重试</li>
+</ol>
+<h2 id="具体技术"><a href="#具体技术" class="headerlink" title="具体技术"></a>具体技术</h2><ol>
+<li>Servlet3</li>
+<li>Nginx</li>
+<li>OpenResty：Nginx+lua</li>
+</ol>
+<h1 id="总结与思考"><a href="#总结与思考" class="headerlink" title="总结与思考"></a>总结与思考</h1><p>其实高并发在业务实践中有更多的可玩性与灵活性，往往是提供可靠的中间件与运维组件，而业务方依赖这些组件定制策略，灵活度高，这个往往是业务线的专家做的事情<br>而高可用往往会做到环境与中间件中，往往高可用是需要上下文联动才能达到高可用，所以只有环境做的不好周边设施不完善时才有业务自己去定制开发，这个往往是平台架构师做的事情<br>高并发是多短时间内请求量，高可用是多长时间内成功率，简单总结一下就是要让系统又猛又持久</p>
+<p>整体书的内容对于自己的架构还是有能引起思考的，书中提到的东西基本也是技术老生常谈并不新鲜但是很实用，由于加了实践的经验还是值得一读，最终采用nginx做网关的设计虽然我不是太赞同作者架构观点，但就像开篇点评说的一样，虽然内容不一定是对的但是经过推演假设实践后不断优化就越接近本质，设计也就更合理，做一个有思想的架构师很重要，所以我还是比较欣赏作者的，很有思想自成体系，内容则可去其糟粕取其精华</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;背景&quot;&gt;&lt;a href=&quot;#背景&quot; class=&quot;headerlink&quot; title=&quot;背景&quot;&gt;&lt;/a&gt;背景&lt;/h1&gt;&lt;p&gt;平常时间不多，看书断断续续，这本书基本从18年年末看起，看到现在才看完，作者花了半年写书我花了半年才看完，惭愧~&lt;br&gt;整本书450页，前面
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title>过年味道</title>
+    <link href="https://dawell.github.io/2019/02/09/%E8%BF%87%E5%B9%B4%E5%91%B3%E9%81%93/"/>
+    <id>https://dawell.github.io/2019/02/09/过年味道/</id>
+    <published>2019-02-09T06:57:13.000Z</published>
+    <updated>2019-02-10T07:33:52.091Z</updated>
+    
+    <content type="html"><![CDATA[<p>今年没加班也没有晚回去，只是提早回来几天，算是比较正常的回家过年了<br>不过今年才逐步发现很多过年才去做的事情逐步都不做了，年味变得越来越淡<br>不过细细一想其实最重要的东西还在，那就是与家人亲属朋友团聚，所以形式上的东西也就无所谓了</p>
+<h1 id="年味的变迁"><a href="#年味的变迁" class="headerlink" title="年味的变迁"></a>年味的变迁</h1><p>每年过年都会少去一些过去年味，这些年味体现在从地点，周围人，娱乐方式，衣服，饮食上面</p>
+<ol>
+<li>老人：因为爷爷奶奶去世，再也没有大年三十那种大团圆在爷爷家吃饭的场景了，一家族人一起看春晚的热闹场景，小辈们一起玩游戏抢电脑打游戏，逐步变为一家三口在自己家过年，现在是一家四口了，家族改为初一聚餐</li>
+<li>衣服：也没有以前那样每年才去买一套衣服，所以也不会去与父母逛商场买衣服鞋了，现在衣服随便买</li>
+<li>鞭炮：市区取消了炮竹，禁止放烟花爆竹，去年好像还有几个小时可以放，今年则一点声响也听不到了，即使到了凌晨，倒是不用担心吵得睡不着觉了，但是总感觉过了一个假的除夕</li>
+<li>节目：以前看春晚，后来逐步放弃春晚，改为看看网上的视频，如AB站的拜年祭之类的，不过这类节目只能一个人看不能陪父母，所以后来还是去看春晚了，陪着爸妈比较重要，顺便一提今年的AB站没有好节目很失望改成直播有点不自由</li>
+<li>饮食：老妈高血脂高血压迹象，老爸高血糖糖尿病，不能吃甜、咸、油、辣、饱，所以也不能吃什么了，所以今年取消了油炸物品（炸鱼、炸藕合、炸肉），取消了酱牛肉，火锅吃了一次没啥好吃的以后也取消，以前觉得过年吃的最好现在感觉也平淡了</li>
+</ol>
+<p>保留下来也不多</p>
+<ol>
+<li>赶集买菜</li>
+<li>家里打扫卫生</li>
+<li>老妈一年只有的一次长假、与发小们聚聚聊聊、年初一的家族聚餐、年初二的老娘家、亲戚们的串门</li>
+</ol>
+<p>衣食住行上其实现在过年吃的与不过年差异也不是那么大了<br>感叹过年家里习惯逐步取消了，再也不是儿时的感受，时间的改变<br>只是一些家的味道不会变，比如妈妈做的卤子面，水饺，可乐鸡翅，爸爸炒的辣子鸡，吃到这些后才感觉回到家里的那种幸福，还有老妈的笑容，老爸慈祥的样子</p>
+<p>现在想来过年主要还是团聚与交流最为重要，其实全家人一起旅游过年也是一个不错的选择</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;今年没加班也没有晚回去，只是提早回来几天，算是比较正常的回家过年了&lt;br&gt;不过今年才逐步发现很多过年才去做的事情逐步都不做了，年味变得越来越淡&lt;br&gt;不过细细一想其实最重要的东西还在，那就是与家人亲属朋友团聚，所以形式上的东西也就无所谓了&lt;/p&gt;
+&lt;h1 id=&quot;年味的变迁
+    
+    </summary>
+    
+      <category term="人情" scheme="https://dawell.github.io/categories/%E4%BA%BA%E6%83%85/"/>
+    
+    
+      <category term="过年" scheme="https://dawell.github.io/tags/%E8%BF%87%E5%B9%B4/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>win2go</title>
+    <link href="https://dawell.github.io/2019/02/03/win2go/"/>
+    <id>https://dawell.github.io/2019/02/03/win2go/</id>
+    <published>2019-02-03T07:33:08.000Z</published>
+    <updated>2019-02-10T07:34:44.121Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="win2go安装"><a href="#win2go安装" class="headerlink" title="win2go安装"></a>win2go安装</h2><p>一个是黑屏<br>一个是安装更新坑爹，只要强行重启就好</p>
+<p>安装windows</p>
+<p>win to go 360总是提示不能安装到移动设备，无语，可以禁用一键安装</p>
+<p>安装时可以先禁用磁盘，最终再分配盘符</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;win2go安装&quot;&gt;&lt;a href=&quot;#win2go安装&quot; class=&quot;headerlink&quot; title=&quot;win2go安装&quot;&gt;&lt;/a&gt;win2go安装&lt;/h2&gt;&lt;p&gt;一个是黑屏&lt;br&gt;一个是安装更新坑爹，只要强行重启就好&lt;/p&gt;
+&lt;p&gt;安装windows&lt;/
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title>亲戚上海手术经历</title>
+    <link href="https://dawell.github.io/2019/01/10/%E4%BA%B2%E6%88%9A%E4%B8%8A%E6%B5%B7%E6%89%8B%E6%9C%AF%E7%BB%8F%E5%8E%86/"/>
+    <id>https://dawell.github.io/2019/01/10/亲戚上海手术经历/</id>
+    <published>2019-01-10T11:46:31.000Z</published>
+    <updated>2019-02-10T05:57:05.753Z</updated>
+    
+    <content type="html"><![CDATA[<p>就在18年12月底，亲戚来上海做了肠道相关的微创手术，于是除了对方的父母，我也过来帮忙，其中家里也多住宿人来减少住宿开支，整体持续15天<br>手术在上海瑞金医院进行，这家可以说是非常正规的医院了，将整个过程记录下来并总结了部分经验如下</p>
+<p>全篇文章分为几个部分：</p>
+<ol>
+<li>住院相关</li>
+<li>手术相关</li>
+<li>家务相关</li>
+<li>观察总结</li>
+</ol>
+<h1 id="住院相关"><a href="#住院相关" class="headerlink" title="住院相关"></a>住院相关</h1><p>住院前准备</p>
+<ol>
+<li>手术费几万垫付，现金需准备好，保险至少备5w</li>
+<li>取部分现金拿着备用，有些药需要现金</li>
+<li>医院食堂饭卡充值+押金，只能现金，100+</li>
+<li>工作事宜交接请假处理好</li>
+<li>住院大楼的门禁卡办理</li>
+<li>是否本地医保，是否驻外医疗，是否可以要开转院证明报销用，上海的是无法开出去外地的转院的</li>
+</ol>
+<p>住院事项</p>
+<ol>
+<li>各种检查做一遍</li>
+<li>病房会给病人提供三餐（医生开的食物，如易消化面条粥之类的）一段饭30元，早上7点送饭，中午11点送饭，晚上4点半送饭</li>
+<li>家属可以去隔壁楼食堂吃饭，有粥，面，套餐等，办卡10元押金，充值最低30元，必须现金充值，一次餐饮大约10-25元之间，餐厅开放时间：6点半-晚7点半</li>
+<li>病房进出管控严格，一个病人可以有一个家属卡（卡只有1张，病人本身有额外手环标识可以随便进出），持卡人可以在早11点后一直到第二天早上7点可以陪护（早上7点-11点不允许任何人进去，包括持卡人，楼下有家属等待区），下午3点到晚8点为探视时间（不超过3个家属可以不用卡随便进出）</li>
+<li>晚上是否可以在病房里？老人可以开个陪床单子只能有1个，什么时候都可以来，非老人则不行，不过可以在7点赶人时偷偷藏到厕所里过会再出来，一般看望的只能11点后进来</li>
+<li>持卡人在病房过夜，只有手术期间提供躺椅1张用1晚，手术前不提供，不允许带躺椅，折叠椅进去，如果自己陪护买充气床，如果不想自己可以雇佣护工180白天+晚上</li>
+<li>当时在住院楼12层共51个床位，10个床位位于双人房，1个位于3人房，剩余都是4人房，4人房一天50元，2人房很贵一天800元；病房51个，1-6号，42-45是2人房，39-41是3人房，其他是4人房</li>
+<li>一般住院检查无误后很快会安排手术</li>
+</ol>
+<p>住院每日</p>
+<ol>
+<li>每日测体温：耳朵测量体温套不要扔掉，住院期间复用一个，出院再扔</li>
+<li>每日换病服</li>
+<li>可以换床单</li>
+<li>输液-保护胃的，少吃饭，所以抑制胃酸分泌</li>
+<li>输液-葡萄糖</li>
+<li>输液-氯化钾、氯化钠</li>
+</ol>
+<p>物品</p>
+<ol>
+<li>护理垫：术后垫上护理垫</li>
+<li>唇膏：出来摸嘴唇，不能禁食禁水防止嘴唇干裂</li>
+<li>纸巾&amp;卷纸&amp;湿厕纸：上厕所</li>
+<li>纸抹布：一次性抹布，擦桌子等物品用</li>
+<li>充气床垫180：在医院门口都有必用品购买</li>
+<li>饮食用具：水杯，勺子，中玻璃饭盒，保温杯、水果刀、海绵+洗洁精</li>
+<li>洗漱用品：拖鞋，牙刷，牙膏，毛巾，2个衣服撑子，3个盆子</li>
+<li>生活用品：行李箱，小被子，手机，换洗内衣，医保卡，身份证，现金与银行卡</li>
+</ol>
+<p>总结医院的衣食住行用<br>衣：睡衣，内衣备用，个人衣服1套，拖鞋<br>食：病人餐饮提供，饭盒，勺子，水杯，餐洗净，其他人办理饭卡楼下吃<br>住：床被都有，其他人需要小毯子，地铺毯子<br>行：不需要，门禁卡要有<br>用：毛巾，盆子多个，衣服撑子，行李箱<br>用-消耗：肥皂，洗发水，化妆品，卫生纸，抽纸，护理垫，一次性牙刷，牙膏</p>
+<p>出院</p>
+<ol>
+<li>磁卡，押金单，单子，去下面付钱上来开出院小结</li>
+<li>1月后复查，取细胞化验报告</li>
+<li>伤口渗黄水说明感染，需要来医院</li>
+<li>线可以吸收不用拆</li>
+<li>不能重物，但要运动下</li>
+<li>术后饮食注意事项，需观察关注的点</li>
+<li>洗澡可以用防水贴住伤口</li>
+<li>填写护士的满意度调查表</li>
+</ol>
+<h1 id="手术相关"><a href="#手术相关" class="headerlink" title="手术相关"></a>手术相关</h1><p>术前准备</p>
+<ol>
+<li>手术前住院几天责任护士，护士长名字</li>
+<li>清理身体：洗澡、划体毛、清理指甲</li>
+<li>衣服倒过来，氧气设备准备</li>
+<li>吃饭阶段1：饮食不允许吃有渣食物，方便后续手术防止清理不净</li>
+<li>吃饭阶段2：术前多少小时禁止喝水吃饭</li>
+<li>吃饭阶段3：清肠：舒泰清口服多次</li>
+<li>验血、验尿</li>
+<li>是否需要送礼</li>
+</ol>
+<p>术中</p>
+<ol>
+<li>手术7点只能1个家属在病房</li>
+<li>手术情况在家属等待区有电子屏</li>
+</ol>
+<p>术后处理</p>
+<ol>
+<li>护工：刚出院几天要请护工，一天70，预交7天，帮洗漱去厕所，差不多用了4天就可以自己下床走动了，然后退护工钱</li>
+<li>不良反应都属于正常：恶心，想吐；疼；头晕</li>
+<li>要动动身体，下半夜2次侧身防止肠粘连</li>
+<li>晚上家属看守排班，几个亲戚轮流看守：盯吊瓶、扶上厕所、帮吃饭、护士交流、特殊帮忙，如果床位空晚上可以偷偷睡在空床位上</li>
+</ol>
+<p>手术事项</p>
+<ol>
+<li>病区就是不一帮人，第一病区与第二病区就相当于是两个手术团队</li>
+<li>手术开始的很早，第一台7点半，手术时长2-4小时不等，也有更长时间的</li>
+<li>周六周日不手术</li>
+</ol>
+<h1 id="家里"><a href="#家里" class="headerlink" title="家里"></a>家里</h1><p>家务处理</p>
+<p>家人亲属衣食住行的安排</p>
+<ol>
+<li>定住宿，可以美团</li>
+</ol>
+<p>家人住宿物品准备</p>
+<ol>
+<li>备用毛巾、酒店备用拖鞋、酒店备用牙刷</li>
+<li>卷纸、抽纸、小包纸</li>
+</ol>
+<h1 id="医院观察总结"><a href="#医院观察总结" class="headerlink" title="医院观察总结"></a>医院观察总结</h1><p>医院部门</p>
+<ol>
+<li>员工餐厅与家属分开2个，不在一起饮食</li>
+<li>教学，门诊，急诊，行政，餐饮xx楼；教学，门诊占地面积较大</li>
+<li>病房楼5大座：普通最高，内科，外科，9舍（有食堂），感染呼吸科的（需要隔离）</li>
+</ol>
+<p>其他感受</p>
+<ol>
+<li>医院里陪床最讨厌的事情：打呼噜睡不着，连续两天经历打呼噜，一天出差跟同事，接着在医院陪床隔壁也打呼噜，连续2天没睡好</li>
+<li>人家说来医院哪有不花钱的，所以该花的花，这种手术有一半进口材料不给报销，剩余报销85%，然后有商保可以再报销剩余15%，所以花钱主要是自费的项目</li>
+</ol>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;就在18年12月底，亲戚来上海做了肠道相关的微创手术，于是除了对方的父母，我也过来帮忙，其中家里也多住宿人来减少住宿开支，整体持续15天&lt;br&gt;手术在上海瑞金医院进行，这家可以说是非常正规的医院了，将整个过程记录下来并总结了部分经验如下&lt;/p&gt;
+&lt;p&gt;全篇文章分为几个部分：
+    
+    </summary>
+    
+      <category term="健康" scheme="https://dawell.github.io/categories/%E5%81%A5%E5%BA%B7/"/>
+    
+    
+      <category term="住院" scheme="https://dawell.github.io/tags/%E4%BD%8F%E9%99%A2/"/>
+    
+      <category term="手术" scheme="https://dawell.github.io/tags/%E6%89%8B%E6%9C%AF/"/>
+    
+  </entry>
   
   <entry>
     <title>如何高效的记录知识与任务管理</title>
@@ -125,6 +694,55 @@
       <category term="经验" scheme="https://dawell.github.io/tags/%E7%BB%8F%E9%AA%8C/"/>
     
       <category term="效率" scheme="https://dawell.github.io/tags/%E6%95%88%E7%8E%87/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>漫展2018总结</title>
+    <link href="https://dawell.github.io/2018/12/26/%E6%BC%AB%E5%B1%952018%E6%80%BB%E7%BB%93/"/>
+    <id>https://dawell.github.io/2018/12/26/漫展2018总结/</id>
+    <published>2018-12-26T05:57:03.000Z</published>
+    <updated>2019-02-11T06:09:09.019Z</updated>
+    
+    <content type="html"><![CDATA[<p>参加漫展</p>
+<ol>
+<li>12月16日：CP23</li>
+</ol>
+<h1 id="CP23感悟"><a href="#CP23感悟" class="headerlink" title="CP23感悟"></a>CP23感悟</h1><p>趋势</p>
+<ol>
+<li>游戏，手办，周边杂货，虚拟偶像（好赚钱？）</li>
+<li>女性向游戏不少，看到有5个，都是男人的游戏</li>
+</ol>
+<p>参加这次CP，感觉短短半年女性向ACG突然崛起了，随便逛逛开发商手游就见到5、6款，是男性向的钱被榨干还是市场不景气大家都开始扩大用户群了[流汗]</p>
+<p>小裙子（有美女cos），cos化妆品，假发</p>
+<p>艾漫，微笑社</p>
+<p>emefans？人好多<br>杨天翔？</p>
+<p>猫耳app平台，广播剧？？</p>
+<p>现在体验好，不过想要的主题无法搜索，其实只想逛自己感兴趣的部分，其他新奇的也可以看看，做线上下结合才行，目前太累</p>
+<p>千篇一律，不如自己定制什么样的图片，有图片库就好了</p>
+<p>做一个二次元同人物品网站，物品方便搜索与定位</p>
+<p>tap与bili现在刚需，家家需要关注预约！</p>
+<p>感觉本子少了，周边特别多，重复的物品类型</p>
+<p>神乐坂真冬！写真</p>
+<p>随直播赚钱还在cp卖自己的写真</p>
+<p>现在盖章了，真麻烦</p>
+<p>漫展人多，怎么容纳呢，要验签票，卡，所以为了提高吞吐量不至于在门口阻塞导致请求拒绝，在里面增加蛇行栅栏，同事设定vip请求直接进去，这样提高了吞吐量，不过队列会占用一部分内存场地而已</p>
+<p>验签与拦截，先验证行李（安全检验），多并发入口，里面再去验签票</p>
+<p>bili会员购有专门票验票地点</p>
+<p>刺客五六七</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;参加漫展&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;12月16日：CP23&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h1 id=&quot;CP23感悟&quot;&gt;&lt;a href=&quot;#CP23感悟&quot; class=&quot;headerlink&quot; title=&quot;CP23感悟&quot;&gt;&lt;/a&gt;CP23感悟&lt;/h1&gt;&lt;p&gt;趋势&lt;/p&gt;
+&lt;ol
+    
+    </summary>
+    
     
   </entry>
   
@@ -591,7 +1209,7 @@
     <link href="https://dawell.github.io/2018/09/21/%E4%BA%91%E6%A0%96%E5%A4%A7%E4%BC%9A2018%E4%B8%80%E6%97%A5%E6%B8%B8/"/>
     <id>https://dawell.github.io/2018/09/21/云栖大会2018一日游/</id>
     <published>2018-09-21T08:11:18.000Z</published>
-    <updated>2018-10-16T11:15:20.781Z</updated>
+    <updated>2019-02-10T05:57:05.763Z</updated>
     
     <content type="html"><![CDATA[<p>云栖大会是阿里组织的包含了最新的行业动态与技术分享的大会，每年一次，今年是第8次<br>往年真是关注技术分享，都是看在线直播，不过离杭州这么近，为啥不去亲身体验一把呢？于是这次请了一天假过去参加</p>
 <p>整个大会持续4天，分为主会场与分会场还有一些音乐节之类的活动，看了下大会行程，只有开发者专场比较感兴趣，所以这次目标明确的想去E会场看看<br>票务有VIP票与普通票，有4天的票也有只参加1天的票，很早就关注的，阿里云还给我发了优惠券，所以买了第二天的早鸟票90多元<br>云栖大会前几天发来短信提示需要用钉钉才能取到票二维码，看来阿里是无处不安利钉钉，钉钉里还需要人脸识别录入</p>
@@ -610,6 +1228,10 @@
     
     </summary>
     
+      <category term="教育" scheme="https://dawell.github.io/categories/%E6%95%99%E8%82%B2/"/>
+    
+    
+      <category term="云栖大会" scheme="https://dawell.github.io/tags/%E4%BA%91%E6%A0%96%E5%A4%A7%E4%BC%9A/"/>
     
   </entry>
   
@@ -1124,502 +1746,6 @@
     
     </summary>
     
-    
-  </entry>
-  
-  <entry>
-    <title>SpringCloud-监控管理</title>
-    <link href="https://dawell.github.io/2018/08/10/SpringCloud-%E7%9B%91%E6%8E%A7%E7%AE%A1%E7%90%86/"/>
-    <id>https://dawell.github.io/2018/08/10/SpringCloud-监控管理/</id>
-    <published>2018-08-10T07:40:30.000Z</published>
-    <updated>2018-08-17T07:54:41.384Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="SpringCloud文章系列"><a href="#SpringCloud文章系列" class="headerlink" title="SpringCloud文章系列"></a>SpringCloud文章系列</h1><ol>
-<li><a href="http://dawell.cc/2018/08/01/SpringCloud/" target="_blank" rel="noopener">SpringCloud</a></li>
-<li><a href="http://dawell.cc/2018/08/02/SpringCloud-%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83/" target="_blank" rel="noopener">SpringCloud-注册中心</a></li>
-<li><a href="http://dawell.cc/2018/08/03/SpringCloud-%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83/" target="_blank" rel="noopener">SpringCloud-配置中心</a></li>
-<li><a href="http://dawell.cc/2018/08/04/SpringCloud-%E9%93%BE%E8%B7%AF%E8%B7%9F%E8%B8%AA/" target="_blank" rel="noopener">SpringCloud-链路跟踪</a></li>
-<li><a href="http://dawell.cc/2018/08/05/SpringCloud-%E6%B6%88%E6%81%AF%E6%80%BB%E7%BA%BF/" target="_blank" rel="noopener">SpringCloud-消息总线</a></li>
-<li><a href="http://dawell.cc/2018/08/06/SpringCloud-API%E7%BD%91%E5%85%B3/" target="_blank" rel="noopener">SpringCloud-API网关</a></li>
-<li><a href="http://dawell.cc/2018/08/07/SpringCloud-%E5%BC%82%E6%AD%A5%E6%B6%88%E6%81%AF/" target="_blank" rel="noopener">SpringCloud-异步消息</a></li>
-<li><a href="http://dawell.cc/2018/08/08/SpringCloud-%E5%90%8C%E6%AD%A5%E8%B0%83%E7%94%A8/" target="_blank" rel="noopener">SpringCloud-同步调用</a></li>
-<li><a href="http://dawell.cc/2018/08/09/SpringCloud-%E6%96%AD%E8%B7%AF%E9%99%8D%E7%BA%A7/" target="_blank" rel="noopener">SpringCloud-断路降级</a></li>
-<li>【当前文章】<a href="http://dawell.cc/2018/08/10/SpringCloud-%E7%9B%91%E6%8E%A7%E7%AE%A1%E7%90%86/" target="_blank" rel="noopener">SpringCloud-监控管理</a></li>
-<li><a href="http://dawell.cc/2018/08/11/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E4%B8%B4%E6%97%B6%E4%BB%BB%E5%8A%A1/" target="_blank" rel="noopener">SpringCloud-番外篇-临时任务</a></li>
-<li><a href="http://dawell.cc/2018/08/12/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E6%96%87%E6%A1%A3%E7%94%9F%E6%88%90/" target="_blank" rel="noopener">SpringCloud-番外篇-文档生成</a></li>
-<li><a href="http://dawell.cc/2018/08/13/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" target="_blank" rel="noopener">SpringCloud-番外篇-源码解析</a></li>
-</ol>
-<h3 id="接入说明"><a href="#接入说明" class="headerlink" title="接入说明"></a>接入说明</h3><ol>
-<li>目前采用最新的1.xRelease版本：1.5.15.RELEASE</li>
-<li>SpringCloud项目可以在start.spring.io下载，不过更方便的应该是通过idea新建项目，建立Spring Initializr项目</li>
-<li>我一般习惯将具体实现服务用具体的服务名，而公共组件用service-xxx来命名，当然还有一些比较固定名字的公共组件</li>
-</ol>
-<h3 id="Admin监控"><a href="#Admin监控" class="headerlink" title="Admin监控"></a>Admin监控</h3><h4 id="1-新建项目"><a href="#1-新建项目" class="headerlink" title="1. 新建项目"></a>1. 新建项目</h4><p>新建artifactId为service-admin的服务</p>
-<h4 id="2-导入依赖"><a href="#2-导入依赖" class="headerlink" title="2. 导入依赖"></a>2. 导入依赖</h4><p>依赖说明</p>
-<ol>
-<li>actuator用于暴露监控的接口</li>
-<li>eureka-server是Eureka服务器的依赖</li>
-<li>config是Config客户端，从配置中心拉取配置</li>
-<li>admin-starter-server是admin监控平台的依赖</li>
-</ol>
-<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-actuator<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-config<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-netflix-eureka-client<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>de.codecentric<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-admin-starter-server<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<h4 id="3-编写启动类"><a href="#3-编写启动类" class="headerlink" title="3. 编写启动类"></a>3. 编写启动类</h4><p>打开ServiceAdminApplication，在class上加入@EnableAdminServer注解</p>
-<h4 id="4-修改配置"><a href="#4-修改配置" class="headerlink" title="4. 修改配置"></a>4. 修改配置</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">server.port=7088</span><br><span class="line">spring.application.name=service-admin</span><br><span class="line"></span><br><span class="line"># public</span><br><span class="line">eureka.client.serviceUrl.defaultZone=http://localhost:8761/eureka,http://localhost:8762/eureka</span><br><span class="line">spring.cloud.config.discovery.enabled=true</span><br><span class="line">spring.cloud.config.discovery.service-id=service-config</span><br></pre></td></tr></table></figure>
-<h4 id="5-启动main"><a href="#5-启动main" class="headerlink" title="5. 启动main"></a>5. 启动main</h4><h4 id="6-验证"><a href="#6-验证" class="headerlink" title="6. 验证"></a>6. 验证</h4><p>访问 <a href="http://localhost:8761/" target="_blank" rel="noopener">http://localhost:8761/</a> 看到service-admin已经注册了一台<br>访问 <a href="http://localhost:7088" target="_blank" rel="noopener">http://localhost:7088</a>  可以看到admin的列表，首页就是与注册中心信息差不多，全部的应用，还有detail可以点进去看到各个endpoint数据</p>
-<h3 id="客户端使用"><a href="#客户端使用" class="headerlink" title="客户端使用"></a>客户端使用</h3><p>admin其实是基于SpringBoot诞生的，在注册中心引入之前本来也是有一个admin的client的，用于发现服务维持心跳的<br>但是基于SpringCloud的注册中心就不需要在客户端依赖了</p>
-<h3 id="扩展"><a href="#扩展" class="headerlink" title="扩展"></a>扩展</h3><h4 id="集成Hystrix大盘"><a href="#集成Hystrix大盘" class="headerlink" title="集成Hystrix大盘"></a>集成Hystrix大盘</h4><p>之前介绍过断路降级的hystrix大盘，其实可以集成在admin中更加方便统一<br>导入依赖<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"> <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>de.codecentric<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-admin-server-ui-hystrix<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.5.4<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>de.codecentric<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-admin-server-ui-turbine<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.5.4<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
-<p>配置文件中引入<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">spring.boot.admin.routes.endpoints=env,metrics,dump,jolokia,info,configprops,trace,logfile,refresh,flyway,liquibase,heapdump,loggers,auditevents,hystrix.stream,turbine.stream,activiti</span><br><span class="line">spring.boot.admin.turbine.location=turbine-service</span><br></pre></td></tr></table></figure></p>
-<p>这样打开页面时在每个服务的detail中可以看到hystrix的信息，同时在大菜单上加入了Tuibine的视图</p>
-<p>同时有个方便的方式是将turbine服务直接在admin中去集成，不用单独开turbine服务</p>
-<h4 id="集成登录验证"><a href="#集成登录验证" class="headerlink" title="集成登录验证"></a>集成登录验证</h4><p>简单的方式引入spring-boot-starter-security即可用basic验证了<br>不过admin也有一个登录界面<br>引入如下<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">  <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>de.codecentric<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-admin-server-ui-login<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.5.4<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-security<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
-<p>然后建立登录认证的配置<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="meta">@EnableWebSecurity</span></span><br><span class="line"><span class="meta">@EnableGlobalMethodSecurity</span>(securedEnabled = <span class="keyword">true</span>, prePostEnabled = <span class="keyword">true</span>, proxyTargetClass = <span class="keyword">true</span>)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">WebSecurityConfig</span> <span class="keyword">extends</span> <span class="title">WebSecurityConfigurerAdapter</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">configure</span><span class="params">(WebSecurity web)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        <span class="comment">//忽略css.jq.img等文件</span></span><br><span class="line">        web.ignoring()</span><br><span class="line">                .antMatchers(<span class="string">"/**.html"</span>, <span class="string">"/**.css"</span>, <span class="string">"/img/**"</span>, <span class="string">"/**.js"</span>, <span class="string">"/third-party/**"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">configure</span><span class="params">(HttpSecurity http)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line"></span><br><span class="line">        http</span><br><span class="line">                .csrf().disable() <span class="comment">//HTTP with Disable CSRF</span></span><br><span class="line">                .authorizeRequests() <span class="comment">//Authorize Request Configuration</span></span><br><span class="line">                .antMatchers(<span class="string">"/login"</span>,</span><br><span class="line">                        <span class="string">"/api/**"</span>,</span><br><span class="line">                        <span class="string">"/**/heapdump"</span>,</span><br><span class="line">                        <span class="string">"/**/loggers"</span>,</span><br><span class="line">                        <span class="string">"/**/liquibase"</span>,</span><br><span class="line">                        <span class="string">"/**/logfile"</span>,</span><br><span class="line">                        <span class="string">"/**/flyway"</span>,</span><br><span class="line">                        <span class="string">"/**/auditevents"</span>,</span><br><span class="line">                        <span class="string">"/**/jolokia"</span>).permitAll() <span class="comment">//放开"/api/**"：为了给被监控端免登录注册并解决Log与Logger冲突</span></span><br><span class="line">                .and()</span><br><span class="line">                .authorizeRequests()</span><br><span class="line">                .antMatchers(<span class="string">"/**"</span>).hasRole(<span class="string">"USER"</span>)</span><br><span class="line">                .antMatchers(<span class="string">"/**"</span>).authenticated()</span><br><span class="line">                .and() <span class="comment">//Login Form configuration for all others</span></span><br><span class="line">                .formLogin()</span><br><span class="line">                .loginPage(<span class="string">"/login.html"</span>)</span><br><span class="line">                .loginProcessingUrl(<span class="string">"/login"</span>).permitAll()</span><br><span class="line">                .defaultSuccessUrl(<span class="string">"/"</span>)</span><br><span class="line">                .and() <span class="comment">//Logout Form configuration</span></span><br><span class="line">                .logout()</span><br><span class="line">                .deleteCookies(<span class="string">"remove"</span>)</span><br><span class="line">                .logoutSuccessUrl(<span class="string">"/login.html"</span>).permitAll()</span><br><span class="line">                .and()</span><br><span class="line">                .httpBasic();</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>配置文件中引入<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># 权限</span><br><span class="line">security.user.name=admin</span><br><span class="line">security.user.password=123</span><br><span class="line">security.basic.enabled=false</span><br></pre></td></tr></table></figure></p>
-<p>这样在访问监控时会先要求登录 使用admin与123访问</p>
-<h4 id="集成监控报警"><a href="#集成监控报警" class="headerlink" title="集成监控报警"></a>集成监控报警</h4><p>可以在应用状态变更与endpoin异常时自动邮件报警<br>导入<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-mail<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
-<p>配置中需要开启通知与邮件的配置</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">spring.boot.admin.notify.mail.to=456@qq.com</span><br><span class="line">spring.boot.admin.notify.mail.from=123@qq.com</span><br><span class="line">#从任何状态到up状态都不要发邮件通知</span><br><span class="line">#spring.boot.admin.notify.mail.ignore-changes: *:UP</span><br><span class="line"># 邮件</span><br><span class="line">spring.mail.host=smtp.qq.com</span><br><span class="line">spring.mail.username=123@qq.com</span><br><span class="line">spring.mail.password=xxxxx</span><br><span class="line">spring.mail.properties.mail.debug=false</span><br><span class="line">spring.mail.properties.mail.smtp.auth=true</span><br><span class="line">spring.mail.properties.mail.smtp.starttls.enable=true</span><br><span class="line">spring.mail.properties.mail.smtp.starttls.required=true</span><br><span class="line">spring.mail.properties.mail.smtp.ssl.enable=true</span><br><span class="line">spring.mail.port=465</span><br></pre></td></tr></table></figure>
-<p>上面配置是开启SSL的邮件配置</p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;SpringCloud文章系列&quot;&gt;&lt;a href=&quot;#SpringCloud文章系列&quot; class=&quot;headerlink&quot; title=&quot;SpringCloud文章系列&quot;&gt;&lt;/a&gt;SpringCloud文章系列&lt;/h1&gt;&lt;ol&gt;
-&lt;li&gt;&lt;a href=&quot;htt
-    
-    </summary>
-    
-      <category term="技术" scheme="https://dawell.github.io/categories/%E6%8A%80%E6%9C%AF/"/>
-    
-    
-      <category term="SpringCloud" scheme="https://dawell.github.io/tags/SpringCloud/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>SpringCloud-断路降级</title>
-    <link href="https://dawell.github.io/2018/08/09/SpringCloud-%E6%96%AD%E8%B7%AF%E9%99%8D%E7%BA%A7/"/>
-    <id>https://dawell.github.io/2018/08/09/SpringCloud-断路降级/</id>
-    <published>2018-08-09T07:39:14.000Z</published>
-    <updated>2018-08-17T07:54:41.355Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="SpringCloud文章系列"><a href="#SpringCloud文章系列" class="headerlink" title="SpringCloud文章系列"></a>SpringCloud文章系列</h1><ol>
-<li><a href="http://dawell.cc/2018/08/01/SpringCloud/" target="_blank" rel="noopener">SpringCloud</a></li>
-<li><a href="http://dawell.cc/2018/08/02/SpringCloud-%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83/" target="_blank" rel="noopener">SpringCloud-注册中心</a></li>
-<li><a href="http://dawell.cc/2018/08/03/SpringCloud-%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83/" target="_blank" rel="noopener">SpringCloud-配置中心</a></li>
-<li><a href="http://dawell.cc/2018/08/04/SpringCloud-%E9%93%BE%E8%B7%AF%E8%B7%9F%E8%B8%AA/" target="_blank" rel="noopener">SpringCloud-链路跟踪</a></li>
-<li><a href="http://dawell.cc/2018/08/05/SpringCloud-%E6%B6%88%E6%81%AF%E6%80%BB%E7%BA%BF/" target="_blank" rel="noopener">SpringCloud-消息总线</a></li>
-<li><a href="http://dawell.cc/2018/08/06/SpringCloud-API%E7%BD%91%E5%85%B3/" target="_blank" rel="noopener">SpringCloud-API网关</a></li>
-<li><a href="http://dawell.cc/2018/08/07/SpringCloud-%E5%BC%82%E6%AD%A5%E6%B6%88%E6%81%AF/" target="_blank" rel="noopener">SpringCloud-异步消息</a></li>
-<li><a href="http://dawell.cc/2018/08/08/SpringCloud-%E5%90%8C%E6%AD%A5%E8%B0%83%E7%94%A8/" target="_blank" rel="noopener">SpringCloud-同步调用</a></li>
-<li>【当前文章】<a href="http://dawell.cc/2018/08/09/SpringCloud-%E6%96%AD%E8%B7%AF%E9%99%8D%E7%BA%A7/" target="_blank" rel="noopener">SpringCloud-断路降级</a></li>
-<li><a href="http://dawell.cc/2018/08/10/SpringCloud-%E7%9B%91%E6%8E%A7%E7%AE%A1%E7%90%86/" target="_blank" rel="noopener">SpringCloud-监控管理</a></li>
-<li><a href="http://dawell.cc/2018/08/11/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E4%B8%B4%E6%97%B6%E4%BB%BB%E5%8A%A1/" target="_blank" rel="noopener">SpringCloud-番外篇-临时任务</a></li>
-<li><a href="http://dawell.cc/2018/08/12/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E6%96%87%E6%A1%A3%E7%94%9F%E6%88%90/" target="_blank" rel="noopener">SpringCloud-番外篇-文档生成</a></li>
-<li><a href="http://dawell.cc/2018/08/13/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" target="_blank" rel="noopener">SpringCloud-番外篇-源码解析</a></li>
-</ol>
-<h3 id="接入说明"><a href="#接入说明" class="headerlink" title="接入说明"></a>接入说明</h3><ol>
-<li>目前采用最新的1.xRelease版本：1.5.15.RELEASE</li>
-<li>SpringCloud项目可以在start.spring.io下载，不过更方便的应该是通过idea新建项目，建立Spring Initializr项目</li>
-<li>我一般习惯将具体实现服务用具体的服务名，而公共组件用service-xxx来命名，当然还有一些比较固定名字的公共组件</li>
-</ol>
-<h3 id="断路监控大盘"><a href="#断路监控大盘" class="headerlink" title="断路监控大盘"></a>断路监控大盘</h3><h4 id="1-新建项目"><a href="#1-新建项目" class="headerlink" title="1. 新建项目"></a>1. 新建项目</h4><p>新建artifactId为hystrix-dashboard的服务</p>
-<h4 id="2-导入依赖"><a href="#2-导入依赖" class="headerlink" title="2. 导入依赖"></a>2. 导入依赖</h4><p>依赖说明</p>
-<ol>
-<li>actuator用于暴露监控的接口</li>
-<li>eureka-server是Eureka服务器的依赖</li>
-<li>config是Config客户端，从配置中心拉取配置</li>
-<li>netflix-hystrix-dashboard是hystrix监控大盘的依赖</li>
-</ol>
-<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-actuator<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-config<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-netflix-eureka-client<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-netflix-hystrix-dashboard<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<h4 id="3-编写启动类"><a href="#3-编写启动类" class="headerlink" title="3. 编写启动类"></a>3. 编写启动类</h4><p>打开HystrixDashboardApplication，在class上加入@EnableHystrixDashboard注解</p>
-<h4 id="4-修改配置"><a href="#4-修改配置" class="headerlink" title="4. 修改配置"></a>4. 修改配置</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">server.port=8030</span><br><span class="line">spring.application.name=hystrix-dashboard</span><br><span class="line"></span><br><span class="line"># public</span><br><span class="line">eureka.client.serviceUrl.defaultZone=http://localhost:8761/eureka,http://localhost:8762/eureka</span><br><span class="line">spring.cloud.config.discovery.enabled=true</span><br><span class="line">spring.cloud.config.discovery.service-id=service-config</span><br></pre></td></tr></table></figure>
-<h4 id="5-启动main"><a href="#5-启动main" class="headerlink" title="5. 启动main"></a>5. 启动main</h4><h4 id="6-验证"><a href="#6-验证" class="headerlink" title="6. 验证"></a>6. 验证</h4><p>访问 <a href="http://localhost:8761/" target="_blank" rel="noopener">http://localhost:8761/</a> 看到hystrix-dashboard已经注册了一台<br>访问 <a href="http://localhost:8030" target="_blank" rel="noopener">http://localhost:8030</a>  可以看到hystrix监控的页面，上面需要配置一个xxx.stream的http地址，客户度集成后就有这个地址了</p>
-<h3 id="客户端使用"><a href="#客户端使用" class="headerlink" title="客户端使用"></a>客户端使用</h3><p>基于刚同步调用章节business-service服务调用account-service服务接口的例子</p>
-<h4 id="1-添加依赖"><a href="#1-添加依赖" class="headerlink" title="1. 添加依赖"></a>1. 添加依赖</h4><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-hystrix<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<h4 id="2-开启注解"><a href="#2-开启注解" class="headerlink" title="2. 开启注解"></a>2. 开启注解</h4><p>BusinessServiceApplication加入注解 @EnableCircuitBreaker 打开断路器功能</p>
-<h4 id="3-修改代码"><a href="#3-修改代码" class="headerlink" title="3. 修改代码"></a>3. 修改代码</h4><p>基于feign远程调用的降级非常简单</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">AccountController</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> AccountRead accountRead;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">fallback</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"掛了"</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@HystrixCommand</span>(fallbackMethod = <span class="string">"fallback"</span>)</span><br><span class="line">    <span class="meta">@RequestMapping</span>(<span class="string">"/account-msg"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">read</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> accountRead.read();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>增加@HystrixCommand注解，注解种指定fallbackMethod对应同参数与返回值的方法即可</p>
-<p>其他的方法也可以在方法上面标注@HystrixCommand(fallbackMethod = “xxx”)注解就实现降级了，比如用restTempldate请求的方法上加上</p>
-<h3 id="监控大盘集成"><a href="#监控大盘集成" class="headerlink" title="监控大盘集成"></a>监控大盘集成</h3><p>只需将客户的的<a href="http://localhost:8010/hystrix.stream填入hystrix-dashboard的url中点击下面按钮注册就可以看到监控数据" target="_blank" rel="noopener">http://localhost:8010/hystrix.stream填入hystrix-dashboard的url中点击下面按钮注册就可以看到监控数据</a><br>但是这样只能看到一台机器的，有时候我们想关注整个集群的情况，多个业务服务的链路情况，则需要使用数据聚合服务turbine-service</p>
-<h4 id="turbine服务"><a href="#turbine服务" class="headerlink" title="turbine服务"></a>turbine服务</h4><p>导入依赖<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-actuator<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-config<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-netflix-eureka-client<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-turbine<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
-<p>添加bootstrap.properties<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">server.port=8001</span><br><span class="line">spring.application.name=turbine-service</span><br><span class="line"></span><br><span class="line"># private</span><br><span class="line">turbine.app-config=api-gateway,business-service</span><br><span class="line">turbine.aggregator.clusterConfig=default</span><br><span class="line">turbine.cluster-name-expression=&quot;default&quot;</span><br><span class="line">turbine.combine-host-port=true</span><br><span class="line"></span><br><span class="line"># public</span><br><span class="line">eureka.client.serviceUrl.defaultZone=http://localhost:8761/eureka,http://localhost:8762/eureka</span><br><span class="line">spring.cloud.config.discovery.enabled=true</span><br><span class="line">spring.cloud.config.discovery.service-id=service-config</span><br></pre></td></tr></table></figure></p>
-<p>turbine.app-config用于指定具体聚合哪些服务，这里聚合2个有调用请求的服务网关+business服务</p>
-<p>在TurbineServiceApplication类上加入@EnableTurbine</p>
-<p>将地址 <a href="http://localhost:8001/hystrix.stream" target="_blank" rel="noopener">http://localhost:8001/hystrix.stream</a> 配置在hystrix-dashboard上就可以看到服务网关+business服务2个集群的调用情况了</p>
-<h3 id="疑问"><a href="#疑问" class="headerlink" title="疑问"></a>疑问</h3><h4 id="如果触发了断路器一定是调用服务不可用么？"><a href="#如果触发了断路器一定是调用服务不可用么？" class="headerlink" title="如果触发了断路器一定是调用服务不可用么？"></a>如果触发了断路器一定是调用服务不可用么？</h4><p>不是，因为断路器触发不止远程服务不可行，包括调用异常的情况，只要是异常都会触发断路，比如bug导致的</p>
-<h4 id="如果fallback代码报错了呢？"><a href="#如果fallback代码报错了呢？" class="headerlink" title="如果fallback代码报错了呢？"></a>如果fallback代码报错了呢？</h4><p>fallback报错了会抛出一个异常，而fallback一般都是简单的返回默认值固定值的逻辑，如果担心这里处理也有问题，可以在fallback上再加上@HystrixCommand降级<br>可以这样一直降级下去</p>
-<h3 id="其他注册中心"><a href="#其他注册中心" class="headerlink" title="其他注册中心"></a>其他注册中心</h3><p>其他更多的是限流的方案与设置调用超时与trycatch的简单处理方案，相对不是太灵活，这里不展开了</p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;SpringCloud文章系列&quot;&gt;&lt;a href=&quot;#SpringCloud文章系列&quot; class=&quot;headerlink&quot; title=&quot;SpringCloud文章系列&quot;&gt;&lt;/a&gt;SpringCloud文章系列&lt;/h1&gt;&lt;ol&gt;
-&lt;li&gt;&lt;a href=&quot;htt
-    
-    </summary>
-    
-      <category term="技术" scheme="https://dawell.github.io/categories/%E6%8A%80%E6%9C%AF/"/>
-    
-    
-      <category term="SpringCloud" scheme="https://dawell.github.io/tags/SpringCloud/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>SpringCloud-同步调用</title>
-    <link href="https://dawell.github.io/2018/08/08/SpringCloud-%E5%90%8C%E6%AD%A5%E8%B0%83%E7%94%A8/"/>
-    <id>https://dawell.github.io/2018/08/08/SpringCloud-同步调用/</id>
-    <published>2018-08-08T07:37:43.000Z</published>
-    <updated>2018-08-17T07:54:41.476Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="SpringCloud文章系列"><a href="#SpringCloud文章系列" class="headerlink" title="SpringCloud文章系列"></a>SpringCloud文章系列</h1><ol>
-<li><a href="http://dawell.cc/2018/08/01/SpringCloud/" target="_blank" rel="noopener">SpringCloud</a></li>
-<li><a href="http://dawell.cc/2018/08/02/SpringCloud-%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83/" target="_blank" rel="noopener">SpringCloud-注册中心</a></li>
-<li><a href="http://dawell.cc/2018/08/03/SpringCloud-%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83/" target="_blank" rel="noopener">SpringCloud-配置中心</a></li>
-<li><a href="http://dawell.cc/2018/08/04/SpringCloud-%E9%93%BE%E8%B7%AF%E8%B7%9F%E8%B8%AA/" target="_blank" rel="noopener">SpringCloud-链路跟踪</a></li>
-<li><a href="http://dawell.cc/2018/08/05/SpringCloud-%E6%B6%88%E6%81%AF%E6%80%BB%E7%BA%BF/" target="_blank" rel="noopener">SpringCloud-消息总线</a></li>
-<li><a href="http://dawell.cc/2018/08/06/SpringCloud-API%E7%BD%91%E5%85%B3/" target="_blank" rel="noopener">SpringCloud-API网关</a></li>
-<li><a href="http://dawell.cc/2018/08/07/SpringCloud-%E5%BC%82%E6%AD%A5%E6%B6%88%E6%81%AF/" target="_blank" rel="noopener">SpringCloud-异步消息</a></li>
-<li>【当前文章】<a href="http://dawell.cc/2018/08/08/SpringCloud-%E5%90%8C%E6%AD%A5%E8%B0%83%E7%94%A8/" target="_blank" rel="noopener">SpringCloud-同步调用</a></li>
-<li><a href="http://dawell.cc/2018/08/09/SpringCloud-%E6%96%AD%E8%B7%AF%E9%99%8D%E7%BA%A7/" target="_blank" rel="noopener">SpringCloud-断路降级</a></li>
-<li><a href="http://dawell.cc/2018/08/10/SpringCloud-%E7%9B%91%E6%8E%A7%E7%AE%A1%E7%90%86/" target="_blank" rel="noopener">SpringCloud-监控管理</a></li>
-<li><a href="http://dawell.cc/2018/08/11/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E4%B8%B4%E6%97%B6%E4%BB%BB%E5%8A%A1/" target="_blank" rel="noopener">SpringCloud-番外篇-临时任务</a></li>
-<li><a href="http://dawell.cc/2018/08/12/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E6%96%87%E6%A1%A3%E7%94%9F%E6%88%90/" target="_blank" rel="noopener">SpringCloud-番外篇-文档生成</a></li>
-<li><a href="http://dawell.cc/2018/08/13/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" target="_blank" rel="noopener">SpringCloud-番外篇-源码解析</a></li>
-</ol>
-<h3 id="接入说明"><a href="#接入说明" class="headerlink" title="接入说明"></a>接入说明</h3><ol>
-<li>目前采用最新的1.xRelease版本：1.5.15.RELEASE</li>
-<li>SpringCloud项目可以在start.spring.io下载，不过更方便的应该是通过idea新建项目，建立Spring Initializr项目</li>
-<li>我一般习惯将具体实现服务用具体的服务名，而公共组件用service-xxx来命名，当然还有一些比较固定名字的公共组件</li>
-<li>基于配置中心，请先按照配置中心章节，配置公共配置</li>
-<li>依赖链路追踪章节</li>
-</ol>
-<h3 id="同步调用"><a href="#同步调用" class="headerlink" title="同步调用"></a>同步调用</h3><p>同步调用主要是通过HTTP去请求的，这里演示Feign的调用，重点在客户端的实现，服务端暴露接口就是普通的SpringMVC的使用</p>
-<h4 id="1-新建项目"><a href="#1-新建项目" class="headerlink" title="1. 新建项目"></a>1. 新建项目</h4><p>继续使用”异步调用”章节的artifactId为account-service的服务</p>
-<h4 id="2-导入依赖"><a href="#2-导入依赖" class="headerlink" title="2. 导入依赖"></a>2. 导入依赖</h4><p>依赖说明</p>
-<ol>
-<li>可以显示引入web的依赖</li>
-<li>actuator与eureka-server已经依赖web，其实SC中大部分组件已经强依赖web了，依赖这些组件可以不显示依赖（不过建议还是明确引入）</li>
-</ol>
-<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-web<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<h4 id="3-编写服务端暴露接口"><a href="#3-编写服务端暴露接口" class="headerlink" title="3. 编写服务端暴露接口"></a>3. 编写服务端暴露接口</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@RefreshScope</span></span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MessageController</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> String msg;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">MessageController</span><span class="params">(@Value(<span class="string">"$&#123;message&#125;"</span>)</span> String msg)</span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.msg = msg;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@RequestMapping</span>(<span class="string">"/msg"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">read</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> msg;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>这个接口还是使用配置中心章节使用的/msg接口暴露服务</p>
-<h4 id="4-启动main"><a href="#4-启动main" class="headerlink" title="4. 启动main"></a>4. 启动main</h4><h4 id="5-验证"><a href="#5-验证" class="headerlink" title="5. 验证"></a>5. 验证</h4><p>访问<a href="http://localhost:8020/msg" target="_blank" rel="noopener">http://localhost:8020/msg</a> 可以返回配置中心的msg配置数据</p>
-<h3 id="客户端使用"><a href="#客户端使用" class="headerlink" title="客户端使用"></a>客户端使用</h3><p>客户端使用项目business-service演示</p>
-<h4 id="1-添加依赖"><a href="#1-添加依赖" class="headerlink" title="1. 添加依赖"></a>1. 添加依赖</h4><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-feign<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<h4 id="2-开启注解"><a href="#2-开启注解" class="headerlink" title="2. 开启注解"></a>2. 开启注解</h4><p>BusinessServiceApplication上加入@EnableFeignClients开启Feign</p>
-<h4 id="3-添加调用代码"><a href="#3-添加调用代码" class="headerlink" title="3. 添加调用代码"></a>3. 添加调用代码</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@FeignClient</span>(<span class="string">"account-service"</span>)</span><br><span class="line"><span class="class"><span class="keyword">interface</span> <span class="title">AccountRead</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@RequestMapping</span>(method = RequestMethod.GET, value = <span class="string">"/msg"</span>)</span><br><span class="line">    <span class="function">String <span class="title">read</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">AccountController</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> AccountRead accountRead;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@RequestMapping</span>(<span class="string">"/account-msg"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">read</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> accountRead.read();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>之前在account-service中声明的/msg接口在这里使用同样的SpringMVC的注解标注AccountRead接口接口代表远程调用的客户端<br>然后调用时只需要@Autowired注入即可使用</p>
-<h3 id="其他同步调用方式"><a href="#其他同步调用方式" class="headerlink" title="其他同步调用方式"></a>其他同步调用方式</h3><p>如restfulTemplate也可以远程调用，不过不如feign方便，需要拼请求参数的URL，当前例子因为不需要拼接参数，所以看起来差不多</p>
-<h4 id="快速接入"><a href="#快速接入" class="headerlink" title="快速接入"></a>快速接入</h4><p>在main类或者config类中构建一个RestTemplate，标记@LoadBalanced，则会采用Ribbon提供的负载均衡算法<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="meta">@LoadBalanced</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> RestTemplate <span class="title">restTemplate</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> RestTemplate();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AccountController2</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> RestTemplate restTemplate;</span><br><span class="line">    </span><br><span class="line">    <span class="meta">@RequestMapping</span>(<span class="string">"/account-msg"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">read</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> restTemplate.getForObject(<span class="string">"http://account-service/msg"</span>, String.class);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="疑问"><a href="#疑问" class="headerlink" title="疑问"></a>疑问</h3><h4 id="如果返回的不是String，而是一个对象呢？"><a href="#如果返回的不是String，而是一个对象呢？" class="headerlink" title="如果返回的不是String，而是一个对象呢？"></a>如果返回的不是String，而是一个对象呢？</h4><p>对象只需要在客户端这里声明一个类似的对象即可自动转换，其实中间数据都是用json传输的，类名可以不一样，只要属性一样即可匹配</p>
-<h4 id="请求调用的IP与端口号我想获取或者单独控制怎么实现？"><a href="#请求调用的IP与端口号我想获取或者单独控制怎么实现？" class="headerlink" title="请求调用的IP与端口号我想获取或者单独控制怎么实现？"></a>请求调用的IP与端口号我想获取或者单独控制怎么实现？</h4><p>Feign其实是依赖Ribbon去做负载均衡的，可以在配置中配置负载均衡策略<br>具体获取请求IP与端口控制可以直接使用Ribbon去请求可以获取到负载的IP与端口号，结合RestfulTempldate去请求服务</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">AccountController</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> LoadBalancerClient client;</span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> RestTemplate restTemplate;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@RequestMapping</span>(<span class="string">"/account-msg2"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">read2</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        ServiceInstance serviceInstance = client.choose(<span class="string">"account-service"</span>);</span><br><span class="line">        String url = <span class="string">"http://"</span> + serviceInstance.getHost() + <span class="string">":"</span> + serviceInstance.getPort() + <span class="string">"/msg"</span>;</span><br><span class="line">        <span class="keyword">return</span> restTemplate.getForObject(url, String.class);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;SpringCloud文章系列&quot;&gt;&lt;a href=&quot;#SpringCloud文章系列&quot; class=&quot;headerlink&quot; title=&quot;SpringCloud文章系列&quot;&gt;&lt;/a&gt;SpringCloud文章系列&lt;/h1&gt;&lt;ol&gt;
-&lt;li&gt;&lt;a href=&quot;htt
-    
-    </summary>
-    
-      <category term="技术" scheme="https://dawell.github.io/categories/%E6%8A%80%E6%9C%AF/"/>
-    
-    
-      <category term="SpringCloud" scheme="https://dawell.github.io/tags/SpringCloud/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>SpringCloud-异步消息</title>
-    <link href="https://dawell.github.io/2018/08/07/SpringCloud-%E5%BC%82%E6%AD%A5%E6%B6%88%E6%81%AF/"/>
-    <id>https://dawell.github.io/2018/08/07/SpringCloud-异步消息/</id>
-    <published>2018-08-07T07:24:31.000Z</published>
-    <updated>2018-08-20T03:52:56.764Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="SpringCloud文章系列"><a href="#SpringCloud文章系列" class="headerlink" title="SpringCloud文章系列"></a>SpringCloud文章系列</h1><ol>
-<li><a href="http://dawell.cc/2018/08/01/SpringCloud/" target="_blank" rel="noopener">SpringCloud</a></li>
-<li><a href="http://dawell.cc/2018/08/02/SpringCloud-%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83/" target="_blank" rel="noopener">SpringCloud-注册中心</a></li>
-<li><a href="http://dawell.cc/2018/08/03/SpringCloud-%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83/" target="_blank" rel="noopener">SpringCloud-配置中心</a></li>
-<li><a href="http://dawell.cc/2018/08/04/SpringCloud-%E9%93%BE%E8%B7%AF%E8%B7%9F%E8%B8%AA/" target="_blank" rel="noopener">SpringCloud-链路跟踪</a></li>
-<li><a href="http://dawell.cc/2018/08/05/SpringCloud-%E6%B6%88%E6%81%AF%E6%80%BB%E7%BA%BF/" target="_blank" rel="noopener">SpringCloud-消息总线</a></li>
-<li><a href="http://dawell.cc/2018/08/06/SpringCloud-API%E7%BD%91%E5%85%B3/" target="_blank" rel="noopener">SpringCloud-API网关</a></li>
-<li>【当前文章】<a href="http://dawell.cc/2018/08/07/SpringCloud-%E5%BC%82%E6%AD%A5%E6%B6%88%E6%81%AF/" target="_blank" rel="noopener">SpringCloud-异步消息</a></li>
-<li><a href="http://dawell.cc/2018/08/08/SpringCloud-%E5%90%8C%E6%AD%A5%E8%B0%83%E7%94%A8/" target="_blank" rel="noopener">SpringCloud-同步调用</a></li>
-<li><a href="http://dawell.cc/2018/08/09/SpringCloud-%E6%96%AD%E8%B7%AF%E9%99%8D%E7%BA%A7/" target="_blank" rel="noopener">SpringCloud-断路降级</a></li>
-<li><a href="http://dawell.cc/2018/08/10/SpringCloud-%E7%9B%91%E6%8E%A7%E7%AE%A1%E7%90%86/" target="_blank" rel="noopener">SpringCloud-监控管理</a></li>
-<li><a href="http://dawell.cc/2018/08/11/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E4%B8%B4%E6%97%B6%E4%BB%BB%E5%8A%A1/" target="_blank" rel="noopener">SpringCloud-番外篇-临时任务</a></li>
-<li><a href="http://dawell.cc/2018/08/12/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E6%96%87%E6%A1%A3%E7%94%9F%E6%88%90/" target="_blank" rel="noopener">SpringCloud-番外篇-文档生成</a></li>
-<li><a href="http://dawell.cc/2018/08/13/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" target="_blank" rel="noopener">SpringCloud-番外篇-源码解析</a></li>
-</ol>
-<h3 id="接入说明"><a href="#接入说明" class="headerlink" title="接入说明"></a>接入说明</h3><ol>
-<li>目前采用最新的1.xRelease版本：1.5.15.RELEASE</li>
-<li>SpringCloud项目可以在start.spring.io下载，不过更方便的应该是通过idea新建项目，建立Spring Initializr项目</li>
-<li>我一般习惯将具体实现服务用具体的服务名，而公共组件用service-xxx来命名，当然还有一些比较固定名字的公共组件</li>
-<li>基于配置中心，请先按照配置中心章节，配置公共配置</li>
-<li>依赖链路追踪章节</li>
-</ol>
-<h3 id="Stream-Kafka"><a href="#Stream-Kafka" class="headerlink" title="Stream-Kafka"></a>Stream-Kafka</h3><h4 id="0-搭建kafka"><a href="#0-搭建kafka" class="headerlink" title="0. 搭建kafka"></a>0. 搭建kafka</h4><p>详见中间件kafka章节</p>
-<h4 id="1-新建项目"><a href="#1-新建项目" class="headerlink" title="1. 新建项目"></a>1. 新建项目</h4><p>新建artifactId为account-service的服务</p>
-<h4 id="2-导入依赖"><a href="#2-导入依赖" class="headerlink" title="2. 导入依赖"></a>2. 导入依赖</h4><p>依赖说明</p>
-<ol>
-<li>actuator用于暴露监控的接口</li>
-<li>eureka是Eureka客户端，注册到注册中心</li>
-<li>config是Config客户端，从配置中心拉取配置</li>
-<li>sleuth + zipkin是链路追踪客户端，用于监控链路调用</li>
-<li>bus-kafka是基于kafka的bus消息总线客户端，用于接收消息总线异步事件</li>
-<li>stream + stream-binder-kafka + spring-kafka配置的是kafka的发送/消费端依赖</li>
-</ol>
-<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-actuator<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-netflix-eureka-client<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-config<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-sleuth<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-zipkin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-bus-kafka<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-stream<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-stream-binder-kafka<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.kafka<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-kafka<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<h4 id="3-编写启动类"><a href="#3-编写启动类" class="headerlink" title="3. 编写启动类"></a>3. 编写启动类</h4><p>打开AccountServiceApplication，在class上加入@EnableBinding(Source.class)注解</p>
-<h4 id="4-修改配置"><a href="#4-修改配置" class="headerlink" title="4. 修改配置"></a>4. 修改配置</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">server.port=8020</span><br><span class="line">spring.application.name=account-service</span><br><span class="line"></span><br><span class="line">private</span><br><span class="line">spring.cloud.stream.bindings.output.destination=accounts</span><br><span class="line"></span><br><span class="line">#kafka</span><br><span class="line">spring.cloud.stream.kafka.binder.zk-nodes=localhost:2181</span><br><span class="line">spring.cloud.stream.kafka.binder.brokers=localhost:9092</span><br></pre></td></tr></table></figure>
-<p>stream.bindings.output.destination主要是配置kafka发送端的topic</p>
-<h4 id="5-编写调用代码"><a href="#5-编写调用代码" class="headerlink" title="5. 编写调用代码"></a>5. 编写调用代码</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MessageController</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> Source source;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@PostMapping</span>(value = <span class="string">"/accounts"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">write</span><span class="params">(@RequestBody Account account)</span> </span>&#123;</span><br><span class="line">        source.output().send(MessageBuilder.withPayload(account.getMob()).build());</span><br><span class="line">        log.info(<span class="string">"kafka send!"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>暴露一个/accounts接口，提交POST方法请求，传递包含mob字段的json数据，会将mob字段作为kafka消息体发送<br>其中Source直接注入即可，Source是Stream自带的接口类，默认Source中的配置关联到”output”中，刚才配置了output的destination也就是topic是accounts</p>
-<h4 id="6-启动main"><a href="#6-启动main" class="headerlink" title="6. 启动main"></a>6. 启动main</h4><h4 id="7-验证"><a href="#7-验证" class="headerlink" title="7. 验证"></a>7. 验证</h4><p>可以打开一个控制台，通过kafka-console-consumer.sh/bat去监听accounts的topic的kafka<br>通过暴露/accounts接口post提交信息，通过kafka-console-consumer.sh/bat控台可以看到消息结构<br>stream会自动封装一个content-type类型，用于标识数据类型</p>
-<h3 id="客户端使用"><a href="#客户端使用" class="headerlink" title="客户端使用"></a>客户端使用</h3><h4 id="1-添加依赖"><a href="#1-添加依赖" class="headerlink" title="1. 添加依赖"></a>1. 添加依赖</h4><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-stream<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-stream-binder-kafka<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.kafka<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-kafka<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<p>stream + stream-binder-kafka + spring-kafka配置的是kafka的发送/消费端依赖<br>这个配置与发送端是一样的</p>
-<h4 id="2-开启注解"><a href="#2-开启注解" class="headerlink" title="2. 开启注解"></a>2. 开启注解</h4><p>BusinessServiceApplication添加@EnableBinding(Sink.class)</p>
-<p>Sink用于接收kafka，当然如果是多个kafkaTopic这里可以设置多个，接口都是继承了Sink接口，也可以在一个接口中声明多个SubscribableChannel与注解如：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">CustomSink</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    String INPUT = <span class="string">"input3"</span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Input</span>(INPUT)</span><br><span class="line">    <span class="function">SubscribableChannel <span class="title">input</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    String INPUT0 = <span class="string">"input0"</span>;</span><br><span class="line"></span><br><span class="line">    String INPUT1 = <span class="string">"input1"</span>;</span><br><span class="line"></span><br><span class="line">    String INPUT2 = <span class="string">"input2"</span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Input</span>(INPUT0)</span><br><span class="line">    <span class="function">SubscribableChannel <span class="title">input0</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Input</span>(INPUT1)</span><br><span class="line">    <span class="function">SubscribableChannel <span class="title">input1</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Input</span>(INPUT2)</span><br><span class="line">    <span class="function">SubscribableChannel <span class="title">input2</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<h4 id="3-修改配置"><a href="#3-修改配置" class="headerlink" title="3. 修改配置"></a>3. 修改配置</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">spring.cloud.stream.bindings.input.destination=accounts</span><br><span class="line">#spring.kafka.listener.poll-timeout=</span><br></pre></td></tr></table></figure>
-<p>这里是接收端，所以是input<br>headerMode用于配置是stream的格式还是原始数据<br>content-type用于配置数据解析类型</p>
-<p>注意：如果通过kafka的kafka-console-producer.bat模拟发送kafka的时候，消费端会报如下错误<br>    could not convert messages from Kafka异常<br>原因就是因为发送的内容不是stream发送出来的，stream有其固定的格式，至少要有content-type属性<br>如果想不用stream格式发送也能解析需要在消费方增加如下配置，进行raw源数据的解析<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">spring.cloud.stream.bindings.input.consumer.headerMode=raw</span><br><span class="line">spring.cloud.stream.bindings.input.content-type=text/plain</span><br></pre></td></tr></table></figure></p>
-<h4 id="4-接收消息代码"><a href="#4-接收消息代码" class="headerlink" title="4. 接收消息代码"></a>4. 接收消息代码</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">AccountConsumer</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@StreamListener</span>(Sink.INPUT)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">write</span><span class="params">(String name)</span> </span>&#123;</span><br><span class="line">        log.info(name);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>@StreamListener注解用于标识处理消息的方法</p>
-<h3 id="疑问"><a href="#疑问" class="headerlink" title="疑问"></a>疑问</h3><h4 id="Stream是怎么保存链路追踪的数据的？"><a href="#Stream是怎么保存链路追踪的数据的？" class="headerlink" title="Stream是怎么保存链路追踪的数据的？"></a>Stream是怎么保存链路追踪的数据的？</h4><p>如果不引入sleuth + zipkin依赖，保存的消息格式只是带有content-type字段，而如果引入了这2个依赖就会在Stream消息格式里加入额外4个字段</p>
-<ol>
-<li>traceId</li>
-<li>spanId</li>
-</ol>
-<p>消息体会变大，不过带来的好处是消息消费的时候依然可以记录链路信息，这样在链路图上就可以看到所有消息者消费的情况了</p>
-<h4 id="支持kafka的消息组及消息分区"><a href="#支持kafka的消息组及消息分区" class="headerlink" title="支持kafka的消息组及消息分区"></a>支持kafka的消息组及消息分区</h4><p>在生产端需要增加分区规则与个数的配置<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">spring.cloud.stream.bindings.output.producer.partitionKeyExpression=payload</span><br><span class="line">spring.cloud.stream.bindings.output.producer.partitionCount=2</span><br></pre></td></tr></table></figure></p>
-<p>partitionKeyExpression可以使用SpEL去解析具体传输数据体中的某个key值去作为分区key<br>partitionCount指定分区的总个数</p>
-<p>在消费端也需要开启分区配置<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">spring.cloud.stream.bindings.input.comsumer.partitioned=true</span><br><span class="line">spring.cloud.stream.instanceCount=2</span><br><span class="line">spring.cloud.stream.instanceIndex=0</span><br></pre></td></tr></table></figure></p>
-<p>指定总分区个数与当然消费的分区</p>
-<p>而消费端如果要指定消费组只需要指定消费组的名称即可开启<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spring.cloud.stream.bindings.input.group=comsumer1</span><br></pre></td></tr></table></figure></p>
-<p>不加消费组每个订阅者都收到同样的消息，offset独立维护<br>消费组能保证所有组内消费同一topic中的消息只有一个组内的服务消费，串性消费，offset维护在公共区域，Stream默认存储在zookeeper中</p>
-<p>在kafka中的zookeeper中存储个位置：/consumers/组名/offsets/主题/分区移动的位置</p>
-<h3 id="其他注册中心"><a href="#其他注册中心" class="headerlink" title="其他注册中心"></a>其他注册中心</h3><p>其他还有RabbitMQ的实现</p>
-<h4 id="快速接入"><a href="#快速接入" class="headerlink" title="快速接入"></a>快速接入</h4><p>略…</p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;SpringCloud文章系列&quot;&gt;&lt;a href=&quot;#SpringCloud文章系列&quot; class=&quot;headerlink&quot; title=&quot;SpringCloud文章系列&quot;&gt;&lt;/a&gt;SpringCloud文章系列&lt;/h1&gt;&lt;ol&gt;
-&lt;li&gt;&lt;a href=&quot;htt
-    
-    </summary>
-    
-      <category term="技术" scheme="https://dawell.github.io/categories/%E6%8A%80%E6%9C%AF/"/>
-    
-    
-      <category term="SpringCloud" scheme="https://dawell.github.io/tags/SpringCloud/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>SpringCloud-API网关</title>
-    <link href="https://dawell.github.io/2018/08/06/SpringCloud-API%E7%BD%91%E5%85%B3/"/>
-    <id>https://dawell.github.io/2018/08/06/SpringCloud-API网关/</id>
-    <published>2018-08-06T12:21:35.000Z</published>
-    <updated>2018-08-17T07:54:41.407Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="SpringCloud文章系列"><a href="#SpringCloud文章系列" class="headerlink" title="SpringCloud文章系列"></a>SpringCloud文章系列</h1><ol>
-<li><a href="http://dawell.cc/2018/08/01/SpringCloud/" target="_blank" rel="noopener">SpringCloud</a></li>
-<li><a href="http://dawell.cc/2018/08/02/SpringCloud-%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83/" target="_blank" rel="noopener">SpringCloud-注册中心</a></li>
-<li><a href="http://dawell.cc/2018/08/03/SpringCloud-%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83/" target="_blank" rel="noopener">SpringCloud-配置中心</a></li>
-<li><a href="http://dawell.cc/2018/08/04/SpringCloud-%E9%93%BE%E8%B7%AF%E8%B7%9F%E8%B8%AA/" target="_blank" rel="noopener">SpringCloud-链路跟踪</a></li>
-<li><a href="http://dawell.cc/2018/08/05/SpringCloud-%E6%B6%88%E6%81%AF%E6%80%BB%E7%BA%BF/" target="_blank" rel="noopener">SpringCloud-消息总线</a></li>
-<li>【当前文章】<a href="http://dawell.cc/2018/08/06/SpringCloud-API%E7%BD%91%E5%85%B3/" target="_blank" rel="noopener">SpringCloud-API网关</a></li>
-<li><a href="http://dawell.cc/2018/08/07/SpringCloud-%E5%BC%82%E6%AD%A5%E6%B6%88%E6%81%AF/" target="_blank" rel="noopener">SpringCloud-异步消息</a></li>
-<li><a href="http://dawell.cc/2018/08/08/SpringCloud-%E5%90%8C%E6%AD%A5%E8%B0%83%E7%94%A8/" target="_blank" rel="noopener">SpringCloud-同步调用</a></li>
-<li><a href="http://dawell.cc/2018/08/09/SpringCloud-%E6%96%AD%E8%B7%AF%E9%99%8D%E7%BA%A7/" target="_blank" rel="noopener">SpringCloud-断路降级</a></li>
-<li><a href="http://dawell.cc/2018/08/10/SpringCloud-%E7%9B%91%E6%8E%A7%E7%AE%A1%E7%90%86/" target="_blank" rel="noopener">SpringCloud-监控管理</a></li>
-<li><a href="http://dawell.cc/2018/08/11/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E4%B8%B4%E6%97%B6%E4%BB%BB%E5%8A%A1/" target="_blank" rel="noopener">SpringCloud-番外篇-临时任务</a></li>
-<li><a href="http://dawell.cc/2018/08/12/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E6%96%87%E6%A1%A3%E7%94%9F%E6%88%90/" target="_blank" rel="noopener">SpringCloud-番外篇-文档生成</a></li>
-<li><a href="http://dawell.cc/2018/08/13/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" target="_blank" rel="noopener">SpringCloud-番外篇-源码解析</a></li>
-</ol>
-<h3 id="接入说明"><a href="#接入说明" class="headerlink" title="接入说明"></a>接入说明</h3><ol>
-<li>目前采用最新的1.xRelease版本：1.5.15.RELEASE</li>
-<li>SpringCloud项目可以在start.spring.io下载，不过更方便的应该是通过idea新建项目，建立Spring Initializr项目</li>
-<li>我一般习惯将具体实现服务用具体的服务名，而公共组件用service-xxx来命名，当然还有一些比较固定名字的公共组件</li>
-<li>基于配置中心，请先按照配置中心章节，配置公共配置</li>
-<li>依赖链路追踪章节</li>
-</ol>
-<h3 id="API网关"><a href="#API网关" class="headerlink" title="API网关"></a>API网关</h3><h4 id="1-新建项目"><a href="#1-新建项目" class="headerlink" title="1. 新建项目"></a>1. 新建项目</h4><p>新建artifactId为api-gateway的服务</p>
-<h4 id="2-导入依赖"><a href="#2-导入依赖" class="headerlink" title="2. 导入依赖"></a>2. 导入依赖</h4><p>依赖说明</p>
-<ol>
-<li>actuator用于暴露监控的接口</li>
-<li>eureka是Eureka客户端，注册到注册中心</li>
-<li>config是Config客户端，从配置中心拉取配置</li>
-<li>sleuth + zipkin是链路追踪客户端，用于监控链路调用</li>
-<li>bus-kafka是基于kafka的bus消息总线客户端，用于接收消息总线异步事件</li>
-<li>zuul是zuul网关的依赖</li>
-</ol>
-<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-actuator<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-netflix-eureka-client<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-config<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-sleuth<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-zipkin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-bus-kafka<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-zuul<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<h4 id="3-编写启动类"><a href="#3-编写启动类" class="headerlink" title="3. 编写启动类"></a>3. 编写启动类</h4><p>打开ApiGatewayApplication，在class上加入@EnableZuulProxy注解</p>
-<h4 id="4-修改配置"><a href="#4-修改配置" class="headerlink" title="4. 修改配置"></a>4. 修改配置</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">server.port=9998</span><br><span class="line">spring.application.name=api-gateway</span><br><span class="line"></span><br><span class="line">#private</span><br><span class="line">feign.httpclient.connection-timeout=3000</span><br><span class="line"></span><br><span class="line">#public 注册中心+配置中心+链路追踪+BUSkafka</span><br></pre></td></tr></table></figure>
-<p>feign.httpclient.connection-timeout：API网关依赖Fegion客户端，而API调用时可能超时，一般远程调用的时间需要调整下</p>
-<h4 id="5-启动main"><a href="#5-启动main" class="headerlink" title="5. 启动main"></a>5. 启动main</h4><h4 id="6-验证"><a href="#6-验证" class="headerlink" title="6. 验证"></a>6. 验证</h4><p>访问 <a href="http://localhost:8761/" target="_blank" rel="noopener">http://localhost:8761/</a> 看到api-gateway已经注册了一台<br>访问 <a href="http://localhost:9998/应用名/接口名" target="_blank" rel="noopener">http://localhost:9998/应用名/接口名</a>  即可验证，被代理的接口是否调用成功</p>
-<h3 id="API网关集群"><a href="#API网关集群" class="headerlink" title="API网关集群"></a>API网关集群</h3><p>只要配置2个端口区分开即可，如9998,9999</p>
-<h3 id="客户端使用"><a href="#客户端使用" class="headerlink" title="客户端使用"></a>客户端使用</h3><p>启动代理后就可以通过代理访问请求了，所以无客户端</p>
-<h3 id="疑问"><a href="#疑问" class="headerlink" title="疑问"></a>疑问</h3><h3 id="其他API网关"><a href="#其他API网关" class="headerlink" title="其他API网关"></a>其他API网关</h3><p>目前还有SpringCLoud亲儿子，基于SpringBoot2的SpringCloud API Gateway</p>
-<h4 id="快速接入"><a href="#快速接入" class="headerlink" title="快速接入"></a>快速接入</h4><p>略…</p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;SpringCloud文章系列&quot;&gt;&lt;a href=&quot;#SpringCloud文章系列&quot; class=&quot;headerlink&quot; title=&quot;SpringCloud文章系列&quot;&gt;&lt;/a&gt;SpringCloud文章系列&lt;/h1&gt;&lt;ol&gt;
-&lt;li&gt;&lt;a href=&quot;htt
-    
-    </summary>
-    
-      <category term="技术" scheme="https://dawell.github.io/categories/%E6%8A%80%E6%9C%AF/"/>
-    
-    
-      <category term="SpringCloud" scheme="https://dawell.github.io/tags/SpringCloud/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>SpringCloud-消息总线</title>
-    <link href="https://dawell.github.io/2018/08/05/SpringCloud-%E6%B6%88%E6%81%AF%E6%80%BB%E7%BA%BF/"/>
-    <id>https://dawell.github.io/2018/08/05/SpringCloud-消息总线/</id>
-    <published>2018-08-05T06:57:18.000Z</published>
-    <updated>2018-08-17T07:54:41.502Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="SpringCloud文章系列"><a href="#SpringCloud文章系列" class="headerlink" title="SpringCloud文章系列"></a>SpringCloud文章系列</h1><ol>
-<li><a href="http://dawell.cc/2018/08/01/SpringCloud/" target="_blank" rel="noopener">SpringCloud</a></li>
-<li><a href="http://dawell.cc/2018/08/02/SpringCloud-%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83/" target="_blank" rel="noopener">SpringCloud-注册中心</a></li>
-<li><a href="http://dawell.cc/2018/08/03/SpringCloud-%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83/" target="_blank" rel="noopener">SpringCloud-配置中心</a></li>
-<li><a href="http://dawell.cc/2018/08/04/SpringCloud-%E9%93%BE%E8%B7%AF%E8%B7%9F%E8%B8%AA/" target="_blank" rel="noopener">SpringCloud-链路跟踪</a></li>
-<li>【当前文章】<a href="http://dawell.cc/2018/08/05/SpringCloud-%E6%B6%88%E6%81%AF%E6%80%BB%E7%BA%BF/" target="_blank" rel="noopener">SpringCloud-消息总线</a></li>
-<li><a href="http://dawell.cc/2018/08/06/SpringCloud-API%E7%BD%91%E5%85%B3/" target="_blank" rel="noopener">SpringCloud-API网关</a></li>
-<li><a href="http://dawell.cc/2018/08/07/SpringCloud-%E5%BC%82%E6%AD%A5%E6%B6%88%E6%81%AF/" target="_blank" rel="noopener">SpringCloud-异步消息</a></li>
-<li><a href="http://dawell.cc/2018/08/08/SpringCloud-%E5%90%8C%E6%AD%A5%E8%B0%83%E7%94%A8/" target="_blank" rel="noopener">SpringCloud-同步调用</a></li>
-<li><a href="http://dawell.cc/2018/08/09/SpringCloud-%E6%96%AD%E8%B7%AF%E9%99%8D%E7%BA%A7/" target="_blank" rel="noopener">SpringCloud-断路降级</a></li>
-<li><a href="http://dawell.cc/2018/08/10/SpringCloud-%E7%9B%91%E6%8E%A7%E7%AE%A1%E7%90%86/" target="_blank" rel="noopener">SpringCloud-监控管理</a></li>
-<li><a href="http://dawell.cc/2018/08/11/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E4%B8%B4%E6%97%B6%E4%BB%BB%E5%8A%A1/" target="_blank" rel="noopener">SpringCloud-番外篇-临时任务</a></li>
-<li><a href="http://dawell.cc/2018/08/12/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E6%96%87%E6%A1%A3%E7%94%9F%E6%88%90/" target="_blank" rel="noopener">SpringCloud-番外篇-文档生成</a></li>
-<li><a href="http://dawell.cc/2018/08/13/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" target="_blank" rel="noopener">SpringCloud-番外篇-源码解析</a></li>
-</ol>
-<h3 id="接入说明"><a href="#接入说明" class="headerlink" title="接入说明"></a>接入说明</h3><ol>
-<li>目前采用最新的1.xRelease版本：1.5.15.RELEASE</li>
-<li>SpringCloud项目可以在start.spring.io下载，不过更方便的应该是通过idea新建项目，建立Spring Initializr项目</li>
-<li>我一般习惯将具体实现服务用具体的服务名，而公共组件用service-xxx来命名，当然还有一些比较固定名字的公共组件</li>
-<li>基于配置中心，请先按照配置中心章节，配置公共配置</li>
-<li>依赖链路追踪章节</li>
-</ol>
-<h3 id="Bus"><a href="#Bus" class="headerlink" title="Bus"></a>Bus</h3><h4 id="1-新建项目"><a href="#1-新建项目" class="headerlink" title="1. 新建项目"></a>1. 新建项目</h4><p>新建artifactId为service-bus的服务</p>
-<h4 id="2-导入依赖"><a href="#2-导入依赖" class="headerlink" title="2. 导入依赖"></a>2. 导入依赖</h4><p>依赖说明</p>
-<ol>
-<li>actuator用于暴露监控的接口</li>
-<li>eureka是Eureka客户端，注册到注册中心</li>
-<li>config是Config客户端，从配置中心拉取配置</li>
-<li>sleuth + zipkin是链路追踪客户端，用于监控链路调用</li>
-<li>bus-kafka是基于kafka的bus消息总线客户端，用于接收消息总线异步事件</li>
-</ol>
-<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-actuator<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-netflix-eureka-client<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-config<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-sleuth<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-zipkin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-bus-kafka<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<h4 id="3-编写启动类"><a href="#3-编写启动类" class="headerlink" title="3. 编写启动类"></a>3. 编写启动类</h4><p>不需要添加任何注解，bus依赖进来后扩展了SpringBoot的endpoint</p>
-<h4 id="4-修改配置"><a href="#4-修改配置" class="headerlink" title="4. 修改配置"></a>4. 修改配置</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">server.port=8901</span><br><span class="line">spring.application.name=service-bus</span><br><span class="line"></span><br><span class="line">## private</span><br><span class="line">spring.cloud.bus.trace.enabled=true</span><br><span class="line"></span><br><span class="line">#public</span><br><span class="line">spring.cloud.stream.kafka.binder.zk-nodes=localhost:2181</span><br><span class="line">spring.cloud.stream.kafka.binder.brokers=localhost:9092</span><br></pre></td></tr></table></figure>
-<p>bus.trace.enabled可以开启bus操作的链路跟踪，每次客户端处理都是异步接收消息去处理的，所以可以观察到每个客户端接收消息时间与ack的情况<br>由于bus依赖于异步消息Stream，这里采用kafka，所以需要配置下kafka的zk与brokers的地址（这里可以看下之前kafka搭建的文章）</p>
-<h4 id="5-启动main"><a href="#5-启动main" class="headerlink" title="5. 启动main"></a>5. 启动main</h4><h4 id="6-验证"><a href="#6-验证" class="headerlink" title="6. 验证"></a>6. 验证</h4><p>访问 <a href="http://localhost:8761/" target="_blank" rel="noopener">http://localhost:8761/</a> 看到service-bus已经注册了一台<br>使用curl或者Postman用POST方式访问 <a href="http://localhost:8901/bus/refresh" target="_blank" rel="noopener">http://localhost:8901/bus/refresh</a> 可以通过/trace看到每台机器ack的情况<br>如果开启了链路追踪，也可以通过链路追踪看到每次bus请求的情况</p>
-<h3 id="客户端使用"><a href="#客户端使用" class="headerlink" title="客户端使用"></a>客户端使用</h3><h4 id="1-添加依赖"><a href="#1-添加依赖" class="headerlink" title="1. 添加依赖"></a>1. 添加依赖</h4><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-bus-kafka<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<h4 id="2-开启注解"><a href="#2-开启注解" class="headerlink" title="2. 开启注解"></a>2. 开启注解</h4><p>无注解，引入依赖既开启</p>
-<h4 id="3-修改配置"><a href="#3-修改配置" class="headerlink" title="3. 修改配置"></a>3. 修改配置</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">#kafka</span><br><span class="line">spring.cloud.stream.kafka.binder.zk-nodes=localhost:2181</span><br><span class="line">spring.cloud.stream.kafka.binder.brokers=localhost:9092</span><br></pre></td></tr></table></figure>
-<p>依赖kafka，与服务端统一kafka</p>
-<h3 id="扩展"><a href="#扩展" class="headerlink" title="扩展"></a>扩展</h3><ol>
-<li>通过bus调用的命令不加参数是全局的，可以通过增加destination参数，如/bus/refresh?destination=business-service:**，只会请求business-service的所有服务</li>
-<li>如果访问出现401，则配置需要加上management.security.enabled=false</li>
-<li>很多BUS功能单一，一般主要与配置中心配合，所以往往BUS的功能可以直接集成在配置中心中，方便管理</li>
-</ol>
-<h3 id="其他消息总线"><a href="#其他消息总线" class="headerlink" title="其他消息总线"></a>其他消息总线</h3><p>除了kafka的支持，还可以通过rabbitMQ</p>
-<h4 id="快速接入"><a href="#快速接入" class="headerlink" title="快速接入"></a>快速接入</h4><p>略…</p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;SpringCloud文章系列&quot;&gt;&lt;a href=&quot;#SpringCloud文章系列&quot; class=&quot;headerlink&quot; title=&quot;SpringCloud文章系列&quot;&gt;&lt;/a&gt;SpringCloud文章系列&lt;/h1&gt;&lt;ol&gt;
-&lt;li&gt;&lt;a href=&quot;htt
-    
-    </summary>
-    
-      <category term="技术" scheme="https://dawell.github.io/categories/%E6%8A%80%E6%9C%AF/"/>
-    
-    
-      <category term="SpringCloud" scheme="https://dawell.github.io/tags/SpringCloud/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>SpringCloud-链路跟踪</title>
-    <link href="https://dawell.github.io/2018/08/04/SpringCloud-%E9%93%BE%E8%B7%AF%E8%B7%9F%E8%B8%AA/"/>
-    <id>https://dawell.github.io/2018/08/04/SpringCloud-链路跟踪/</id>
-    <published>2018-08-04T03:51:52.000Z</published>
-    <updated>2018-08-17T07:54:41.430Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="SpringCloud文章系列"><a href="#SpringCloud文章系列" class="headerlink" title="SpringCloud文章系列"></a>SpringCloud文章系列</h1><ol>
-<li><a href="http://dawell.cc/2018/08/01/SpringCloud/" target="_blank" rel="noopener">SpringCloud</a></li>
-<li><a href="http://dawell.cc/2018/08/02/SpringCloud-%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83/" target="_blank" rel="noopener">SpringCloud-注册中心</a></li>
-<li><a href="http://dawell.cc/2018/08/03/SpringCloud-%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83/" target="_blank" rel="noopener">SpringCloud-配置中心</a></li>
-<li>【当前文章】<a href="http://dawell.cc/2018/08/04/SpringCloud-%E9%93%BE%E8%B7%AF%E8%B7%9F%E8%B8%AA/" target="_blank" rel="noopener">SpringCloud-链路跟踪</a></li>
-<li><a href="http://dawell.cc/2018/08/05/SpringCloud-%E6%B6%88%E6%81%AF%E6%80%BB%E7%BA%BF/" target="_blank" rel="noopener">SpringCloud-消息总线</a></li>
-<li><a href="http://dawell.cc/2018/08/06/SpringCloud-API%E7%BD%91%E5%85%B3/" target="_blank" rel="noopener">SpringCloud-API网关</a></li>
-<li><a href="http://dawell.cc/2018/08/07/SpringCloud-%E5%BC%82%E6%AD%A5%E6%B6%88%E6%81%AF/" target="_blank" rel="noopener">SpringCloud-异步消息</a></li>
-<li><a href="http://dawell.cc/2018/08/08/SpringCloud-%E5%90%8C%E6%AD%A5%E8%B0%83%E7%94%A8/" target="_blank" rel="noopener">SpringCloud-同步调用</a></li>
-<li><a href="http://dawell.cc/2018/08/09/SpringCloud-%E6%96%AD%E8%B7%AF%E9%99%8D%E7%BA%A7/" target="_blank" rel="noopener">SpringCloud-断路降级</a></li>
-<li><a href="http://dawell.cc/2018/08/10/SpringCloud-%E7%9B%91%E6%8E%A7%E7%AE%A1%E7%90%86/" target="_blank" rel="noopener">SpringCloud-监控管理</a></li>
-<li><a href="http://dawell.cc/2018/08/11/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E4%B8%B4%E6%97%B6%E4%BB%BB%E5%8A%A1/" target="_blank" rel="noopener">SpringCloud-番外篇-临时任务</a></li>
-<li><a href="http://dawell.cc/2018/08/12/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E6%96%87%E6%A1%A3%E7%94%9F%E6%88%90/" target="_blank" rel="noopener">SpringCloud-番外篇-文档生成</a></li>
-<li><a href="http://dawell.cc/2018/08/13/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" target="_blank" rel="noopener">SpringCloud-番外篇-源码解析</a></li>
-</ol>
-<h3 id="接入说明"><a href="#接入说明" class="headerlink" title="接入说明"></a>接入说明</h3><ol>
-<li>目前采用最新的1.xRelease版本：1.5.15.RELEASE</li>
-<li>SpringCloud项目可以在start.spring.io下载，不过更方便的应该是通过idea新建项目，建立Spring Initializr项目</li>
-<li>我一般习惯将具体实现服务用具体的服务名，而公共组件用service-xxx来命名，当然还有一些比较固定名字的公共组件</li>
-<li>基于配置中心，请先按照配置中心章节，配置公共配置</li>
-</ol>
-<h3 id="Zipkin"><a href="#Zipkin" class="headerlink" title="Zipkin"></a>Zipkin</h3><h4 id="1-新建项目"><a href="#1-新建项目" class="headerlink" title="1. 新建项目"></a>1. 新建项目</h4><p>新建artifactId为zipkin-service的服务</p>
-<h4 id="2-导入依赖"><a href="#2-导入依赖" class="headerlink" title="2. 导入依赖"></a>2. 导入依赖</h4><p>依赖说明</p>
-<ol>
-<li>actuator用于暴露监控的接口</li>
-<li>eureka是Eureka客户端，注册到注册中心</li>
-<li>config是Config客户端，从配置中心拉取配置</li>
-<li>zipkin-server + zipkin-autoconfigure-ui是链路追踪客户端，用于监控链路调用<ol>
-<li>注意这个依赖属于zipkin的ui，并不是springcloud包下，需要单独引用</li>
-</ol>
-</li>
-</ol>
-<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-actuator<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-netflix-eureka-client<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-config<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>io.zipkin.java<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>zipkin-server<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>io.zipkin.java<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>zipkin-autoconfigure-ui<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">scope</span>&gt;</span>runtime<span class="tag">&lt;/<span class="name">scope</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<h4 id="3-编写启动类"><a href="#3-编写启动类" class="headerlink" title="3. 编写启动类"></a>3. 编写启动类</h4><p>打开ZipkinServiceApplication，在class上加入@EnableZipkinServer注解</p>
-<h4 id="4-修改配置"><a href="#4-修改配置" class="headerlink" title="4. 修改配置"></a>4. 修改配置</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">server.port=9411</span><br><span class="line">spring.application.name=zipkin-service</span><br><span class="line"></span><br><span class="line"># public</span><br><span class="line">eureka.client.serviceUrl.defaultZone=http://localhost:8761/eureka,http://localhost:8762/eureka</span><br><span class="line">spring.cloud.config.discovery.enabled=true</span><br><span class="line">spring.cloud.config.discovery.service-id=service-config</span><br><span class="line">zipkin.storage.type=mem</span><br></pre></td></tr></table></figure>
-<p>zipkin.storage.type默认也是用mem，默认数据存储在内存中，可以用mysql之类的存储去存储收集的信息</p>
-<h4 id="5-启动main"><a href="#5-启动main" class="headerlink" title="5. 启动main"></a>5. 启动main</h4><h4 id="6-验证"><a href="#6-验证" class="headerlink" title="6. 验证"></a>6. 验证</h4><p>访问 <a href="http://localhost:8761/" target="_blank" rel="noopener">http://localhost:8761/</a> 看到zipkin-service已经注册了一台<br>访问 <a href="http://localhost:9411/zipkin" target="_blank" rel="noopener">http://localhost:9411/zipkin</a> 看到服务端的UI界面，上面有查找调用链、依赖分析等功能</p>
-<h3 id="客户端使用"><a href="#客户端使用" class="headerlink" title="客户端使用"></a>客户端使用</h3><h4 id="1-添加依赖"><a href="#1-添加依赖" class="headerlink" title="1. 添加依赖"></a>1. 添加依赖</h4><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-sleuth<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-zipkin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<h4 id="2-开启注解"><a href="#2-开启注解" class="headerlink" title="2. 开启注解"></a>2. 开启注解</h4><p>无须添加注解</p>
-<h4 id="3-修改配置"><a href="#3-修改配置" class="headerlink" title="3. 修改配置"></a>3. 修改配置</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">spring.sleuth.scheduled.enabled=false</span><br><span class="line">spring.sleuth.async.enabled=false</span><br><span class="line">spring.sleuth.annotation.enabled=false</span><br><span class="line">spring.sleuth.sampler.percentage=1</span><br><span class="line">spring.zipkin.sender.type=web</span><br></pre></td></tr></table></figure>
-<p>scheduled.enabled与async.enabled关闭定时与异步推送数据，开启实时同步，可以更实时的看到数据<br>sampler.percentage采集率，用于控制多少比例的数据进行采集，默认是0.1，请求10次采集1次，这里设置为1，每一次调用都会采集<br>zipkin.sender.type设置为web才会直接请求到zipkin-server，否则如果依赖binders会默认是放在kafka中的，所以明确使用web方式调用</p>
-<h3 id="扩展"><a href="#扩展" class="headerlink" title="扩展"></a>扩展</h3><h4 id="除了通过web同步请求链路信息，还可以采用kafka异步采集信息"><a href="#除了通过web同步请求链路信息，还可以采用kafka异步采集信息" class="headerlink" title="除了通过web同步请求链路信息，还可以采用kafka异步采集信息"></a>除了通过web同步请求链路信息，还可以采用kafka异步采集信息</h4><p>zipkin.collector可以采用kafka收集信息，而客户端也可以配置为kafka发送信息</p>
-<p>配置略…</p>
-<h4 id="zipkin的数据可以采用mysql数据存储"><a href="#zipkin的数据可以采用mysql数据存储" class="headerlink" title="zipkin的数据可以采用mysql数据存储"></a>zipkin的数据可以采用mysql数据存储</h4><p>配置略…</p>
-<h4 id="trace中的流转"><a href="#trace中的流转" class="headerlink" title="trace中的流转"></a>trace中的流转</h4><p>一个是多出了trace信息，同时注意最后一个状态位<br>日志中[demo-trace1,63c082f6715c8979,63c082f6715c8979,true],true代表上传成功；</p>
-<p>如果开启了kafka的日志，则kafka消息中会多出4个trace相关的key，详见异步消息章节</p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;SpringCloud文章系列&quot;&gt;&lt;a href=&quot;#SpringCloud文章系列&quot; class=&quot;headerlink&quot; title=&quot;SpringCloud文章系列&quot;&gt;&lt;/a&gt;SpringCloud文章系列&lt;/h1&gt;&lt;ol&gt;
-&lt;li&gt;&lt;a href=&quot;htt
-    
-    </summary>
-    
-      <category term="技术" scheme="https://dawell.github.io/categories/%E6%8A%80%E6%9C%AF/"/>
-    
-    
-      <category term="SpringCloud" scheme="https://dawell.github.io/tags/SpringCloud/"/>
     
   </entry>
   

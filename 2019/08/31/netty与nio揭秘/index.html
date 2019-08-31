@@ -1,0 +1,1176 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="netty,操作系统,NIO," />
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="Dawell的博客" type="application/atom+xml" />
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.1" />
+
+
+
+
+
+
+<meta name="description" content="netty与nio感觉很多文章都讲不到重点，很多都是API层面怎么用，很多同学搞IO这块看的也是一头雾水 今天来了兴致写一篇吧，一气呵成，前篇没有去查任何资料，全靠记忆与理解回顾，后篇是很早之前学习过程的笔记贴上，如有问题欢迎指正~ Netty用于高并发服务开发，基于NIO，要想明白Netty，要先知道NIO的情况，然后多了解下操作系统就OK了，不想说netty你的性能优化真的是各种数组替换has">
+<meta name="keywords" content="netty,操作系统,NIO">
+<meta property="og:type" content="article">
+<meta property="og:title" content="netty与nio揭秘">
+<meta property="og:url" content="https://dawell.github.io/2019/08/31/netty与nio揭秘/index.html">
+<meta property="og:site_name" content="Dawell的博客">
+<meta property="og:description" content="netty与nio感觉很多文章都讲不到重点，很多都是API层面怎么用，很多同学搞IO这块看的也是一头雾水 今天来了兴致写一篇吧，一气呵成，前篇没有去查任何资料，全靠记忆与理解回顾，后篇是很早之前学习过程的笔记贴上，如有问题欢迎指正~ Netty用于高并发服务开发，基于NIO，要想明白Netty，要先知道NIO的情况，然后多了解下操作系统就OK了，不想说netty你的性能优化真的是各种数组替换has">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-08-31T15:37:37.884Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="netty与nio揭秘">
+<meta name="twitter:description" content="netty与nio感觉很多文章都讲不到重点，很多都是API层面怎么用，很多同学搞IO这块看的也是一头雾水 今天来了兴致写一篇吧，一气呵成，前篇没有去查任何资料，全靠记忆与理解回顾，后篇是很早之前学习过程的笔记贴上，如有问题欢迎指正~ Netty用于高并发服务开发，基于NIO，要想明白Netty，要先知道NIO的情况，然后多了解下操作系统就OK了，不想说netty你的性能优化真的是各种数组替换has">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    sidebar: {"position":"left","display":"post","offset":12,"offset_float":0,"b2t":false,"scrollpercent":false},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://dawell.github.io/2019/08/31/netty与nio揭秘/"/>
+
+
+
+
+
+  <title>netty与nio揭秘 | Dawell的博客</title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+  <script type="text/javascript">
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?8fcd00f1a6db3573f9ae6e885fa6b71e";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Dawell的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">我不是一个简单的少年~</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2019/08/31/netty与nio揭秘/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dawell">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Dawell的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">netty与nio揭秘</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-08-31T23:36:01+08:00">
+                2019-08-31
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/技术/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a class="cloud-tie-join-count" href="/2019/08/31/netty与nio揭秘/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count join-count" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+             <span id="/2019/08/31/netty与nio揭秘/" class="leancloud_visitors" data-flag-title="netty与nio揭秘">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="netty与nio"><a href="#netty与nio" class="headerlink" title="netty与nio"></a>netty与nio</h1><p>感觉很多文章都讲不到重点，很多都是API层面怎么用，很多同学搞IO这块看的也是一头雾水</p>
+<p>今天来了兴致写一篇吧，一气呵成，前篇没有去查任何资料，全靠记忆与理解回顾，后篇是很早之前学习过程的笔记贴上，如有问题欢迎指正~</p>
+<p>Netty用于高并发服务开发，基于NIO，要想明白Netty，要先知道NIO的情况，然后多了解下操作系统就OK了，不想说netty你的性能优化真的是各种数组替换hash结构的骚操作太多~</p>
+<p>PS：这篇涉及IO模型、堆外内存、Netty分析、操作系统IO原理、内存分配、并发实践等内容，后续有空配图</p>
+<h2 id="NIO"><a href="#NIO" class="headerlink" title="NIO"></a>NIO</h2><p>在Java1.4的时候就提供了nio的支持，non-blocking I/O，好多也叫new I/O，主要是非阻塞的实现，本质还是同步的通信模型</p>
+<p>这里就会有人问了，非阻塞不应该是异步么？这就是没分清楚的表现，这种问题还经常出现在面试题中（其实是我经常问。。。）</p>
+<h3 id="首先概念要先搞清楚"><a href="#首先概念要先搞清楚" class="headerlink" title="首先概念要先搞清楚"></a>首先概念要先搞清楚</h3><ol>
+<li>阻塞与非阻塞指的是调用方的情况，同步与异步指的是通信的模型</li>
+<li>本质上你调用的IO通信接口都是操作系统提供的，操作系统的接口你调用之后就阻塞住了还是立即返回这叫阻塞非阻塞</li>
+<li>而你调用系统之后，系统又与TCP与网卡交互，有数据之后操作系统会把数据传输到应用程序中的过程是通信过程，如果操作系统只提供了查询有没有数据的接口，你只能去拉数据确认有没有那这就是同步，如果系统提供回调通知的方式，来了数据会主动回调你，避免了你不停的去轮询这个就是异步通信，是个推的过程</li>
+<li>其实IO上的阻塞总是有的，只是说应用处理上是不是阻塞的，如果可以把数据处理与接收请求2个事情分开这个事情就解了</li>
+</ol>
+<h3 id="先看看Java吧"><a href="#先看看Java吧" class="headerlink" title="先看看Java吧"></a>先看看Java吧</h3><ol>
+<li>1.4之前都是用BIO模式，还记得那些讨厌的装饰器模式的InputStream与OutputStream之间的嵌套使用么，那个就是，在Socket编程中基本都是服务端Socket调用accept方法来返回Socket对象才能操作客户端的请求，如果没有请求，那就要阻塞。这有2个问题，1是主线程只能卡主不能干别的，2是主线程accept到socket进来了还要去执行任务，这样下个socket请求就只能卡在TCP缓冲区里了要等这个处理完才能处理，服务端瞬间变为同步模式排队处理请求，所以BIO时代处理都是用线程池玩儿，这样虽然服务端监听accept还在卡主，但是多少是可以并发处理</li>
+<li>1.4之后的nio，提供了一个selector方法，open一下，然后监听accept事件，虽然没有事件也是阻塞的，但是一旦有了事件会返回一个<code>List&lt;SelectKey&gt;</code>，这是一组Socket请求，然后你就可以while循环一个个去处理，当然你不是直接去处理，这就跟刚才没区别了，而是NIO中accept与用户读写事件完全分离了，accept之后如果想去读写数据可以再单独去订阅读写事件，那刚才接收到accept的主线程就直接用另一个selector去订阅read事件，这样刚才那个selector就可以独立去处理请求了。重要的是读写的时候也是一批<code>List&lt;SelectKey&gt;</code>去拉取处理，这样相当于术业有专攻，有专门批量处理请求的，也有专门批量处理读写的，谁也可以不等着谁的流程。底层其实还是同步去确认系统数据的，只是API上通过监听分开，达到了非阻塞的目的，同时采用的是多路复用的IO模型，这个后续会讲</li>
+<li>1.7之后提供了aio，这个就是刚才说的非阻塞异步模型了，不过使用的人真不多，netty曾经用过不过效率还没nio好，所以也弃用了，以我的感知认为其实在推拉模型中跨单元调用拉可能是大部分设计比较好的方式（不过也有特例，比如现在的Reactive模式，Disrupter模型）</li>
+</ol>
+<h3 id="说下NIO底层"><a href="#说下NIO底层" class="headerlink" title="说下NIO底层"></a>说下NIO底层</h3><ol>
+<li>其实nio底层采用的操作系统的epoll方法，这个epoll相当于在每个socket的队列中都插入epoll指针，自己也维护一个用户测注册epoll的回调，当网卡收到数据会中断操作系统来接收数据（中断是操作系统的机制，就是IO总是有限的，CPU忙到中间IO有读写CPU就要中断程序优先响应IO处理），操作系统会读取数据写入socket文件中（linux中设备、网络都相当于是文件，fd），这时候epoll就发现来数据了，它给每个socket都增加了队列监听，来了数据就去从系统的socket数据登记列表中查哪些socket有数据（操作系统维护了一个数据通知的表避免epoll把所有socket遍历一遍，低效），然后去拉取数据然后再通知到自己的队列中监听者回调数据通知，返回一批的selectKey事件告知来数据可以来取了</li>
+<li>其实在epoll之前，还有select，与poll，select方法比较笨，监听与读写是一体的，而且要遍历socket才知道有哪些socket有数据，poll稍微优化了下，2002年诞生的epoll目前基本都在用，比如redis、netty、kafka，底层都是epoll。这里需要注意的是Java的API总是在说selector，但是底层是epoll不是select，此select非彼select，不要混淆。</li>
+<li>epoll也有2种触发模式，水平触发与边缘出发，边缘就是快到了就通知准备，JDK提供的NIO是采用水平出发方式，在netty中就提供了底层的边缘出发，效果更好，在netty中就是EventLoop是Epoll开头的那些类</li>
+</ol>
+<h3 id="理解IO模型"><a href="#理解IO模型" class="headerlink" title="理解IO模型"></a>理解IO模型</h3><p>再来看看操作系统的IO模型吧</p>
+<ol>
+<li>nio刚才讲了其实是非阻塞同步，那与操作系统打交道，操作系统到底提供了几种，答案是5种，4种同步，1种异步</li>
+<li>同步阻塞、同步非阻塞、多路复用、？、信号异步</li>
+<li>其中多路复用是同步非阻塞的升级，同时监听多个Socket，也就是刚才说的epoll的模式，而信号异步就是aio，同步阻塞就是那个bio了，其他2种都是鸡肋</li>
+</ol>
+<p>说白了，其实JDK中关于IO它自己还真没怎么去搞什么优化，大部分还就是包装操作系统的方法而已，要想学好IO，包括文件IO、网络IO，那还是学好操作系统才能完全搞明白</p>
+<h3 id="Channel与ByteBuf"><a href="#Channel与ByteBuf" class="headerlink" title="Channel与ByteBuf"></a>Channel与ByteBuf</h3><p>接下来还要给大家介绍2个概念</p>
+<p>1个是channel、1是个bytebuf对象，有时候是不是困惑这个堆外内存的情况？因为它不属于JVM堆管理的范畴，是直接操作系统中的内存，那为啥高性能的框架组件总喜欢直接操作操作系统的内存呢？这就涉及到进程与系统之间IO交互的问题了，一步步说明吧</p>
+<ol>
+<li>操作系统与进程的内存是分开的2部分，一部分是内核态，一部分是用户态，所谓用户态就是每次分配一个进程的时候给你开辟一块进程的内存空间让你自己去玩，比如Java进程就开辟一块JVM用去分了栈私有空间与堆私有空间，这个就是Java的内存模型JMM，这都是一个进程自个儿定义的，怎么玩都没关系，而IO就不一样了，如果进程想去碰一个文件，或者一个网络上的传输的数据，那就要通过磁盘，然后到内存，内存还是先在内核内存，然后要copy到用户进程内存中才能使用，这个过程好处就是因为每个进程内存模型自己玩的，一旦数据跑到用户态内存中，比如Java中就变为堆上的对象了，可以用GC回收处理了，不用管太多，用户操作也简单，但是效率低，至少要copy一次，所以就诞生了直接去内核态里去读取内存与分配内存的骚操作，比如文件写入的缓存直接写到内存分配的内存中，或者读取直接读取内核内存中的数据，这样就减少了copy的过程，这就是大家一直在讲的零拷贝优化了。但是有个缺点，就是内核中的内存使用就要按操作系统的内存玩法去玩（一会提到指针问题），而且稍有不慎可能就堆外内存溢出了，所以一般提供的API都有一些限制，在Java中，这个东西就放在ByteBuffer对象中，可以通过ByteBuffer#allocateDirect分配，JVM还会限制堆外内存分配总大小，Unsafe#allocateMemory也是直接可以分配的，不过这东西更底层，Unsafe只能用特殊方法调用（我其他博客中有讲）</li>
+<li>不过这个ByteBuffer操作是真的挺难用的，因为总要控制几个指针，一个是read，一个是write，还有一个总共的大小，还要各种重置清空的方法，read&lt;write&lt;总大小，这样来控制你写入多少读取多少，如果读过头了其实是错误的数据，JDK中也不允许这么玩，而且JDK还会保持一个引用好进行一定程度的回收，总之这个ByteBuffer就是可以用于操作系统内存了，其实也可以分配的堆中，相当于2个实现。这个回收相对而言netty做的就比较贴心，有个兜底的方式给你回收掉，后面会提</li>
+<li>读取文件还有更多骚操作，比如直接把文件映射为内存映射，就是虚拟内存，在程序中读取虚拟内存加快速度</li>
+<li>Channel的理解：操作系统层面有channel，是为了避免CPU直接与IO打交道，直接开辟的内存读取的方式形成一个Channel通道，Java中的FileChannel，还有Nio中的网络Channel都是这个东西</li>
+</ol>
+<p>所以要想真的让NIO更快，那必须用channel+对外内存ByteBuffer来处理，这个netty都是有的</p>
+<p>PS：关于文件句柄限制、内存区域与优化的东西还有一些问题，netty章节会讲</p>
+<h2 id="Netty"><a href="#Netty" class="headerlink" title="Netty"></a>Netty</h2><p>大约3年前我还一直简单的认为netty只是对JavaNIO太难用的封装+个reactor模型而已，后来看了下源码与资料，发现果真如此（说好的转折呢？），不过netty对性能细节的把握真的是独到的，而且API还是比较灵活易用的</p>
+<h3 id="核心组件"><a href="#核心组件" class="headerlink" title="核心组件"></a>核心组件</h3><ol>
+<li>NioEventLoop/xxxEventLoop：事件循环，包含一个group里的公用线程池、selector引用</li>
+<li>Channel：是对socket请求的抽象概念，netty中的channel又对javanio的channel包装了一层概念</li>
+<li>Pipeline：可以理解为责任链中的chain的作用，里面可以添加ChannelHandler</li>
+<li>ChannelHandler：就是责任链中的比如filter的实现，来处理read数据与write数据</li>
+<li>ByteBuf：对JDK的ByteBuffer的封装，带有自动回收与复用的性能神器</li>
+</ol>
+<h3 id="程序流程"><a href="#程序流程" class="headerlink" title="程序流程"></a>程序流程</h3><h4 id="总结流程"><a href="#总结流程" class="headerlink" title="总结流程"></a>总结流程</h4><p>Netty的整体流程可以分为服务端与请求处理端2部分</p>
+<p>其中在执行服务端启动的时候，bind方法时就把服务端的EventLoopGroup，对应的Channel与pipeline触发完毕，调用服务端eventloop.execute方法启动执行监听</p>
+<p>在bind中的init的时候也会去调用请求处理端Work的eventloop的execute方法启动监听</p>
+<p>服务端eventloop在监听到selector有请求的时候会请求到请求处理端Work的eventloop中经过pipeline处理</p>
+<p>监听请求：EventLoopGroup持有多个NioEventLoop，会无限循环找任务并监听端口的selector的请求</p>
+<ol>
+<li>通过路由器chooser#next方法依次轮训选择，多个EventLoop共用一个ThreadPerTaskExecutor线程池，每个EventLoop并持有一个优化后的selector对象</li>
+<li>在channel执行eventloop.execute的时候，内部会持有thread的引用，在非当前thread执行时封装task丢入到queue中，这样EventLoopGroup在执行的时候会先检查queue来执行，然后才去selector任务</li>
+</ol>
+<p>发现请求，转换工作：当检测到有请求到来时会受到SelectKey，然后调用processSelectKey方法，内部用unsafe读取，最大读取16个channel，并且逐个包装为Netty的NioSocketChannel对象，workEventLoopGroup会去注册这个channel，然后读取byte数组遍历使用pipeline的fireChannelRead传递byte数据</p>
+<p>业务处理：work的pipeline通过head、ServerBootstrapAcceptor、tail的调用完成请求处理，其中ServerBootstrapAcceptor包含了用户的ChannelHandler经过，每个ChannelHandler都持有ChannelHandlerContext来操作传播</p>
+<ol>
+<li>读请求正向，写请求逆向，异常请求正向</li>
+</ol>
+<h4 id="Boss流程"><a href="#Boss流程" class="headerlink" title="Boss流程"></a>Boss流程</h4><h5 id="bind接口"><a href="#bind接口" class="headerlink" title="bind接口"></a>bind接口</h5><p>服务端启动主要流程就在bind接口中</p>
+<ol>
+<li>initAndRegister初始化：<ol>
+<li><strong>newChannel</strong>：通过用户传入的Channel，如NioServerSocketChannel反射实例<ol>
+<li>构造方法：初始化pipeline、config、unsafe，channel对象设置非阻塞configureBlocking(false)</li>
+</ol>
+</li>
+<li><strong>init</strong>：对channel设置options、attr、pipeline最后添加一个channelInitializer<ol>
+<li>pipeline添加ServerHandler</li>
+<li>channel的<strong>eventloop.execute</strong>一个函数，pipeline最后添加<strong>ServerBootstrapAcceptor</strong>对象，传入childOptions，还要用户定义的childHandler（channelInitializer对象）</li>
+</ol>
+</li>
+<li><strong>register</strong>：调用group（childGroup，就是最初传入的NioEventLoop）的register这个channel对象<ol>
+<li>把channel中的eventloop=这个NioEventLoop</li>
+<li>NioChannel实现中就是启动Java的selector对象注册0兴趣，不关心任何事件，只是做个selector与channel的绑定，传递了this用于java selector回调channel方法用</li>
+<li>然后触发2个回调，handlerRegisted、handlerAdded2个方法（要ServerHandler实现ChannelInboundHandlerAdapter），这里由于还没actived，所以不会触发激活</li>
+</ol>
+</li>
+</ol>
+</li>
+<li><strong>doBind</strong>方法<ol>
+<li>doBind变为actived<ol>
+<li>NioServerSocketChannel实现<ol>
+<li><strong>eventloop.execute</strong>添加一个bind绑定端口的任务</li>
+</ol>
+</li>
+</ol>
+</li>
+<li>pipeline的fireChannelActive<ol>
+<li>通知激活后，还会触发read绑定selector的操作，从0变为read</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<h4 id="Work流程"><a href="#Work流程" class="headerlink" title="Work流程"></a>Work流程</h4><p>work的主要流程开始就是在服务端接收到请求时对work分配工作时操作的，关注pipeline</p>
+<h5 id="pipeline"><a href="#pipeline" class="headerlink" title="pipeline"></a>pipeline</h5><p>NioEventLoop中有processSelectKey方法</p>
+<ol>
+<li>用unsafe读取，while循环只要继续读，内部通过JavaNio获取JavaChannel个数，读取while条件中最大读取16条，如果中途读不到数据也会break跳出，读取的Channel会包装为Netty的NioSocketChannel，内部会做一些事情<ol>
+<li>设置非阻塞，创建unsafe、id、pipeline</li>
+<li>parent就是通过那个通过反射创建的channel</li>
+<li>setTcpNoDelay(true)：如果是false tcp会将小数据包转换为大数据包才发送，不过netty想尽可能快的让收到数据，所以禁止了，默认非android的默认都是禁止的</li>
+</ol>
+</li>
+<li>读取数据后，遍历readByte，然后调用pipeline的<strong>fireChannelRead</strong>方法传递byte数据</li>
+<li>pipeline调用顺序：head-&gt;<strong>ServerBootstrapAcceptor</strong>-&gt;tail，channel创建是诞生的pipeline<ol>
+<li>head与tail是创建pipeline的时候就有了，tail是outbound处理，如果异常没处理，信息没处理这个就是兜底收尾的事情，head是个inbound，写都是用unsafe操作</li>
+<li>ChannelHandlerContext中具备属性存储，读事件传播，写事件传播的3个接口实现</li>
+<li>在<strong>fireChannelRead</strong>方法中，用户编写时使用chilidHandler的ChannelInitializer的ch.pipeline去添加ChannelHandler实现，添加完后会把ChannelInitializer自己删除，用户自己设置的options与attrs都会设置到channel的config对象中（也是用户侧设置的），然后workgroup去注册这个Channel，注册方法内部会调用next函数找到一个NioEventLoop去执行，最终注册调用的是底层javanio的selector的注册0感兴趣事件，然后后面就是开始调用pipeline的head节点传播了，head会去注册读事件（这个逻辑与服务端启动的逻辑相似，dobind方法中在监听端口后也会触发一次读请求）<ol>
+<li>会先判断是否重复添加，添加是基于双向链表尾部操作，删除要先找到节点然后删除，添加删除都有回调</li>
+<li>ChannelHandler分为Outbound与Inbound，还有对应的adapter实现</li>
+<li>inbound是next正向传播到tail（tail也是in），<strong>如果buffer会自动释放，考虑周全</strong>，而outbound是逆向传播到head（head是out），而异常传播是inboundoutbound都是正向传播</li>
+<li>context.channel.write是从头传播（更常用），而直接context.write是从当前节点传播</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<h4 id="公共部分"><a href="#公共部分" class="headerlink" title="公共部分"></a>公共部分</h4><h5 id="Channel"><a href="#Channel" class="headerlink" title="Channel"></a>Channel</h5><ol>
+<li>AbstractChannel：持有unsafe、Pipeline、channel<ol>
+<li>AbstractNioChannel：持有selectKey、selector<ol>
+<li>AbstractNioByteChannel持有NioByteUnsafe，客户端的，监听read<ol>
+<li>NioSocketChannel持有NioSocketChannelConfig</li>
+</ol>
+</li>
+<li>AbstractNioMessageChannel持有NioMessageUnsafe，服务端的，监听accept<ol>
+<li>NioServerSocketChannel持有NioServerSocketChannelConfig</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<p>客户端 服务端 都继承 说明都是基于selector</p>
+<ol>
+<li>不过监听事件不一样，服务端监听accept、客户端监听read</li>
+<li>还一个对应Unsafe不一样，主要是读写抽象不一样，客户端读数据byte，服务端读连接</li>
+</ol>
+<h5 id="EventLoopGroup"><a href="#EventLoopGroup" class="headerlink" title="EventLoopGroup"></a>EventLoopGroup</h5><p>EventLoopGroup，默认不设置线程个数是0，会用2倍CPU线程数</p>
+<ol>
+<li>new 一个线程执行器ThreadPerTaskExecutor，实现Executor接口实现的线程池，factory里线程池开头小写命名线程名，创建的Thread是FastThreadLocalThread，这个Thread继承Thread，<strong>重写ThreadLocal为数组的实现，性能优化点之一</strong></li>
+<li>按线程个数初始化线程child<ol>
+<li>在NioEventLoopGroup中的newChild会new NioEventLoop，触发构造函数逻辑<ol>
+<li>provider，openSelector产生selector引用持有，一个selector对应一个NioEventLoop<ol>
+<li>通过Class.forName传入System类加载器+sun.nio.ch.</li>
+<li>SelectorImpl获取Class对象，然后针对selector对象中的<code>Set&lt;SelectKey&gt;</code>默认的HashSet<strong>替换为netty自己的实现</strong>，用数组替代时间复杂度从On降到O1</li>
+</ol>
+</li>
+<li>TaskQueue：newTaskQueue：mpscQueue，如果不是当前线程的任务会塞在队列里，代表外部线程用的任务队列</li>
+</ol>
+</li>
+</ol>
+</li>
+<li>chooser选择器构建，传入全部NioEventLoop对象<ol>
+<li>chooser会调用NioEventLoopGroup#next：NioEventLoop[]  ，每一个新连接是从0到N依次去绑定任务，最终从多个里面返回一个NioEventLoop</li>
+<li>特定优化：如果是<strong>2的幂次方性能优化的策略</strong>：每次next时自增id+1，然后要选择EventExecutor[]数组（NioEventLoop的父类）中的一个要取模，2的倍数直接用&amp;（长度-1）操作，可以二进制过滤出余数，如果是非2个倍数，直接%长度取模，&amp;比%高效</li>
+</ol>
+</li>
+<li>execute方法<ol>
+<li>EventLoopGroup中的executer线程池会调用execute，内部run方法，如果是第一次这个channel会保存这个thread的引用，如果是第二次则会判断执行是否是当前线程，如果不是当前线程就封装为一个task放到queue串行执行<ol>
+<li>方法执行一个SingleThreadEventExecutor.run<ol>
+<li>这个run里会无限循环，然后去调用selector对象找SelectKeys数据IO数据，每次会统计select的时间</li>
+<li>先检查任务按照截止时间排队是否到期，没有检查是否有队列任务，没有就执行真正的selector操作<strong>processSelectKey</strong><ol>
+<li>阻塞1s获取，如果selectKeys不为空、被唤醒、有任务了，就终止select操作</li>
+<li><strong>java的niobug就是不阻塞</strong> 然后就不停的轮训导致cpu100%。这里判断是否执行时间大于阻塞时间，如果小于阻塞时间说明 select 没有阻塞直接就返回了，超过512次就重新建立一个selector把所有事件转移到新的selector 这样可能就好了</li>
+</ol>
+</li>
+<li>处理异步队列中的任务<ol>
+<li>除了普通任务，还有定时任务，scheduled，有个PriorityQueue优先级队列，按照截止时间来排序</li>
+<li>因为queue不是线程安全的，如果是在事件循环中就直接queue.add，如果不是就execute一个run把queue.add添加进去来保证queue的线程安全（netty如何保证异步串行无锁化？）</li>
+<li>触发会把到期的定时任务放到taskQueue里面</li>
+<li>无限循环，任务执行，<strong>nanoTime也是耗时操作</strong>，所以每执行64次，才去计算时间如果没有结束</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<h5 id="内存分配"><a href="#内存分配" class="headerlink" title="内存分配"></a>内存分配</h5><p>read只能读取写入的数据，capacity是空间最大值</p>
+<p>Unsafe可以直接拿到对象内存地址，可以直接内存读写，非Unsafe是直接拿一个数组的一个索引值，Unsafe 这个是根据jdk来自动判断的，看是否能强行获取JDK内部的Unsafe来来操作，使用者不用关心。Unsafe的读写数据更快</p>
+<p>Heap不需要手工释放在堆，Direct需要手工释放</p>
+<p>另外2个维度是用实现来区分 Pool与Unpool，区别就是PooledByteBufAllcator，内部有PoolThreadCache，可以在Area上分配</p>
+<ol>
+<li>提供了内存分配管理器ByteBufAllcator，有堆、直接内存分配的方法，主要区分 堆内与对外的接口</li>
+<li>tiny、small、normal3个不同大小的bytebuf 缓存多少个，每个thread到时候分配是直接拿走用，不用用的时候才去分配，这样更快</li>
+<li>每个对象中持有一个handler用于回收，如果缓存没分配成功会直接分配</li>
+</ol>
+<p>内存规格：比较复杂，最终得到效果：分配内存规格然后缓存，防止分配耗费性能</p>
+<ol>
+<li>tiny（0-512b）、small（512b-8k：512、1k、2k、4k）、normal（8k-16M：8k、16k、32k）、huge（超过16M） 就是这4个区间</li>
+<li>操作系统规定16M要去申请一个Chunk，所有的内存申请向系统的单位是Chunk，分配1M也要先申请一个Chunk，然后再在Chunk里取一个</li>
+<li>8K是一个Page ，16M有点大，拆分就用Page来取，2^11次方2048个Page，所以一个Chunk包含2048个page，一个page是8k，16k就是2个page</li>
+<li>subpage就是0-8k之间 还很大，netty定义的small、tiny、normal，而huge是直接走的非缓存的分配，每种类型的每个一个小规格都有一个queue存储</li>
+<li>Chunk链表，netty会分析使用情况 组成chunklist用于分配，分析使用率，还是用到了ThreadLocal隔离</li>
+</ol>
+<h5 id="解码"><a href="#解码" class="headerlink" title="解码"></a>解码</h5><p>netty是基于TCP层之上的组件，这个与socket一样，客户端监听服务端IP+端口，而服务端需要绑定端口</p>
+<p>所以接收到的数据是一个byte[]通过协议转换为报文内容，然后再处理，最终再转换为报文，转换为byte[]的过程，这个过程其实就像生产处理流水线一样，所以是放在Pipeline中的一个个ChannelHandler来处理的</p>
+<p>ChannelHandler默认提供了一堆编解码的基础能力实现，比如</p>
+<ol>
+<li>基于byte长度分割字符</li>
+<li>基于\r\n或者\n的行分割字符</li>
+<li>基于分隔符号，比如逗号、分号这种分隔符处理器</li>
+<li>还有基于数据域的方式，先解析接下来数据长度，然后读取一段，再遇到一个长度数字再解析一段，里面有不少可以调节的参数</li>
+</ol>
+<p>整体上这些处理器都具备一定容错能力，主要是比如一直读取不到（可以设置上限）分隔符就会抛弃到下一个分隔符的一段数据，实现层面是通过一个byte累加器来实现，在他们父类中</p>
+<p>虽然整个业务逻辑都是ChannelHandler，但是也要区分下职责，比如有只负责读的，有只负责写的，也有读写都行的，那就是分别是inbound与outbound2个接口，inboud对应read的相关方法，outbound对应write的一些方法</p>
+<p>write操作</p>
+<ol>
+<li>如果直接是堆外就返回，否则就把内容 写到 堆外内存中的转换，写byte操作几个指针，一部分flush了，还有没有flush的，如果积累的没flush的数据超过64k就自旋锁+CAS阻塞不可写状态。每次flush就size-1，如果小于32k就设置为可写的状态，head会保证数据都塞到堆外内存去，最终数据转为JDK原生对象写入</li>
+</ol>
+<h5 id="性能工具"><a href="#性能工具" class="headerlink" title="性能工具"></a>性能工具</h5><p>这2个工具类 也可以单独去用</p>
+<ol>
+<li>FastThreadLocal是自己维护了一个map，继承Thread，内部的ThreadLocalMap底层用数组实现提高效率，自动扩容</li>
+<li>对象池Recycler，基于fastThreadlocal，bytebuf就是用这种方式回收，ThreadLocal中获取stack，然后pop，是个handler，如果handler没有会创建，里面包含value还有stack的引用，可以同线程 回收，也可以另一个线程会回收对象</li>
+<li>另一个零copy的点：CompositeByteBuf，用addComponent取代ByteBuf#writeByte，可以把2个内存直接当连续的读取，这样减少的内存copy的代价，内部实现也是先找到组件，然后再找空间</li>
+</ol>
+<h2 id="实践"><a href="#实践" class="headerlink" title="实践"></a>实践</h2><h3 id="百万并发调优"><a href="#百万并发调优" class="headerlink" title="百万并发调优"></a>百万并发调优</h3><ol>
+<li><p>模拟百万：用8000-8100端口，一个端口顶多6w请求，1024-65535 ，扣除常用端口，实际只有6w左右连接，单机也就6w，但是多客户端 连接 太费机器了，所以用多接口方案</p>
+</li>
+<li><p>一个文件一个句柄，突破</p>
+<ol>
+<li><p><code>ulimit -n</code> 查看句柄</p>
+<p><code>/etc/security/limits.conf</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">* hard nofile 1000000</span><br><span class="line">* soft nofile 1000000</span><br></pre></td></tr></table></figure>
+<p>*代表当前用户，hard是真正限制，soft是警告限制，nofile表示能打开的最大连接数<br>任何用户最终能打开100w文件</p>
+<p>需要重启</p>
+</li>
+</ol>
+</li>
+<li><p>一个系统的限制需要突破</p>
+<ol>
+<li><p><code>cat /proc/sys/fs/file-max</code></p>
+<p><code>/etc/sysctl.conf</code> 添加一行</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fs.file-max=1000000</span><br></pre></td></tr></table></figure>
+<p><code>sysctl -p /etc/sysctl.conf</code> 生效</p>
+</li>
+</ol>
+</li>
+<li><p>cpu可能会标满</p>
+</li>
+</ol>
+<h3 id="线程数可以调优"><a href="#线程数可以调优" class="headerlink" title="线程数可以调优"></a>线程数可以调优</h3><ol>
+<li>任务线程里自己搞个线程池把耗时代码隔离</li>
+<li>在pipeline.addLast中可以添加businessGroup新建一个，整个Handler逻辑隔离</li>
+<li>线程数要不停的尝试才能达到最优</li>
+</ol>
+<h3 id="技巧"><a href="#技巧" class="headerlink" title="技巧"></a>技巧</h3><ol>
+<li>telnet 127.0.0.1 8888 连接netty服务端，然后输入内容测试服务端</li>
+</ol>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+	<div>
+	 
+	   
+<div style="text-align:center;color: #ccc;font-size:14px;">
+------ 本文结束 ------</div>
+<br/>
+<div style="border: 1px solid black">
+<div style="margin-left:10px">
+<span style="font-weight:blod">版权声明</span>
+<img src="http://wx4.sinaimg.cn/mw690/712a7015gy1ffwqkthgrlj20e9026gm4.jpg" >
+<br/>
+<p style="font-size: 10px;line-height: 30px"><a href="http://dawell.cc" style="color:#258FC6">dawell's Notes</a> by <a href="http://dawell.cc" style="color:#258FC6">Dawell</a> is licensed under a <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" style="color:#258FC6">Creative Commons BY-NC-ND 4.0 International License</a>.<br/>
+由<a href="http://dawell.cc" style="color:#258FC6">Dawell</a>创作并维护的<a href="http://dawell.cc" style="color:#258FC6">dawell's Notes</a>博客采用<a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" style="color:#258FC6">创作共用保留署名-非商业-禁止演绎4.0国际许可证</a>。<br/>
+本文首发于<a href="http://dawell.cc" style="color:#258FC6">dawell's Notes</a> 博客（ <a href="http://dawell.cc" style="color:#258FC6">http://dawell.cc</a> ），版权所有，侵权必究。</p>
+</div>
+</div>
+
+
+	 
+	</div>
+	
+    <div>
+      
+        
+  <div style="padding: 10px 0; margin: 20px auto; width: 90%; text-align: center;">
+    <div>坚持原创技术分享，您的支持将鼓励我继续创作！</div>
+    <button id="rewardButton" disable="enable" onclick="var qr = document.getElementById('QR'); if (qr.style.display === 'none') {qr.style.display='block';} else {qr.style.display='none'}">
+      <span>赏</span>
+    </button>
+    <div id="QR" style="display: none;">
+      
+        <div id="wechat" style="display: inline-block">
+          <img id="wechat_qr" src="http://wx3.sinaimg.cn/mw690/712a7015gy1ffwq5phr1rj208j08imxp.jpg" alt="Dawell WeChat Pay"/>
+          <p>微信打赏</p>
+        </div>
+      
+      
+        <div id="alipay" style="display: inline-block">
+          <img id="alipay_qr" src="http://wx1.sinaimg.cn/mw690/712a7015gy1ffwq4f2m3kj208x08w74w.jpg" alt="Dawell Alipay"/>
+          <p>支付宝打赏</p>
+        </div>
+      
+    </div>
+  </div>
+
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+	
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/netty/" rel="tag"># netty</a>
+          
+            <a href="/tags/操作系统/" rel="tag"># 操作系统</a>
+          
+            <a href="/tags/NIO/" rel="tag"># NIO</a>
+          
+        </div>
+      
+
+      
+        
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/05/06/龙珠/" rel="next" title="龙珠">
+                <i class="fa fa-chevron-left"></i> 龙珠
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+      <div id="cloud-tie-wrapper" class="cloud-tie-wrapper"></div>
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg"
+               alt="Dawell" />
+          <p class="site-author-name" itemprop="name">Dawell</p>
+           
+              <p class="site-description motion-element" itemprop="description">一个Java程序员日常学习、技术总结博客</p>
+          
+        </div>
+        <nav class="site-state motion-element">
+
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">58</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-categories">
+              <a href="/categories/index.html">
+                <span class="site-state-item-count">8</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-tags">
+              <a href="/tags/index.html">
+                <span class="site-state-item-count">34</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+          <div class="feed-link motion-element">
+            <a href="/atom.xml" rel="alternate">
+              <i class="fa fa-rss"></i>
+              RSS
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/Dawell" target="_blank" title="GitHub">
+                  
+                    <i class="fa fa-fw fa-github"></i>
+                  
+                  GitHub
+                </a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+          <div class="cc-license motion-element" itemprop="license">
+            <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" class="cc-opacity" target="_blank">
+              <img src="/images/cc-by-nc-nd.svg" alt="Creative Commons" />
+            </a>
+          </div>
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#netty与nio"><span class="nav-number">1.</span> <span class="nav-text">netty与nio</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#NIO"><span class="nav-number">1.1.</span> <span class="nav-text">NIO</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#首先概念要先搞清楚"><span class="nav-number">1.1.1.</span> <span class="nav-text">首先概念要先搞清楚</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#先看看Java吧"><span class="nav-number">1.1.2.</span> <span class="nav-text">先看看Java吧</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#说下NIO底层"><span class="nav-number">1.1.3.</span> <span class="nav-text">说下NIO底层</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#理解IO模型"><span class="nav-number">1.1.4.</span> <span class="nav-text">理解IO模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Channel与ByteBuf"><span class="nav-number">1.1.5.</span> <span class="nav-text">Channel与ByteBuf</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Netty"><span class="nav-number">1.2.</span> <span class="nav-text">Netty</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#核心组件"><span class="nav-number">1.2.1.</span> <span class="nav-text">核心组件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#程序流程"><span class="nav-number">1.2.2.</span> <span class="nav-text">程序流程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#总结流程"><span class="nav-number">1.2.2.1.</span> <span class="nav-text">总结流程</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Boss流程"><span class="nav-number">1.2.2.2.</span> <span class="nav-text">Boss流程</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#bind接口"><span class="nav-number">1.2.2.2.1.</span> <span class="nav-text">bind接口</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Work流程"><span class="nav-number">1.2.2.3.</span> <span class="nav-text">Work流程</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#pipeline"><span class="nav-number">1.2.2.3.1.</span> <span class="nav-text">pipeline</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#公共部分"><span class="nav-number">1.2.2.4.</span> <span class="nav-text">公共部分</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Channel"><span class="nav-number">1.2.2.4.1.</span> <span class="nav-text">Channel</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#EventLoopGroup"><span class="nav-number">1.2.2.4.2.</span> <span class="nav-text">EventLoopGroup</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#内存分配"><span class="nav-number">1.2.2.4.3.</span> <span class="nav-text">内存分配</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#解码"><span class="nav-number">1.2.2.4.4.</span> <span class="nav-text">解码</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#性能工具"><span class="nav-number">1.2.2.4.5.</span> <span class="nav-text">性能工具</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#实践"><span class="nav-number">1.3.</span> <span class="nav-text">实践</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#百万并发调优"><span class="nav-number">1.3.1.</span> <span class="nav-text">百万并发调优</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#线程数可以调优"><span class="nav-number">1.3.2.</span> <span class="nav-text">线程数可以调优</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#技巧"><span class="nav-number">1.3.3.</span> <span class="nav-text">技巧</span></a></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Dawell</span>
+</div>
+
+
+<div class="theme-info">
+  Best Wishes! <a href="mailto:dawell@aliyun.com">联系我</a>
+</div>
+
+
+        
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.1"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.1"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+    
+    <script>
+      var cloudTieConfig = {
+        url: document.location.href, 
+        sourceId: "",
+        productKey: "71e66c8b757244f387b143ce9b977a78",
+        target: "cloud-tie-wrapper"
+      };
+    </script>
+    <script src="https://img1.ws.126.net/f2e/tie/yun/sdk/loader.js"></script>
+  
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+  <script src="https://cdn1.lncld.net/static/js/av-core-mini-0.6.1.js"></script>
+  <script>AV.initialize("3Vbe2UCzbY41yP5dtkxpWd5G-gzGzoHsz", "EeVqL4YwIANsoGT9sJXoTgjp");</script>
+  <script>
+    function showTime(Counter) {
+      var query = new AV.Query(Counter);
+      var entries = [];
+      var $visitors = $(".leancloud_visitors");
+
+      $visitors.each(function () {
+        entries.push( $(this).attr("id").trim() );
+      });
+
+      query.containedIn('url', entries);
+      query.find()
+        .done(function (results) {
+          var COUNT_CONTAINER_REF = '.leancloud-visitors-count';
+
+          if (results.length === 0) {
+            $visitors.find(COUNT_CONTAINER_REF).text(0);
+            return;
+          }
+
+          for (var i = 0; i < results.length; i++) {
+            var item = results[i];
+            var url = item.get('url');
+            var time = item.get('time');
+            var element = document.getElementById(url);
+
+            $(element).find(COUNT_CONTAINER_REF).text(time);
+          }
+          for(var i = 0; i < entries.length; i++) {
+            var url = entries[i];
+            var element = document.getElementById(url);
+            var countSpan = $(element).find(COUNT_CONTAINER_REF);
+            if( countSpan.text() == '') {
+              countSpan.text(0);
+            }
+          }
+        })
+        .fail(function (object, error) {
+          console.log("Error: " + error.code + " " + error.message);
+        });
+    }
+
+    function addCount(Counter) {
+      var $visitors = $(".leancloud_visitors");
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+      var query = new AV.Query(Counter);
+
+      query.equalTo("url", url);
+      query.find({
+        success: function(results) {
+          if (results.length > 0) {
+            var counter = results[0];
+            counter.fetchWhenSave(true);
+            counter.increment("time");
+            counter.save(null, {
+              success: function(counter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.get('time'));
+              },
+              error: function(counter, error) {
+                console.log('Failed to save Visitor num, with error message: ' + error.message);
+              }
+            });
+          } else {
+            var newcounter = new Counter();
+            /* Set ACL */
+            var acl = new AV.ACL();
+            acl.setPublicReadAccess(true);
+            acl.setPublicWriteAccess(true);
+            newcounter.setACL(acl);
+            /* End Set ACL */
+            newcounter.set("title", title);
+            newcounter.set("url", url);
+            newcounter.set("time", 1);
+            newcounter.save(null, {
+              success: function(newcounter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(newcounter.get('time'));
+              },
+              error: function(newcounter, error) {
+                console.log('Failed to create');
+              }
+            });
+          }
+        },
+        error: function(error) {
+          console.log('Error:' + error.code + " " + error.message);
+        }
+      });
+    }
+
+    $(function() {
+      var Counter = AV.Object.extend("Counter");
+      if ($('.leancloud_visitors').length == 1) {
+        addCount(Counter);
+      } else if ($('.post-title-link').length > 1) {
+        showTime(Counter);
+      }
+    });
+  </script>
+
+
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

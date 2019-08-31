@@ -277,6 +277,1159 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2017/05/22/静态代码扫描工具/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dawell">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Dawell的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/05/22/静态代码扫描工具/" itemprop="url">静态代码扫描工具</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-05-22T21:57:00+08:00">
+                2017-05-22
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/技术/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+             <span id="/2017/05/22/静态代码扫描工具/" class="leancloud_visitors" data-flag-title="静态代码扫描工具">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><img src="http://wx3.sinaimg.cn/mw690/712a7015gy1ffuejerhtrj20xc0i0wgr.jpg" alt="img"></p>
+<p>优秀的团队为了保证可读性、可维护性、避免重复踩坑与保证代码质量，都会推出一些开发规范来遵守。<br>开发规范是前置主动要求团队成员遵守的，而光靠意识是难以保证完全遵守规范的，所以还需要一些工具辅助。<br>当然即使有工具做这些事情，规范也是必须推广的，让大家先仔细读读，毕竟直接写出优秀的代码是最好的，然后再辅助工具乃最佳实践。</p>
+<h1 id="开发规范"><a href="#开发规范" class="headerlink" title="开发规范"></a>开发规范</h1><p>一流公司制定规范，二流公司申请专利，三流公司生产产品。<br>所以目前公开规范的大多是大厂的规范。</p>
+<p>目前知道大厂公开的Java开发规范</p>
+<ul>
+<li>Google开发规范 github markdown格式 <a href="http://google.github.io/styleguide/javaguide.html" target="_blank" rel="noopener">点我查看</a></li>
+<li>阿里巴巴开发规范 PDF格式 <a href="https://yq.aliyun.com/articles/69327" target="_blank" rel="noopener">点我查看最新版</a></li>
+<li>华为开发规范</li>
+<li>Oracle开发规范</li>
+</ul>
+<p>阿里巴巴的开发规范，虽然不是单纯的规范，还包括了开发中的各种坑从主观上的一些强制规定，但是总体上还是很有用的，可以拿来部分or全部直接执行。</p>
+<h1 id="独立的组件"><a href="#独立的组件" class="headerlink" title="独立的组件"></a>独立的组件</h1><h2 id="FindBugs"><a href="#FindBugs" class="headerlink" title="FindBugs"></a>FindBugs</h2><p>只寻找可能存在bug的地方，不注重样式或者格式，它试图只寻找真正的缺陷或者潜在的性能问题。</p>
+<h3 id="特点"><a href="#特点" class="headerlink" title="特点"></a>特点</h3><ul>
+<li>基于class分析，如果你clean了再去执行发现没有执行生成报告，所以需要编译后才能执行分析</li>
+<li>有maven插件，有IDE插件（eclipse插件，也有idea插件）</li>
+<li>开发时不用使用maven插件，要编译执行检测生成xml然后再生成网页查看结果，挺麻烦。如果要与Jenkins集成的时候，maven插件就有用了，<a href="http://www.tuicool.com/articles/QB7nqqF" target="_blank" rel="noopener">集成方式点我</a></li>
+<li>开发时使用IDE插件非常方便</li>
+<li>插件中Bug Explorer 中的灰色图标处为 Bug 类型，红色图标表示 bug 较为严重，黄色的图标表示 bug 为警告程度</li>
+</ul>
+<h3 id="代码缺陷分类"><a href="#代码缺陷分类" class="headerlink" title="代码缺陷分类"></a>代码缺陷分类</h3><p>根据缺陷的性质，大致可以分为下列几类</p>
+<ul>
+<li>Bad practice  不好的做法</li>
+<li>Correctness   可能有不正确</li>
+<li>Dodgy code     糟糕的代码</li>
+<li>Experimental  实验</li>
+<li>Internationalization  国际化</li>
+<li>Malicious code vulnerility 恶意的代码漏洞</li>
+<li>Multithreaded correctness 多线程问题</li>
+<li>Performance  性能问题</li>
+</ul>
+<p>FindBugs官方网站上也给出了一些案例：<a href="http://findbugs.sourceforge.net/bugDescriptions.html" target="_blank" rel="noopener">案例点我</a></p>
+<h3 id="缺陷列表"><a href="#缺陷列表" class="headerlink" title="缺陷列表"></a>缺陷列表</h3><p><a href="">缺陷列表</a></p>
+<h3 id="排除单个规则"><a href="#排除单个规则" class="headerlink" title="排除单个规则"></a>排除单个规则</h3><p>如果是排除一类规则，点击IDE旁边的提示选择排除类型就行</p>
+<p>可以针对规则排除单独类中的接触限制，使用注解<code>@edu.umd.cs.findbugs.annotations.SuppressFBWarnings</code><br>要加入依赖  provided代表只在编译时依赖，打包后就没有这个依赖了<br>IDE旁边提示也有这种，不过不会加入以下依赖，需要手动在POM中加入</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.google.code.findbugs<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>annotations<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>3.0.1<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">scope</span>&gt;</span>provided<span class="tag">&lt;/<span class="name">scope</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.google.code.findbugs<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>jsr305<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>3.0.1<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">scope</span>&gt;</span>provided<span class="tag">&lt;/<span class="name">scope</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h2 id="CheckStyle"><a href="#CheckStyle" class="headerlink" title="CheckStyle"></a>CheckStyle</h2><p>代码样式风格检查，专门check代码规范风格的，比如缩进，换行操作，命名<br>大项目往往是有很多人一起完成的，然而每个人都有自己的style，导致整个项目的代码不仅存在不符合语言规范的情况，而且读起来非常困难。因此，这样的项目中都会引入Checkstyle，来规范大家的编码风格，尽量做到统一和合理。<br>所以使用checkStyle检查到问题</p>
+<p>官方文档：<a href="http://checkstyle.sourceforge.net/checks.html" target="_blank" rel="noopener">http://checkstyle.sourceforge.net/checks.html</a></p>
+<h3 id="工具界面"><a href="#工具界面" class="headerlink" title="工具界面"></a>工具界面</h3><p>插件<br><img src="http://wx3.sinaimg.cn/mw690/712a7015gy1ffue2cdu0qj20fa06aq3l.jpg" alt="img"></p>
+<p>单个文件check<br><img src="http://wx3.sinaimg.cn/mw690/712a7015gy1ffue2fumooj20eq0d3jt3.jpg" alt="img"></p>
+<h3 id="特点-1"><a href="#特点-1" class="headerlink" title="特点"></a>特点</h3><ul>
+<li>基于源码，无需编译</li>
+<li>有maven插件，与IDE插件（eclipse插件，也有idea插件）。<a href="http://checkstyle.sourceforge.net/idea.html" target="_blank" rel="noopener">idea的一些细节配置</a></li>
+<li>可以自定义规则</li>
+<li>CheckStyle底层基于antlr对源码进行处理</li>
+<li>可以配置哪些文件不检查</li>
+</ul>
+<h3 id="规范配置"><a href="#规范配置" class="headerlink" title="规范配置"></a>规范配置</h3><p>配置位置<br><img src="http://wx3.sinaimg.cn/mw690/712a7015gy1ffue2ixrz0j20su0jhmxs.jpg" alt="img"></p>
+<ul>
+<li>sun_checks.xml 默认自带sun公司的开发规范，有点严格</li>
+<li>google_checks.xml 下载下来好像有点问题，可能与版本有关 <a href="http://checkstyle.sourceforge.net/google_style.html" target="_blank" rel="noopener">查看</a></li>
+<li>华为的规范 很多公司都会用华为的规范改改</li>
+<li>自定义的规范 比较了解配置规则的情况下配置</li>
+</ul>
+<h3 id="技巧"><a href="#技巧" class="headerlink" title="技巧"></a>技巧</h3><p>我们在代码写完之后，还要花时间去手动解决Checkstyle提示的问题，这是一个非常无聊和耗时的工作。<br>其实很多问题使用IDE的格式化已经能解决一部分，所以最好能提供一个IDE的formatter配置，整个团队都用这个配置导入IDE，这样用用快捷键就能解决一些问题，非常easy。</p>
+<h2 id="PMD"><a href="#PMD" class="headerlink" title="PMD"></a>PMD</h2><p>与findbug类似找bug用，还有规范，比如说注释不全</p>
+<h3 id="特点-2"><a href="#特点-2" class="headerlink" title="特点"></a>特点</h3><ul>
+<li>有maven插件，与IDE插件（eclipse插件，也有idea插件）</li>
+<li>增强代码质量和修改代码的功能</li>
+</ul>
+<h3 id="错误分类"><a href="#错误分类" class="headerlink" title="错误分类"></a>错误分类</h3><ul>
+<li>可能的bug——空的try/catch/finally/switch块。</li>
+<li>无用代码(Dead code)：无用的本地变量，方法参数和私有方法。</li>
+<li>空的if/while语句。</li>
+<li>过度复杂的表达式——不必要的if语句，本来可以用while循环但是却用了for循环。</li>
+<li>可优化的代码：浪费性能的String/StringBuffer的使用。</li>
+</ul>
+<h1 id="集合组件"><a href="#集合组件" class="headerlink" title="集合组件"></a>集合组件</h1><h2 id="IdeaIDE的QAPlug"><a href="#IdeaIDE的QAPlug" class="headerlink" title="IdeaIDE的QAPlug"></a>IdeaIDE的QAPlug</h2><p>这个插件是汇集这前面说的3个插件的结果，不用每次都运行3个插件分别排错，1键运行3个同时汇总整合，非常方便，所以其他的不用装了，就用这个就行了！<br>与sonar平台的功能类似！<br>如果公司没有搭建sonarqube平台的话，本地使用这个最佳</p>
+<h3 id="插件下载安装"><a href="#插件下载安装" class="headerlink" title="插件下载安装"></a>插件下载安装</h3><p>依次下载 QAPlug、QAPlug-Checkstyle、QAPlug-FindBugs、QAPlug-PMD<br><img src="http://wx2.sinaimg.cn/mw690/712a7015gy1ffue2lstwvj20b706rdfv.jpg" alt="img"></p>
+<h3 id="分类"><a href="#分类" class="headerlink" title="分类"></a>分类</h3><p>这个插件会把3个插件的错误分类汇总</p>
+<ul>
+<li>Efficiency 效能</li>
+<li>Maintainability 可维护性</li>
+<li>Reliability 可靠性</li>
+<li>Usability 可用性</li>
+</ul>
+<h2 id="SonarQube"><a href="#SonarQube" class="headerlink" title="SonarQube"></a>SonarQube</h2><p>代码质量管理系统<br>相当于QAPlug的工程独立出一个服务器部署，可以配置规则，扫描代码，集成了很多静态扫描工具<br>2015年3月的时候就看到一篇文章介绍这个平台了，那时候还没有太过关注，后来发现这个是个很好的平台</p>
+<h3 id="Sonarlint"><a href="#Sonarlint" class="headerlink" title="Sonarlint"></a>Sonarlint</h3><p>是SonarQube的配套的IDE插件，配置远程服务器的地址,选取要拉去规则的项目，然后本地就可以执行校验了，用的远程的规则<br>这样还是很方便的，规则可以同一在SonarQube维护，不用每个人本地导入，团队的话用这个最适合</p>
+<p>Sonarlint安装与拉取列表失败问题解决见 </p>
+<h3 id="扩充-Lint概念"><a href="#扩充-Lint概念" class="headerlink" title="扩充-Lint概念"></a>扩充-Lint概念</h3><p>Sonarlint是一个Lint工具，其实Lint的含义就代表代码静态分析的工具，协助开发的工具，尤其是前端经常使用，比如插件eslint：检查JavaScript错误非常方便</p>
+<h2 id="JArchitect"><a href="#JArchitect" class="headerlink" title="JArchitect"></a>JArchitect</h2><p>多种分析工具的聚合工具<br>是一个商业性的收费的分析工具<br>可以汇聚checkstyle、findbugs、pmd的xml，然后分类总结生成图表<br>不过是收费的，也没有idea插件，不用</p>
+<h1 id="代码覆盖率工具"><a href="#代码覆盖率工具" class="headerlink" title="代码覆盖率工具"></a>代码覆盖率工具</h1><p>idea自带了代码覆盖率插件还不错<br>跑单元测试的时候以代码覆盖率的方式运行就行了<br>一般逻辑覆盖率60%就差不多了，核心模块80%覆盖标准即可</p>
+<h2 id="运行方法"><a href="#运行方法" class="headerlink" title="运行方法"></a>运行方法</h2><p><img src="http://wx2.sinaimg.cn/mw690/712a7015gy1ffue9vkviqj208r0jumxx.jpg" alt="img"></p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>首先要从意识上要遵守规范，风格统一，需要制定一份Java开发规范，我比较倾向于直接使用阿里的Java规范吧，简单实用，也不过分严格<br>其次要选择静态代码工具，没有SonarQube的话用QAPlug是很好的选择，有的话装个Sonarlint插件就可以了<br>代码覆盖率通过idea自带的即可</p>
+<p>有些人可能很排斥规范，总感觉条条框框太多，不符合自己的自由风格，但是软件不是开发完上线就结束的过程，而是需要持续迭代维护升级的过程，新人会接手，要有可读性可维护性。项目大了，人多了也是需要规范化才能更好的融合协作，让混乱变得有序<br>一个人的优秀靠的是经验，一个团队的优秀靠的是规范。<br>有了这些规范与工具，就可以大大的提高团队的整体素质与水平，尤其是大厂开发人员，这个是必须有的。</p>
+<p>Best Wishes!</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+	<div>
+	 
+	</div>
+	
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+	
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2017/05/21/博客评论插件/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dawell">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Dawell的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/05/21/博客评论插件/" itemprop="url">博客评论插件</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-05-21T21:00:00+08:00">
+                2017-05-21
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/个人/" itemprop="url" rel="index">
+                    <span itemprop="name">个人</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+             <span id="/2017/05/21/博客评论插件/" class="leancloud_visitors" data-flag-title="博客评论插件">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="评论插件"><a href="#评论插件" class="headerlink" title="评论插件"></a>评论插件</h1><p>目前知道的评论插件系统</p>
+<ul>
+<li>多说</li>
+<li>友言</li>
+<li>网易云跟帖</li>
+<li>disqus</li>
+<li>畅言</li>
+</ul>
+<h2 id="多说"><a href="#多说" class="headerlink" title="多说"></a>多说</h2><p>以前一直用多说，不过2017年6月1日开始将不再维护，所以只能弃用之</p>
+<h2 id="友言"><a href="#友言" class="headerlink" title="友言"></a>友言</h2><p>尝试了下，一开始网上说不支持https，所以哥有申请了个域名换成了http，结果发现还是不行，最后才发现官网的示例程序都不能跑了，都是一个错误：502，所以弃用！</p>
+<h2 id="网易云跟帖"><a href="#网易云跟帖" class="headerlink" title="网易云跟帖"></a>网易云跟帖</h2><p>目前就是用的这个，功能还算可以满足，不过不支持子域名，所以过去挂在github.io上的子域名注册的时候会提示“站点url存在”，所以需要单独申请个域名挂上</p>
+<p>新版的next主体已经支持网易云跟帖，主要更新新版后只要加一个配置即可使用。</p>
+<h2 id="disqus"><a href="#disqus" class="headerlink" title="disqus"></a>disqus</h2><p>我看网上很多人在弃用多说后都是选择的这个，不过不用翻墙vpn，我官网都无法访问，无比尴尬，所以国内无法使用，弃用！</p>
+<h2 id="畅言"><a href="#畅言" class="headerlink" title="畅言"></a>畅言</h2><p>搜狐的，不过未备案的网站只能用15天，弃用！</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>目前能选择的只有 网易云跟帖了 ，后续完善教程，如何配置网易云跟帖。</p>
+<h1 id="参考网站"><a href="#参考网站" class="headerlink" title="参考网站"></a>参考网站</h1><ul>
+<li><a href="https://www.zhihu.com/question/57426274" target="_blank" rel="noopener">https://www.zhihu.com/question/57426274</a></li>
+<li><a href="https://blog.shuiba.co/comment-systems-recommendation#toc_2" target="_blank" rel="noopener">https://blog.shuiba.co/comment-systems-recommendation#toc_2</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+	<div>
+	 
+	</div>
+	
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+	
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2017/01/04/日志采集/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dawell">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Dawell的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/01/04/日志采集/" itemprop="url">日志采集</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-01-04T00:00:00+08:00">
+                2017-01-04
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/技术/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+             <span id="/2017/01/04/日志采集/" class="leancloud_visitors" data-flag-title="日志采集">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="日志采集"><a href="#日志采集" class="headerlink" title="日志采集"></a>日志采集</h2><p>日志是线上服务的刚需，用于排查问题分析数据，特点是写入量大、允许一定丢失、断网也要可以写入（比如写入一些网络异常日志）<br>所以日志一般是写到本地磁盘中，写入时为了减少IO，一般都是先缓存一个内存桶中，比如每积累100k写入一次磁盘<br>如果是在单机上，一般的日志框架已经足够使用，用于常用的linux命令查找日志问题足以<br>但是分布式服务环境下，因为机器较多，不可能登录到每台机器上去查找问题，尤其是那种同一个用户操作，要根据uid查找行为链路的时候<br>可能有人会想配置同一个用户操作路由规则总是落到一台机器上是不是可以解决<br>但是这带来了3个问题：单机故障后这个用户所有操作都挂了、横向扩展后用户的日志就可能又路由到另一台机器了、不是所有的方法都有uid参数，路由维度可能有多个：设备id、ip、uid等<br>所以这只会把问题搞复杂。<br>更简单的方式是还是保持原有负载均衡路由与本地日志的策略，通过一个日志采集程序到统一日志管理平台<br>然后通过统一的日志查询平台查询所有机器日志，这样还附带了很多好处，比如日志归档，本地日志可以保留更短时间<br>隔离程序员登录大命令的时间，直接可视化操作，筛选统计更方便，同时还能有权限控制，图表等功能扩展<br>所以这就是日志采集一整套东西，现在互联网流行的一套叫做ELK</p>
+<h3 id="ELK"><a href="#ELK" class="headerlink" title="ELK"></a>ELK</h3><p>ELK(Kibana)</p>
+<p>Kibana不好的地方在于日志查询不能像grep那样查看上下多行信息，也就是上下文信息，不过最新的版本好像有这个功能了</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+	<div>
+	 
+	</div>
+	
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+	
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2017/01/03/Java内存分析工具/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dawell">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Dawell的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/01/03/Java内存分析工具/" itemprop="url">Java内存分析工具</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-01-03T00:00:00+08:00">
+                2017-01-03
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/技术/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+             <span id="/2017/01/03/Java内存分析工具/" class="leancloud_visitors" data-flag-title="Java内存分析工具">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="Java内存分析"><a href="#Java内存分析" class="headerlink" title="Java内存分析"></a>Java内存分析</h2><p>每次遇到内存消耗过快或者GC回收频繁的时候往往需要heapdump下，分析下内存堆数据，一般需要一些工具作为辅助<br>这里罗列下我常用的分析工具吧</p>
+<h3 id="MAT"><a href="#MAT" class="headerlink" title="MAT"></a>MAT</h3><p>MAT(Memory Analyzer Tool) 是基于heap dumps来进行分析的，它的分析速度比jhat快，分析结果是图形界面显示，比java内置jhat的可读性更高</p>
+<h4 id="安装方式"><a href="#安装方式" class="headerlink" title="安装方式"></a>安装方式</h4><p>打开Eclipse - &gt;help - &gt; Eclipse Marketplace 进行安装<br>安装完成后提示重启Eclipse，重启后打开window - &gt; open perspective，看到Memory Analysis证明安装成功。<br>然后通过MAT打开dump文件即可</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+	<div>
+	 
+	</div>
+	
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+	
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2017/01/02/人的未来，我的人生观/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dawell">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Dawell的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/01/02/人的未来，我的人生观/" itemprop="url">人的未来，我的人生观</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-01-02T00:00:00+08:00">
+                2017-01-02
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/个人/" itemprop="url" rel="index">
+                    <span itemprop="name">个人</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+             <span id="/2017/01/02/人的未来，我的人生观/" class="leancloud_visitors" data-flag-title="人的未来，我的人生观">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="人的未来，我的价值观"><a href="#人的未来，我的价值观" class="headerlink" title="人的未来，我的价值观"></a>人的未来，我的价值观</h2><p>偶尔看到了一些机器人发展的新闻，这块日本玩的最6，说造出了美女机器人，使用最好的皮肤，可以模拟人说话，微笑等等</p>
+<p>其实我对日本一直想造出真实模拟人类的机器一直保持不看好的态度<br>因为人与机器其实差异还挺大的，人是生物，机器是非生物，他们的工作原理不同，人注定要进行吃喝拉撒睡的过程，而机器不需要<br>如果想让机器完全变为人，那就要有人类的一切功能，包括生理的<br>就算用上了机器学习给机器一个与人类工作原理一样的大脑，那也没必要给机器配置上吃喝拉撒睡的功能，因为对于机器来说是多余的，他们可以去掉这些功能也可以正常运作，这些功能对他们没有任何意义，有的只是看上去更像人类罢了<br>机器应该有机器特别的地方，他应该做人类做不到的事情，而不是做人可以做的事情，这才是一个好的方向<br>所以机器发展最终肯定不是模拟人操作的方式，不要认为人就是上帝创造最好的设计，我们用机器堆出一个自己完全没什么软用</p>
+<p>我倒是觉得超人总动员中微型机器人黑科技肯定是最终形态，这种完全突破人肉身的限制随意组合的小东西可以做任何事情<br>所以材料与设计问题是要解决的问题</p>
+<p>未来的人类肯定与机器各有所长，机器有了人工智能AI也会很聪明，人类受大脑与身体的限制肯定达不到AI的进化程度，到最后人类肯定要依靠机器来进化<br>我觉得人类可能先做出机器人工智能的外设，然后外设效率不如直接大脑联通，所以给大脑植入芯片，最后人类身体逐渐老化，为了意识存留，肯定会将意识上传机器中，人工智能AI去尝试改造基因组，通过制造更聪明的生物来进行辅助进化，最后生物与非生物的结合体组合为主宰IA的载体，意识可以下载到人造载体中，形成真正的“互联网”<br>最终机器与人造生物就是人类的载体，意识与思想才能代表人类，最终的人类也许就没有了吃喝拉撒睡，七情六欲的问题，只会发展科技，但是为了保留人类的情感，肯定会有一个模拟系统来体验过去的人类功能<br>一切就和黑客帝国那样，一些都是为了让你体验而已</p>
+<p>也许这个世界就是假的，人类早就发展到了终点，看到了宇宙的谎言，目前的世界只是一个体验系统，等你死后你的意识流就会回归主宰AI，想知道这个世界的一切都在那里。<br>所以我的三观上就认为反正都是假的，人的一生就是要开心嘛，有身体的时候就要让身体愉悦，吃喝拉撒睡，挣钱来更好的体验这原始的人类生活<br>而且最好要丰富的人生经历，好好体验一把，不要干一辈子一样的事情，因为那就浪费了作为原始人类的机会</p>
+<p>一切都是为了可以享受生活，不害怕死亡，只是不想遗憾的死去~</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+	<div>
+	 
+	</div>
+	
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+	
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2017/01/01/利率研究/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dawell">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Dawell的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/01/01/利率研究/" itemprop="url">利率研究</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-01-01T00:00:00+08:00">
+                2017-01-01
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/金融/" itemprop="url" rel="index">
+                    <span itemprop="name">金融</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+             <span id="/2017/01/01/利率研究/" class="leancloud_visitors" data-flag-title="利率研究">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><img src="https://timgsa.baidu.com/timg?image&amp;quality=80&amp;size=b9999_10000&amp;sec=1505812122703&amp;di=3fff343ca16b098b573a986fc8d95ed8&amp;imgtype=jpg&amp;src=http%3A%2F%2Fimg2.imgtn.bdimg.com%2Fit%2Fu%3D2258621863%2C1130501876%26fm%3D214%26gp%3D0.jpg" alt=""></p>
+<h2 id="花呗分期的真实利率"><a href="#花呗分期的真实利率" class="headerlink" title="花呗分期的真实利率"></a>花呗分期的真实利率</h2><p>为了方便看利率，先统一时间，都换算为年化利率</p>
+<h3 id="花呗分期"><a href="#花呗分期" class="headerlink" title="花呗分期"></a>花呗分期</h3><p>花呗分期可以申请3、6、9、12个月的分期还款，费率分别为2.5%，4.5%，6.5%，8.8%，如果直接换算年化为10%，9%，8.67%,8.8%<br>注意这里是费率，并非利率，因为分期每月都会还款，但是按总费率平均每月还的钱不会变化，与实际银行的利率规则不同</p>
+<h3 id="银行利率"><a href="#银行利率" class="headerlink" title="银行利率"></a>银行利率</h3><p>银行利率是按照剩余本金计算的，每月还款后会递减。而这里相当于利息一直按贷款最开始的总额计算，利息每月不变了，这样相当于交的利息更多了，一般这种算法比普通的算法大约高出3/2的手续费<br>如果大约计算实际年化利率为15%，13.5%，13.17%，13.2%，这个才算是花呗实际收益利率数据，可以看到花呗的分期还款利率很高，还是非常不划算的。</p>
+<h3 id="借呗利率"><a href="#借呗利率" class="headerlink" title="借呗利率"></a>借呗利率</h3><p>借呗的贷款利率与银行一致，有些人的借呗利率是万四，那年化0.0004*365=14.6%，利率也是比较高的<br>借呗我个人之前利率是每日万三，也就是年化10.95%的利率，目前是万2.5，相当于年化9.125%，0.75分利息，1w块钱1年2块5利息</p>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>所以看以看出，如果买商品，分期要支付很多利息，而如果自己的借呗日利率低于万4，那使用借呗先借出来分期还款花呗要比直接花呗分期要划算<br>总体来说借呗借的钱可以随便使用，而且利率相对其他网络平台算低的，实时到账，还是非常不错的产品。</p>
+<h2 id="P2P平台的利率"><a href="#P2P平台的利率" class="headerlink" title="P2P平台的利率"></a>P2P平台的利率</h2><p>现在有很多P2P网贷平台，也许今年国家要像去年P2P理财平台一样开始整治，不过还没有开始<br>国家的套路一向是先撒网再收网，先让你自由发展，睁一只眼闭一只眼，大批创业公司诞生，然后出个政策，最后只留下100来家同类平台<br>既然国家还没有整治，具体要求还没有下来，那必然这些P2P网贷平台的会有一些猫腻，尤其是利息计算方式</p>
+<h3 id="“费率”并非“利率”"><a href="#“费率”并非“利率”" class="headerlink" title="“费率”并非“利率”"></a>“费率”并非“利率”</h3><p>比如现在很多平台并不直接使用“利率”提示用户该还多少利息，而是通过“费率”<br>费率也就是手续费，为啥不叫利率呢，因为利率其实应该与银行利率概念一样，按照每月本金计算，还款也应该是银行借款等额本金、等额本息的分期还款方式<br>但是有些P2P平台依然是让用户选择分期，但是每月还的利息却不是按照剩余本金计算的，要按照贷款时的“费率”算好然后每月还相同的利息，这就相当于每月还款的利息要按照最初借款的总金额计算，每月都还第一个月最大金额的利息</p>
+<p>比如一些平台费率都标注到1%，也就是说一年看上去应该就是12%的利率了，但实际上换算为银行的还款利率（大致3/2）就已经20%多了<br>举个实际例子，1w元1年，年化12%，银行利息一年实际只有661.85元，而用这个平台看上去年化12%实际利息要1200元，实际利率达到21.5%了</p>
+<h3 id="总结-1"><a href="#总结-1" class="headerlink" title="总结"></a>总结</h3><p>目前来说我知道的蚂蚁借呗、小米贷款、微信的微粒贷应该都是按照银行贷款利率计算的，还算良心<br>但是很多P2P贷款的利率就不好说了，所以借钱的话，费率一定看清楚是如何计算的，可以用房贷计算器之类的算算实际利率是多少</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+	<div>
+	 
+	</div>
+	
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+	
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2016/12/31/专题整理/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dawell">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Dawell的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2016/12/31/专题整理/" itemprop="url">文章整理</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2016-12-31T11:10:40+08:00">
+                2016-12-31
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+             <span id="/2016/12/31/专题整理/" class="leancloud_visitors" data-flag-title="文章整理">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>系列分类，每个月除了个别感悟总结外，还有一个相对固定的主题，推出一系列持续的文章<br>只有一些月份有对应主题，也是相对有时间才会推出主题系列文章（一般Q1Q4是比较忙的时间段，很少有主题）<br>本文章持续更新</p>
+<p>做后端不止要学习后端技术，还要掌握前端、测试、架构、管理、中间件、运维的相关技术，对自己的上下游了解一个是让自己融会贯通，一个是可以更好的协作<br>计划</p>
+<ol>
+<li>2016年OneNote上Java基础文章系列整理博客（Java程序员）</li>
+<li>2017年会推出些多领域主题（全栈开发懂架构、可以做技术管理，偏实际工作技术）</li>
+<li>2018年专注于开源与中间件（依赖的技术与开源轮子的力量）</li>
+<li>2019年推出运维、编译原理、虚拟机、TCPIP、算法主题（原理与基础深化）</li>
+<li>推出基础平台架构系列：用户中心、通知中心、支付中心</li>
+</ol>
+<h3 id="2016年"><a href="#2016年" class="headerlink" title="2016年"></a>2016年</h3><p>11月：Java<br>12月：面向对象-设计模式</p>
+<h3 id="2017年"><a href="#2017年" class="headerlink" title="2017年"></a>2017年</h3><p>4月：未公开（技术-前端）<br>5月：技术-测试<br>6月：未公开（技术-Spring）<br>7月：未公开（技术-SpringMVC）<br>8月：未公开（技术-架构设计）<br>9月：管理-管理经验</p>
+<h3 id="2018年"><a href="#2018年" class="headerlink" title="2018年"></a>2018年</h3><p>4月：娱乐-游戏经验<br>5月：技术-中间件<br>6月：技术-开源项目<br>7月：技术-SpringBoot<br>8月：技术-SpringCloud微服务<br>9月：技术-Dubbo微服务</p>
+<h3 id="2019年"><a href="#2019年" class="headerlink" title="2019年"></a>2019年</h3><p>4月：预定-Docker与K8S</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+	<div>
+	 
+	</div>
+	
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+	
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2016/12/11/我的博客/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -488,7 +1641,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">51</span>
+                <span class="site-state-item-count">58</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -499,7 +1652,7 @@
             
             <div class="site-state-item site-state-categories">
               <a href="/categories/index.html">
-                <span class="site-state-item-count">4</span>
+                <span class="site-state-item-count">8</span>
                 <span class="site-state-item-name">分类</span>
               </a>
             </div>
@@ -510,7 +1663,7 @@
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">25</span>
+                <span class="site-state-item-count">34</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>

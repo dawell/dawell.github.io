@@ -277,6 +277,1267 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2019/08/31/netty与nio揭秘/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dawell">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Dawell的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/08/31/netty与nio揭秘/" itemprop="url">netty与nio揭秘</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-08-31T23:36:01+08:00">
+                2019-08-31
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/技术/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+             <span id="/2019/08/31/netty与nio揭秘/" class="leancloud_visitors" data-flag-title="netty与nio揭秘">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="netty与nio"><a href="#netty与nio" class="headerlink" title="netty与nio"></a>netty与nio</h1><p>感觉很多文章都讲不到重点，很多都是API层面怎么用，很多同学搞IO这块看的也是一头雾水</p>
+<p>今天来了兴致写一篇吧，一气呵成，前篇没有去查任何资料，全靠记忆与理解回顾，后篇是很早之前学习过程的笔记贴上，如有问题欢迎指正~</p>
+<p>Netty用于高并发服务开发，基于NIO，要想明白Netty，要先知道NIO的情况，然后多了解下操作系统就OK了，不想说netty你的性能优化真的是各种数组替换hash结构的骚操作太多~</p>
+<p>PS：这篇涉及IO模型、堆外内存、Netty分析、操作系统IO原理、内存分配、并发实践等内容，后续有空配图</p>
+<h2 id="NIO"><a href="#NIO" class="headerlink" title="NIO"></a>NIO</h2><p>在Java1.4的时候就提供了nio的支持，non-blocking I/O，好多也叫new I/O，主要是非阻塞的实现，本质还是同步的通信模型</p>
+<p>这里就会有人问了，非阻塞不应该是异步么？这就是没分清楚的表现，这种问题还经常出现在面试题中（其实是我经常问。。。）</p>
+<h3 id="首先概念要先搞清楚"><a href="#首先概念要先搞清楚" class="headerlink" title="首先概念要先搞清楚"></a>首先概念要先搞清楚</h3><ol>
+<li>阻塞与非阻塞指的是调用方的情况，同步与异步指的是通信的模型</li>
+<li>本质上你调用的IO通信接口都是操作系统提供的，操作系统的接口你调用之后就阻塞住了还是立即返回这叫阻塞非阻塞</li>
+<li>而你调用系统之后，系统又与TCP与网卡交互，有数据之后操作系统会把数据传输到应用程序中的过程是通信过程，如果操作系统只提供了查询有没有数据的接口，你只能去拉数据确认有没有那这就是同步，如果系统提供回调通知的方式，来了数据会主动回调你，避免了你不停的去轮询这个就是异步通信，是个推的过程</li>
+<li>其实IO上的阻塞总是有的，只是说应用处理上是不是阻塞的，如果可以把数据处理与接收请求2个事情分开这个事情就解了</li>
+</ol>
+<h3 id="先看看Java吧"><a href="#先看看Java吧" class="headerlink" title="先看看Java吧"></a>先看看Java吧</h3><ol>
+<li>1.4之前都是用BIO模式，还记得那些讨厌的装饰器模式的InputStream与OutputStream之间的嵌套使用么，那个就是，在Socket编程中基本都是服务端Socket调用accept方法来返回Socket对象才能操作客户端的请求，如果没有请求，那就要阻塞。这有2个问题，1是主线程只能卡主不能干别的，2是主线程accept到socket进来了还要去执行任务，这样下个socket请求就只能卡在TCP缓冲区里了要等这个处理完才能处理，服务端瞬间变为同步模式排队处理请求，所以BIO时代处理都是用线程池玩儿，这样虽然服务端监听accept还在卡主，但是多少是可以并发处理</li>
+<li>1.4之后的nio，提供了一个selector方法，open一下，然后监听accept事件，虽然没有事件也是阻塞的，但是一旦有了事件会返回一个<code>List&lt;SelectKey&gt;</code>，这是一组Socket请求，然后你就可以while循环一个个去处理，当然你不是直接去处理，这就跟刚才没区别了，而是NIO中accept与用户读写事件完全分离了，accept之后如果想去读写数据可以再单独去订阅读写事件，那刚才接收到accept的主线程就直接用另一个selector去订阅read事件，这样刚才那个selector就可以独立去处理请求了。重要的是读写的时候也是一批<code>List&lt;SelectKey&gt;</code>去拉取处理，这样相当于术业有专攻，有专门批量处理请求的，也有专门批量处理读写的，谁也可以不等着谁的流程。底层其实还是同步去确认系统数据的，只是API上通过监听分开，达到了非阻塞的目的，同时采用的是多路复用的IO模型，这个后续会讲</li>
+<li>1.7之后提供了aio，这个就是刚才说的非阻塞异步模型了，不过使用的人真不多，netty曾经用过不过效率还没nio好，所以也弃用了，以我的感知认为其实在推拉模型中跨单元调用拉可能是大部分设计比较好的方式（不过也有特例，比如现在的Reactive模式，Disrupter模型）</li>
+</ol>
+<h3 id="说下NIO底层"><a href="#说下NIO底层" class="headerlink" title="说下NIO底层"></a>说下NIO底层</h3><ol>
+<li>其实nio底层采用的操作系统的epoll方法，这个epoll相当于在每个socket的队列中都插入epoll指针，自己也维护一个用户测注册epoll的回调，当网卡收到数据会中断操作系统来接收数据（中断是操作系统的机制，就是IO总是有限的，CPU忙到中间IO有读写CPU就要中断程序优先响应IO处理），操作系统会读取数据写入socket文件中（linux中设备、网络都相当于是文件，fd），这时候epoll就发现来数据了，它给每个socket都增加了队列监听，来了数据就去从系统的socket数据登记列表中查哪些socket有数据（操作系统维护了一个数据通知的表避免epoll把所有socket遍历一遍，低效），然后去拉取数据然后再通知到自己的队列中监听者回调数据通知，返回一批的selectKey事件告知来数据可以来取了</li>
+<li>其实在epoll之前，还有select，与poll，select方法比较笨，监听与读写是一体的，而且要遍历socket才知道有哪些socket有数据，poll稍微优化了下，2002年诞生的epoll目前基本都在用，比如redis、netty、kafka，底层都是epoll。这里需要注意的是Java的API总是在说selector，但是底层是epoll不是select，此select非彼select，不要混淆。</li>
+<li>epoll也有2种触发模式，水平触发与边缘出发，边缘就是快到了就通知准备，JDK提供的NIO是采用水平出发方式，在netty中就提供了底层的边缘出发，效果更好，在netty中就是EventLoop是Epoll开头的那些类</li>
+</ol>
+<h3 id="理解IO模型"><a href="#理解IO模型" class="headerlink" title="理解IO模型"></a>理解IO模型</h3><p>再来看看操作系统的IO模型吧</p>
+<ol>
+<li>nio刚才讲了其实是非阻塞同步，那与操作系统打交道，操作系统到底提供了几种，答案是5种，4种同步，1种异步</li>
+<li>同步阻塞、同步非阻塞、多路复用、？、信号异步</li>
+<li>其中多路复用是同步非阻塞的升级，同时监听多个Socket，也就是刚才说的epoll的模式，而信号异步就是aio，同步阻塞就是那个bio了，其他2种都是鸡肋</li>
+</ol>
+<p>说白了，其实JDK中关于IO它自己还真没怎么去搞什么优化，大部分还就是包装操作系统的方法而已，要想学好IO，包括文件IO、网络IO，那还是学好操作系统才能完全搞明白</p>
+<h3 id="Channel与ByteBuf"><a href="#Channel与ByteBuf" class="headerlink" title="Channel与ByteBuf"></a>Channel与ByteBuf</h3><p>接下来还要给大家介绍2个概念</p>
+<p>1个是channel、1是个bytebuf对象，有时候是不是困惑这个堆外内存的情况？因为它不属于JVM堆管理的范畴，是直接操作系统中的内存，那为啥高性能的框架组件总喜欢直接操作操作系统的内存呢？这就涉及到进程与系统之间IO交互的问题了，一步步说明吧</p>
+<ol>
+<li>操作系统与进程的内存是分开的2部分，一部分是内核态，一部分是用户态，所谓用户态就是每次分配一个进程的时候给你开辟一块进程的内存空间让你自己去玩，比如Java进程就开辟一块JVM用去分了栈私有空间与堆私有空间，这个就是Java的内存模型JMM，这都是一个进程自个儿定义的，怎么玩都没关系，而IO就不一样了，如果进程想去碰一个文件，或者一个网络上的传输的数据，那就要通过磁盘，然后到内存，内存还是先在内核内存，然后要copy到用户进程内存中才能使用，这个过程好处就是因为每个进程内存模型自己玩的，一旦数据跑到用户态内存中，比如Java中就变为堆上的对象了，可以用GC回收处理了，不用管太多，用户操作也简单，但是效率低，至少要copy一次，所以就诞生了直接去内核态里去读取内存与分配内存的骚操作，比如文件写入的缓存直接写到内存分配的内存中，或者读取直接读取内核内存中的数据，这样就减少了copy的过程，这就是大家一直在讲的零拷贝优化了。但是有个缺点，就是内核中的内存使用就要按操作系统的内存玩法去玩（一会提到指针问题），而且稍有不慎可能就堆外内存溢出了，所以一般提供的API都有一些限制，在Java中，这个东西就放在ByteBuffer对象中，可以通过ByteBuffer#allocateDirect分配，JVM还会限制堆外内存分配总大小，Unsafe#allocateMemory也是直接可以分配的，不过这东西更底层，Unsafe只能用特殊方法调用（我其他博客中有讲）</li>
+<li>不过这个ByteBuffer操作是真的挺难用的，因为总要控制几个指针，一个是read，一个是write，还有一个总共的大小，还要各种重置清空的方法，read&lt;write&lt;总大小，这样来控制你写入多少读取多少，如果读过头了其实是错误的数据，JDK中也不允许这么玩，而且JDK还会保持一个引用好进行一定程度的回收，总之这个ByteBuffer就是可以用于操作系统内存了，其实也可以分配的堆中，相当于2个实现。这个回收相对而言netty做的就比较贴心，有个兜底的方式给你回收掉，后面会提</li>
+<li>读取文件还有更多骚操作，比如直接把文件映射为内存映射，就是虚拟内存，在程序中读取虚拟内存加快速度</li>
+<li>Channel的理解：操作系统层面有channel，是为了避免CPU直接与IO打交道，直接开辟的内存读取的方式形成一个Channel通道，Java中的FileChannel，还有Nio中的网络Channel都是这个东西</li>
+</ol>
+<p>所以要想真的让NIO更快，那必须用channel+对外内存ByteBuffer来处理，这个netty都是有的</p>
+<p>PS：关于文件句柄限制、内存区域与优化的东西还有一些问题，netty章节会讲</p>
+<h2 id="Netty"><a href="#Netty" class="headerlink" title="Netty"></a>Netty</h2><p>大约3年前我还一直简单的认为netty只是对JavaNIO太难用的封装+个reactor模型而已，后来看了下源码与资料，发现果真如此（说好的转折呢？），不过netty对性能细节的把握真的是独到的，而且API还是比较灵活易用的</p>
+<h3 id="核心组件"><a href="#核心组件" class="headerlink" title="核心组件"></a>核心组件</h3><ol>
+<li>NioEventLoop/xxxEventLoop：事件循环，包含一个group里的公用线程池、selector引用</li>
+<li>Channel：是对socket请求的抽象概念，netty中的channel又对javanio的channel包装了一层概念</li>
+<li>Pipeline：可以理解为责任链中的chain的作用，里面可以添加ChannelHandler</li>
+<li>ChannelHandler：就是责任链中的比如filter的实现，来处理read数据与write数据</li>
+<li>ByteBuf：对JDK的ByteBuffer的封装，带有自动回收与复用的性能神器</li>
+</ol>
+<h3 id="程序流程"><a href="#程序流程" class="headerlink" title="程序流程"></a>程序流程</h3><h4 id="总结流程"><a href="#总结流程" class="headerlink" title="总结流程"></a>总结流程</h4><p>Netty的整体流程可以分为服务端与请求处理端2部分</p>
+<p>其中在执行服务端启动的时候，bind方法时就把服务端的EventLoopGroup，对应的Channel与pipeline触发完毕，调用服务端eventloop.execute方法启动执行监听</p>
+<p>在bind中的init的时候也会去调用请求处理端Work的eventloop的execute方法启动监听</p>
+<p>服务端eventloop在监听到selector有请求的时候会请求到请求处理端Work的eventloop中经过pipeline处理</p>
+<p>监听请求：EventLoopGroup持有多个NioEventLoop，会无限循环找任务并监听端口的selector的请求</p>
+<ol>
+<li>通过路由器chooser#next方法依次轮训选择，多个EventLoop共用一个ThreadPerTaskExecutor线程池，每个EventLoop并持有一个优化后的selector对象</li>
+<li>在channel执行eventloop.execute的时候，内部会持有thread的引用，在非当前thread执行时封装task丢入到queue中，这样EventLoopGroup在执行的时候会先检查queue来执行，然后才去selector任务</li>
+</ol>
+<p>发现请求，转换工作：当检测到有请求到来时会受到SelectKey，然后调用processSelectKey方法，内部用unsafe读取，最大读取16个channel，并且逐个包装为Netty的NioSocketChannel对象，workEventLoopGroup会去注册这个channel，然后读取byte数组遍历使用pipeline的fireChannelRead传递byte数据</p>
+<p>业务处理：work的pipeline通过head、ServerBootstrapAcceptor、tail的调用完成请求处理，其中ServerBootstrapAcceptor包含了用户的ChannelHandler经过，每个ChannelHandler都持有ChannelHandlerContext来操作传播</p>
+<ol>
+<li>读请求正向，写请求逆向，异常请求正向</li>
+</ol>
+<h4 id="Boss流程"><a href="#Boss流程" class="headerlink" title="Boss流程"></a>Boss流程</h4><h5 id="bind接口"><a href="#bind接口" class="headerlink" title="bind接口"></a>bind接口</h5><p>服务端启动主要流程就在bind接口中</p>
+<ol>
+<li>initAndRegister初始化：<ol>
+<li><strong>newChannel</strong>：通过用户传入的Channel，如NioServerSocketChannel反射实例<ol>
+<li>构造方法：初始化pipeline、config、unsafe，channel对象设置非阻塞configureBlocking(false)</li>
+</ol>
+</li>
+<li><strong>init</strong>：对channel设置options、attr、pipeline最后添加一个channelInitializer<ol>
+<li>pipeline添加ServerHandler</li>
+<li>channel的<strong>eventloop.execute</strong>一个函数，pipeline最后添加<strong>ServerBootstrapAcceptor</strong>对象，传入childOptions，还要用户定义的childHandler（channelInitializer对象）</li>
+</ol>
+</li>
+<li><strong>register</strong>：调用group（childGroup，就是最初传入的NioEventLoop）的register这个channel对象<ol>
+<li>把channel中的eventloop=这个NioEventLoop</li>
+<li>NioChannel实现中就是启动Java的selector对象注册0兴趣，不关心任何事件，只是做个selector与channel的绑定，传递了this用于java selector回调channel方法用</li>
+<li>然后触发2个回调，handlerRegisted、handlerAdded2个方法（要ServerHandler实现ChannelInboundHandlerAdapter），这里由于还没actived，所以不会触发激活</li>
+</ol>
+</li>
+</ol>
+</li>
+<li><strong>doBind</strong>方法<ol>
+<li>doBind变为actived<ol>
+<li>NioServerSocketChannel实现<ol>
+<li><strong>eventloop.execute</strong>添加一个bind绑定端口的任务</li>
+</ol>
+</li>
+</ol>
+</li>
+<li>pipeline的fireChannelActive<ol>
+<li>通知激活后，还会触发read绑定selector的操作，从0变为read</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<h4 id="Work流程"><a href="#Work流程" class="headerlink" title="Work流程"></a>Work流程</h4><p>work的主要流程开始就是在服务端接收到请求时对work分配工作时操作的，关注pipeline</p>
+<h5 id="pipeline"><a href="#pipeline" class="headerlink" title="pipeline"></a>pipeline</h5><p>NioEventLoop中有processSelectKey方法</p>
+<ol>
+<li>用unsafe读取，while循环只要继续读，内部通过JavaNio获取JavaChannel个数，读取while条件中最大读取16条，如果中途读不到数据也会break跳出，读取的Channel会包装为Netty的NioSocketChannel，内部会做一些事情<ol>
+<li>设置非阻塞，创建unsafe、id、pipeline</li>
+<li>parent就是通过那个通过反射创建的channel</li>
+<li>setTcpNoDelay(true)：如果是false tcp会将小数据包转换为大数据包才发送，不过netty想尽可能快的让收到数据，所以禁止了，默认非android的默认都是禁止的</li>
+</ol>
+</li>
+<li>读取数据后，遍历readByte，然后调用pipeline的<strong>fireChannelRead</strong>方法传递byte数据</li>
+<li>pipeline调用顺序：head-&gt;<strong>ServerBootstrapAcceptor</strong>-&gt;tail，channel创建是诞生的pipeline<ol>
+<li>head与tail是创建pipeline的时候就有了，tail是outbound处理，如果异常没处理，信息没处理这个就是兜底收尾的事情，head是个inbound，写都是用unsafe操作</li>
+<li>ChannelHandlerContext中具备属性存储，读事件传播，写事件传播的3个接口实现</li>
+<li>在<strong>fireChannelRead</strong>方法中，用户编写时使用chilidHandler的ChannelInitializer的ch.pipeline去添加ChannelHandler实现，添加完后会把ChannelInitializer自己删除，用户自己设置的options与attrs都会设置到channel的config对象中（也是用户侧设置的），然后workgroup去注册这个Channel，注册方法内部会调用next函数找到一个NioEventLoop去执行，最终注册调用的是底层javanio的selector的注册0感兴趣事件，然后后面就是开始调用pipeline的head节点传播了，head会去注册读事件（这个逻辑与服务端启动的逻辑相似，dobind方法中在监听端口后也会触发一次读请求）<ol>
+<li>会先判断是否重复添加，添加是基于双向链表尾部操作，删除要先找到节点然后删除，添加删除都有回调</li>
+<li>ChannelHandler分为Outbound与Inbound，还有对应的adapter实现</li>
+<li>inbound是next正向传播到tail（tail也是in），<strong>如果buffer会自动释放，考虑周全</strong>，而outbound是逆向传播到head（head是out），而异常传播是inboundoutbound都是正向传播</li>
+<li>context.channel.write是从头传播（更常用），而直接context.write是从当前节点传播</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<h4 id="公共部分"><a href="#公共部分" class="headerlink" title="公共部分"></a>公共部分</h4><h5 id="Channel"><a href="#Channel" class="headerlink" title="Channel"></a>Channel</h5><ol>
+<li>AbstractChannel：持有unsafe、Pipeline、channel<ol>
+<li>AbstractNioChannel：持有selectKey、selector<ol>
+<li>AbstractNioByteChannel持有NioByteUnsafe，客户端的，监听read<ol>
+<li>NioSocketChannel持有NioSocketChannelConfig</li>
+</ol>
+</li>
+<li>AbstractNioMessageChannel持有NioMessageUnsafe，服务端的，监听accept<ol>
+<li>NioServerSocketChannel持有NioServerSocketChannelConfig</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<p>客户端 服务端 都继承 说明都是基于selector</p>
+<ol>
+<li>不过监听事件不一样，服务端监听accept、客户端监听read</li>
+<li>还一个对应Unsafe不一样，主要是读写抽象不一样，客户端读数据byte，服务端读连接</li>
+</ol>
+<h5 id="EventLoopGroup"><a href="#EventLoopGroup" class="headerlink" title="EventLoopGroup"></a>EventLoopGroup</h5><p>EventLoopGroup，默认不设置线程个数是0，会用2倍CPU线程数</p>
+<ol>
+<li>new 一个线程执行器ThreadPerTaskExecutor，实现Executor接口实现的线程池，factory里线程池开头小写命名线程名，创建的Thread是FastThreadLocalThread，这个Thread继承Thread，<strong>重写ThreadLocal为数组的实现，性能优化点之一</strong></li>
+<li>按线程个数初始化线程child<ol>
+<li>在NioEventLoopGroup中的newChild会new NioEventLoop，触发构造函数逻辑<ol>
+<li>provider，openSelector产生selector引用持有，一个selector对应一个NioEventLoop<ol>
+<li>通过Class.forName传入System类加载器+sun.nio.ch.</li>
+<li>SelectorImpl获取Class对象，然后针对selector对象中的<code>Set&lt;SelectKey&gt;</code>默认的HashSet<strong>替换为netty自己的实现</strong>，用数组替代时间复杂度从On降到O1</li>
+</ol>
+</li>
+<li>TaskQueue：newTaskQueue：mpscQueue，如果不是当前线程的任务会塞在队列里，代表外部线程用的任务队列</li>
+</ol>
+</li>
+</ol>
+</li>
+<li>chooser选择器构建，传入全部NioEventLoop对象<ol>
+<li>chooser会调用NioEventLoopGroup#next：NioEventLoop[]  ，每一个新连接是从0到N依次去绑定任务，最终从多个里面返回一个NioEventLoop</li>
+<li>特定优化：如果是<strong>2的幂次方性能优化的策略</strong>：每次next时自增id+1，然后要选择EventExecutor[]数组（NioEventLoop的父类）中的一个要取模，2的倍数直接用&amp;（长度-1）操作，可以二进制过滤出余数，如果是非2个倍数，直接%长度取模，&amp;比%高效</li>
+</ol>
+</li>
+<li>execute方法<ol>
+<li>EventLoopGroup中的executer线程池会调用execute，内部run方法，如果是第一次这个channel会保存这个thread的引用，如果是第二次则会判断执行是否是当前线程，如果不是当前线程就封装为一个task放到queue串行执行<ol>
+<li>方法执行一个SingleThreadEventExecutor.run<ol>
+<li>这个run里会无限循环，然后去调用selector对象找SelectKeys数据IO数据，每次会统计select的时间</li>
+<li>先检查任务按照截止时间排队是否到期，没有检查是否有队列任务，没有就执行真正的selector操作<strong>processSelectKey</strong><ol>
+<li>阻塞1s获取，如果selectKeys不为空、被唤醒、有任务了，就终止select操作</li>
+<li><strong>java的niobug就是不阻塞</strong> 然后就不停的轮训导致cpu100%。这里判断是否执行时间大于阻塞时间，如果小于阻塞时间说明 select 没有阻塞直接就返回了，超过512次就重新建立一个selector把所有事件转移到新的selector 这样可能就好了</li>
+</ol>
+</li>
+<li>处理异步队列中的任务<ol>
+<li>除了普通任务，还有定时任务，scheduled，有个PriorityQueue优先级队列，按照截止时间来排序</li>
+<li>因为queue不是线程安全的，如果是在事件循环中就直接queue.add，如果不是就execute一个run把queue.add添加进去来保证queue的线程安全（netty如何保证异步串行无锁化？）</li>
+<li>触发会把到期的定时任务放到taskQueue里面</li>
+<li>无限循环，任务执行，<strong>nanoTime也是耗时操作</strong>，所以每执行64次，才去计算时间如果没有结束</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<h5 id="内存分配"><a href="#内存分配" class="headerlink" title="内存分配"></a>内存分配</h5><p>read只能读取写入的数据，capacity是空间最大值</p>
+<p>Unsafe可以直接拿到对象内存地址，可以直接内存读写，非Unsafe是直接拿一个数组的一个索引值，Unsafe 这个是根据jdk来自动判断的，看是否能强行获取JDK内部的Unsafe来来操作，使用者不用关心。Unsafe的读写数据更快</p>
+<p>Heap不需要手工释放在堆，Direct需要手工释放</p>
+<p>另外2个维度是用实现来区分 Pool与Unpool，区别就是PooledByteBufAllcator，内部有PoolThreadCache，可以在Area上分配</p>
+<ol>
+<li>提供了内存分配管理器ByteBufAllcator，有堆、直接内存分配的方法，主要区分 堆内与对外的接口</li>
+<li>tiny、small、normal3个不同大小的bytebuf 缓存多少个，每个thread到时候分配是直接拿走用，不用用的时候才去分配，这样更快</li>
+<li>每个对象中持有一个handler用于回收，如果缓存没分配成功会直接分配</li>
+</ol>
+<p>内存规格：比较复杂，最终得到效果：分配内存规格然后缓存，防止分配耗费性能</p>
+<ol>
+<li>tiny（0-512b）、small（512b-8k：512、1k、2k、4k）、normal（8k-16M：8k、16k、32k）、huge（超过16M） 就是这4个区间</li>
+<li>操作系统规定16M要去申请一个Chunk，所有的内存申请向系统的单位是Chunk，分配1M也要先申请一个Chunk，然后再在Chunk里取一个</li>
+<li>8K是一个Page ，16M有点大，拆分就用Page来取，2^11次方2048个Page，所以一个Chunk包含2048个page，一个page是8k，16k就是2个page</li>
+<li>subpage就是0-8k之间 还很大，netty定义的small、tiny、normal，而huge是直接走的非缓存的分配，每种类型的每个一个小规格都有一个queue存储</li>
+<li>Chunk链表，netty会分析使用情况 组成chunklist用于分配，分析使用率，还是用到了ThreadLocal隔离</li>
+</ol>
+<h5 id="解码"><a href="#解码" class="headerlink" title="解码"></a>解码</h5><p>netty是基于TCP层之上的组件，这个与socket一样，客户端监听服务端IP+端口，而服务端需要绑定端口</p>
+<p>所以接收到的数据是一个byte[]通过协议转换为报文内容，然后再处理，最终再转换为报文，转换为byte[]的过程，这个过程其实就像生产处理流水线一样，所以是放在Pipeline中的一个个ChannelHandler来处理的</p>
+<p>ChannelHandler默认提供了一堆编解码的基础能力实现，比如</p>
+<ol>
+<li>基于byte长度分割字符</li>
+<li>基于\r\n或者\n的行分割字符</li>
+<li>基于分隔符号，比如逗号、分号这种分隔符处理器</li>
+<li>还有基于数据域的方式，先解析接下来数据长度，然后读取一段，再遇到一个长度数字再解析一段，里面有不少可以调节的参数</li>
+</ol>
+<p>整体上这些处理器都具备一定容错能力，主要是比如一直读取不到（可以设置上限）分隔符就会抛弃到下一个分隔符的一段数据，实现层面是通过一个byte累加器来实现，在他们父类中</p>
+<p>虽然整个业务逻辑都是ChannelHandler，但是也要区分下职责，比如有只负责读的，有只负责写的，也有读写都行的，那就是分别是inbound与outbound2个接口，inboud对应read的相关方法，outbound对应write的一些方法</p>
+<p>write操作</p>
+<ol>
+<li>如果直接是堆外就返回，否则就把内容 写到 堆外内存中的转换，写byte操作几个指针，一部分flush了，还有没有flush的，如果积累的没flush的数据超过64k就自旋锁+CAS阻塞不可写状态。每次flush就size-1，如果小于32k就设置为可写的状态，head会保证数据都塞到堆外内存去，最终数据转为JDK原生对象写入</li>
+</ol>
+<h5 id="性能工具"><a href="#性能工具" class="headerlink" title="性能工具"></a>性能工具</h5><p>这2个工具类 也可以单独去用</p>
+<ol>
+<li>FastThreadLocal是自己维护了一个map，继承Thread，内部的ThreadLocalMap底层用数组实现提高效率，自动扩容</li>
+<li>对象池Recycler，基于fastThreadlocal，bytebuf就是用这种方式回收，ThreadLocal中获取stack，然后pop，是个handler，如果handler没有会创建，里面包含value还有stack的引用，可以同线程 回收，也可以另一个线程会回收对象</li>
+<li>另一个零copy的点：CompositeByteBuf，用addComponent取代ByteBuf#writeByte，可以把2个内存直接当连续的读取，这样减少的内存copy的代价，内部实现也是先找到组件，然后再找空间</li>
+</ol>
+<h2 id="实践"><a href="#实践" class="headerlink" title="实践"></a>实践</h2><h3 id="百万并发调优"><a href="#百万并发调优" class="headerlink" title="百万并发调优"></a>百万并发调优</h3><ol>
+<li><p>模拟百万：用8000-8100端口，一个端口顶多6w请求，1024-65535 ，扣除常用端口，实际只有6w左右连接，单机也就6w，但是多客户端 连接 太费机器了，所以用多接口方案</p>
+</li>
+<li><p>一个文件一个句柄，突破</p>
+<ol>
+<li><p><code>ulimit -n</code> 查看句柄</p>
+<p><code>/etc/security/limits.conf</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">* hard nofile 1000000</span><br><span class="line">* soft nofile 1000000</span><br></pre></td></tr></table></figure>
+<p>*代表当前用户，hard是真正限制，soft是警告限制，nofile表示能打开的最大连接数<br>任何用户最终能打开100w文件</p>
+<p>需要重启</p>
+</li>
+</ol>
+</li>
+<li><p>一个系统的限制需要突破</p>
+<ol>
+<li><p><code>cat /proc/sys/fs/file-max</code></p>
+<p><code>/etc/sysctl.conf</code> 添加一行</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fs.file-max=1000000</span><br></pre></td></tr></table></figure>
+<p><code>sysctl -p /etc/sysctl.conf</code> 生效</p>
+</li>
+</ol>
+</li>
+<li><p>cpu可能会标满</p>
+</li>
+</ol>
+<h3 id="线程数可以调优"><a href="#线程数可以调优" class="headerlink" title="线程数可以调优"></a>线程数可以调优</h3><ol>
+<li>任务线程里自己搞个线程池把耗时代码隔离</li>
+<li>在pipeline.addLast中可以添加businessGroup新建一个，整个Handler逻辑隔离</li>
+<li>线程数要不停的尝试才能达到最优</li>
+</ol>
+<h3 id="技巧"><a href="#技巧" class="headerlink" title="技巧"></a>技巧</h3><ol>
+<li>telnet 127.0.0.1 8888 连接netty服务端，然后输入内容测试服务端</li>
+</ol>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+	<div>
+	 
+	</div>
+	
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+	
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2019/05/06/龙珠/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dawell">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Dawell的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/05/06/龙珠/" itemprop="url">龙珠</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-05-06T20:31:53+08:00">
+                2019-05-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+             <span id="/2019/05/06/龙珠/" class="leancloud_visitors" data-flag-title="龙珠">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>最近看了龙珠的电影，发现跟小时候看的完全不一样了，各种新人物，各种赛亚人等级，于是查了下资料重新认识了下龙珠的世界观</p>
+<h3 id="龙珠设定"><a href="#龙珠设定" class="headerlink" title="龙珠设定"></a>龙珠设定</h3><p>龙神萨拉玛曾是和全王都是地位非常高的神，全王是宇宙万物破坏之神，而龙神萨拉玛则是宇宙万物创造之神</p>
+<p>龙神萨拉玛创造了超级龙珠，大神官当时应该是全王的天使监督</p>
+<p>萨拉玛要夺取全王的破坏宇宙能力，大战，最终萨拉玛被封印，而全王丧失心智</p>
+<p>大神官全宇宙的最高统治者全王的管家，对全王忠心耿耿，已知儿女有维斯，芭朵斯，科伦，都是天使</p>
+<p>原本一共有18个宇宙，其中的6个宇宙因惹怒全王已被全王消除，现在12个宇宙</p>
+<p>每个宇宙都有对应的破坏神，监督破坏神的天使，与创造神也就是界王神，天使是破坏神的师傅与监督</p>
+<p>天使维斯能力：创造物品、时间前进与倒退、灵魂复活</p>
+<p>第7宇宙就是地球与主角们所在宇宙，破坏神是，天使是维斯，界王神分为5个人，东西南北界王与大界王负责管理、界王下面还有一个星球管理者就是神（克比）</p>
+<p>孙悟空形态：赛亚人、猩猩、超级赛亚人1234、红色、蓝色（神）、玫瑰红（神）、白色（神）、自在空</p>
+<p>超强的赛亚人：布罗利、孙悟空、贝吉塔、孙悟饭、特兰克斯</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+	<div>
+	 
+	</div>
+	
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+	
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2019/03/01/亿级流量网站架构核心技术-读书笔记/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dawell">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Dawell的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/01/亿级流量网站架构核心技术-读书笔记/" itemprop="url">亿级流量网站架构核心技术-读书笔记</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-01T20:15:04+08:00">
+                2019-03-01
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+             <span id="/2019/03/01/亿级流量网站架构核心技术-读书笔记/" class="leancloud_visitors" data-flag-title="亿级流量网站架构核心技术-读书笔记">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><p>平常时间不多，看书断断续续，这本书基本从18年年末看起，看到现在才看完，作者花了半年写书我花了半年才看完，惭愧~<br>整本书450页，前面偏作者总结的理论知识，大章后面会带有小案例，后面讲京东的商品页偏实践，也算是理论+实践了<br>不过读前半段总感觉例子比较牵强，直到后面看到商品页时发展原来都是这个大例子中拆出来的小例子，所以前面的例子很别扭，后面很重复，也算作本书的缺点之一<br>全篇知识比较硬，作者不开玩笑不举现实例子全篇抽象与代码例子，内容相对死板一点，不过也有不少干货小点</p>
+<h1 id="说说作者"><a href="#说说作者" class="headerlink" title="说说作者"></a>说说作者</h1><p>其实我在15年工作的时候就经常看开涛的博客，原因是我搜索时百度给我的头几个帖子都是他的博客内容，看来那时候他就很知名了<br>记得最初看他的博客是关于「跟我学Shiro」的系列文章，因为那时候正好在负责公司多业务线的基础平台整合需要用到Shiro框架，看他博客带入门了<br>感觉他博客学习技术由浅入深还不错，所以后面还看过他的「跟我学Spring」「跟我学SpringMVC」系列回顾了下基础知识颇有意思<br>后面再关注时发现他在发一些nginx与lua技术的文章就不太感兴趣了，原来他15年去了京东，就开始搞这块东西了<br>总体来说，我当时只是觉得他写基础入门博客还是挺好的，直到他出书发现当了京东资深架构师才发现这家伙成长真够快的，原来他还能写一些架构的知识，不过就是写的一般=。=</p>
+<h1 id="内容"><a href="#内容" class="headerlink" title="内容"></a>内容</h1><p>全篇围绕互联网架构技术中的特点，把所有关键字基本过了一遍<br>包括了单机能力的提升与分布式领域能力提升多个维度，我把其点重新分分类，这样看起来会更加清晰<br>同时作者对高可用高并发的分离也有些混乱与错乱，我也稍微调整了下顺序更加合理</p>
+<h2 id="流程与原则"><a href="#流程与原则" class="headerlink" title="流程与原则"></a>流程与原则</h2><ol>
+<li>经验规律：墨菲定律、康威定律、最小产品、二八原则</li>
+<li>设计原则</li>
+</ol>
+<h2 id="主题达成"><a href="#主题达成" class="headerlink" title="主题达成"></a>主题达成</h2><ol>
+<li>高并发：TPS，多短时间内请求量、增加吞吐，降低延迟<ol>
+<li>吞吐：扩容、负载均衡、反向代理、池化</li>
+<li>查：缓存、并发、异构</li>
+<li>写：队列、批量</li>
+</ol>
+</li>
+<li>高可用：3个9，4个9，多长时间内成功率<ol>
+<li>隔离</li>
+<li>部分可用兜底：降级、限流</li>
+<li>循环执行：超时、重试</li>
+<li>灾备：冗余、回滚、压测、预案</li>
+<li>人肉高可用：告警</li>
+</ol>
+</li>
+</ol>
+<h2 id="高并发方法论"><a href="#高并发方法论" class="headerlink" title="高并发方法论"></a>高并发方法论</h2><ol>
+<li>扩容、负责均衡、反向代理</li>
+<li>池化技术</li>
+<li>缓存技术</li>
+<li>异步并发</li>
+<li>队列</li>
+</ol>
+<h2 id="高可用方法论"><a href="#高可用方法论" class="headerlink" title="高可用方法论"></a>高可用方法论</h2><ol>
+<li>隔离</li>
+<li>限流</li>
+<li>降级</li>
+<li>超时与重试</li>
+</ol>
+<h2 id="具体技术"><a href="#具体技术" class="headerlink" title="具体技术"></a>具体技术</h2><ol>
+<li>Servlet3</li>
+<li>Nginx</li>
+<li>OpenResty：Nginx+lua</li>
+</ol>
+<h1 id="总结与思考"><a href="#总结与思考" class="headerlink" title="总结与思考"></a>总结与思考</h1><p>其实高并发在业务实践中有更多的可玩性与灵活性，往往是提供可靠的中间件与运维组件，而业务方依赖这些组件定制策略，灵活度高，这个往往是业务线的专家做的事情<br>而高可用往往会做到环境与中间件中，往往高可用是需要上下文联动才能达到高可用，所以只有环境做的不好周边设施不完善时才有业务自己去定制开发，这个往往是平台架构师做的事情<br>高并发是多短时间内请求量，高可用是多长时间内成功率，简单总结一下就是要让系统又猛又持久</p>
+<p>整体书的内容对于自己的架构还是有能引起思考的，书中提到的东西基本也是技术老生常谈并不新鲜但是很实用，由于加了实践的经验还是值得一读，最终采用nginx做网关的设计虽然我不是太赞同作者架构观点，但就像开篇点评说的一样，虽然内容不一定是对的但是经过推演假设实践后不断优化就越接近本质，设计也就更合理，做一个有思想的架构师很重要，所以我还是比较欣赏作者的，很有思想自成体系，内容则可去其糟粕取其精华</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+	<div>
+	 
+	</div>
+	
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+	
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2019/02/09/过年味道/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dawell">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Dawell的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/09/过年味道/" itemprop="url">过年味道</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-09T14:57:13+08:00">
+                2019-02-09
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/人情/" itemprop="url" rel="index">
+                    <span itemprop="name">人情</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+             <span id="/2019/02/09/过年味道/" class="leancloud_visitors" data-flag-title="过年味道">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>今年没加班也没有晚回去，只是提早回来几天，算是比较正常的回家过年了<br>不过今年才逐步发现很多过年才去做的事情逐步都不做了，年味变得越来越淡<br>不过细细一想其实最重要的东西还在，那就是与家人亲属朋友团聚，所以形式上的东西也就无所谓了</p>
+<h1 id="年味的变迁"><a href="#年味的变迁" class="headerlink" title="年味的变迁"></a>年味的变迁</h1><p>每年过年都会少去一些过去年味，这些年味体现在从地点，周围人，娱乐方式，衣服，饮食上面</p>
+<ol>
+<li>老人：因为爷爷奶奶去世，再也没有大年三十那种大团圆在爷爷家吃饭的场景了，一家族人一起看春晚的热闹场景，小辈们一起玩游戏抢电脑打游戏，逐步变为一家三口在自己家过年，现在是一家四口了，家族改为初一聚餐</li>
+<li>衣服：也没有以前那样每年才去买一套衣服，所以也不会去与父母逛商场买衣服鞋了，现在衣服随便买</li>
+<li>鞭炮：市区取消了炮竹，禁止放烟花爆竹，去年好像还有几个小时可以放，今年则一点声响也听不到了，即使到了凌晨，倒是不用担心吵得睡不着觉了，但是总感觉过了一个假的除夕</li>
+<li>节目：以前看春晚，后来逐步放弃春晚，改为看看网上的视频，如AB站的拜年祭之类的，不过这类节目只能一个人看不能陪父母，所以后来还是去看春晚了，陪着爸妈比较重要，顺便一提今年的AB站没有好节目很失望改成直播有点不自由</li>
+<li>饮食：老妈高血脂高血压迹象，老爸高血糖糖尿病，不能吃甜、咸、油、辣、饱，所以也不能吃什么了，所以今年取消了油炸物品（炸鱼、炸藕合、炸肉），取消了酱牛肉，火锅吃了一次没啥好吃的以后也取消，以前觉得过年吃的最好现在感觉也平淡了</li>
+</ol>
+<p>保留下来也不多</p>
+<ol>
+<li>赶集买菜</li>
+<li>家里打扫卫生</li>
+<li>老妈一年只有的一次长假、与发小们聚聚聊聊、年初一的家族聚餐、年初二的老娘家、亲戚们的串门</li>
+</ol>
+<p>衣食住行上其实现在过年吃的与不过年差异也不是那么大了<br>感叹过年家里习惯逐步取消了，再也不是儿时的感受，时间的改变<br>只是一些家的味道不会变，比如妈妈做的卤子面，水饺，可乐鸡翅，爸爸炒的辣子鸡，吃到这些后才感觉回到家里的那种幸福，还有老妈的笑容，老爸慈祥的样子</p>
+<p>现在想来过年主要还是团聚与交流最为重要，其实全家人一起旅游过年也是一个不错的选择</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+	<div>
+	 
+	</div>
+	
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+	
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2019/02/03/win2go/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dawell">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Dawell的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/03/win2go/" itemprop="url">win2go</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-03T15:33:08+08:00">
+                2019-02-03
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+             <span id="/2019/02/03/win2go/" class="leancloud_visitors" data-flag-title="win2go">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="win2go安装"><a href="#win2go安装" class="headerlink" title="win2go安装"></a>win2go安装</h2><p>一个是黑屏<br>一个是安装更新坑爹，只要强行重启就好</p>
+<p>安装windows</p>
+<p>win to go 360总是提示不能安装到移动设备，无语，可以禁用一键安装</p>
+<p>安装时可以先禁用磁盘，最终再分配盘符</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+	<div>
+	 
+	</div>
+	
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+	
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2019/01/10/亲戚上海手术经历/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dawell">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Dawell的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/01/10/亲戚上海手术经历/" itemprop="url">亲戚上海手术经历</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-10T19:46:31+08:00">
+                2019-01-10
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/健康/" itemprop="url" rel="index">
+                    <span itemprop="name">健康</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+             <span id="/2019/01/10/亲戚上海手术经历/" class="leancloud_visitors" data-flag-title="亲戚上海手术经历">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>就在18年12月底，亲戚来上海做了肠道相关的微创手术，于是除了对方的父母，我也过来帮忙，其中家里也多住宿人来减少住宿开支，整体持续15天<br>手术在上海瑞金医院进行，这家可以说是非常正规的医院了，将整个过程记录下来并总结了部分经验如下</p>
+<p>全篇文章分为几个部分：</p>
+<ol>
+<li>住院相关</li>
+<li>手术相关</li>
+<li>家务相关</li>
+<li>观察总结</li>
+</ol>
+<h1 id="住院相关"><a href="#住院相关" class="headerlink" title="住院相关"></a>住院相关</h1><p>住院前准备</p>
+<ol>
+<li>手术费几万垫付，现金需准备好，保险至少备5w</li>
+<li>取部分现金拿着备用，有些药需要现金</li>
+<li>医院食堂饭卡充值+押金，只能现金，100+</li>
+<li>工作事宜交接请假处理好</li>
+<li>住院大楼的门禁卡办理</li>
+<li>是否本地医保，是否驻外医疗，是否可以要开转院证明报销用，上海的是无法开出去外地的转院的</li>
+</ol>
+<p>住院事项</p>
+<ol>
+<li>各种检查做一遍</li>
+<li>病房会给病人提供三餐（医生开的食物，如易消化面条粥之类的）一段饭30元，早上7点送饭，中午11点送饭，晚上4点半送饭</li>
+<li>家属可以去隔壁楼食堂吃饭，有粥，面，套餐等，办卡10元押金，充值最低30元，必须现金充值，一次餐饮大约10-25元之间，餐厅开放时间：6点半-晚7点半</li>
+<li>病房进出管控严格，一个病人可以有一个家属卡（卡只有1张，病人本身有额外手环标识可以随便进出），持卡人可以在早11点后一直到第二天早上7点可以陪护（早上7点-11点不允许任何人进去，包括持卡人，楼下有家属等待区），下午3点到晚8点为探视时间（不超过3个家属可以不用卡随便进出）</li>
+<li>晚上是否可以在病房里？老人可以开个陪床单子只能有1个，什么时候都可以来，非老人则不行，不过可以在7点赶人时偷偷藏到厕所里过会再出来，一般看望的只能11点后进来</li>
+<li>持卡人在病房过夜，只有手术期间提供躺椅1张用1晚，手术前不提供，不允许带躺椅，折叠椅进去，如果自己陪护买充气床，如果不想自己可以雇佣护工180白天+晚上</li>
+<li>当时在住院楼12层共51个床位，10个床位位于双人房，1个位于3人房，剩余都是4人房，4人房一天50元，2人房很贵一天800元；病房51个，1-6号，42-45是2人房，39-41是3人房，其他是4人房</li>
+<li>一般住院检查无误后很快会安排手术</li>
+</ol>
+<p>住院每日</p>
+<ol>
+<li>每日测体温：耳朵测量体温套不要扔掉，住院期间复用一个，出院再扔</li>
+<li>每日换病服</li>
+<li>可以换床单</li>
+<li>输液-保护胃的，少吃饭，所以抑制胃酸分泌</li>
+<li>输液-葡萄糖</li>
+<li>输液-氯化钾、氯化钠</li>
+</ol>
+<p>物品</p>
+<ol>
+<li>护理垫：术后垫上护理垫</li>
+<li>唇膏：出来摸嘴唇，不能禁食禁水防止嘴唇干裂</li>
+<li>纸巾&amp;卷纸&amp;湿厕纸：上厕所</li>
+<li>纸抹布：一次性抹布，擦桌子等物品用</li>
+<li>充气床垫180：在医院门口都有必用品购买</li>
+<li>饮食用具：水杯，勺子，中玻璃饭盒，保温杯、水果刀、海绵+洗洁精</li>
+<li>洗漱用品：拖鞋，牙刷，牙膏，毛巾，2个衣服撑子，3个盆子</li>
+<li>生活用品：行李箱，小被子，手机，换洗内衣，医保卡，身份证，现金与银行卡</li>
+</ol>
+<p>总结医院的衣食住行用<br>衣：睡衣，内衣备用，个人衣服1套，拖鞋<br>食：病人餐饮提供，饭盒，勺子，水杯，餐洗净，其他人办理饭卡楼下吃<br>住：床被都有，其他人需要小毯子，地铺毯子<br>行：不需要，门禁卡要有<br>用：毛巾，盆子多个，衣服撑子，行李箱<br>用-消耗：肥皂，洗发水，化妆品，卫生纸，抽纸，护理垫，一次性牙刷，牙膏</p>
+<p>出院</p>
+<ol>
+<li>磁卡，押金单，单子，去下面付钱上来开出院小结</li>
+<li>1月后复查，取细胞化验报告</li>
+<li>伤口渗黄水说明感染，需要来医院</li>
+<li>线可以吸收不用拆</li>
+<li>不能重物，但要运动下</li>
+<li>术后饮食注意事项，需观察关注的点</li>
+<li>洗澡可以用防水贴住伤口</li>
+<li>填写护士的满意度调查表</li>
+</ol>
+<h1 id="手术相关"><a href="#手术相关" class="headerlink" title="手术相关"></a>手术相关</h1><p>术前准备</p>
+<ol>
+<li>手术前住院几天责任护士，护士长名字</li>
+<li>清理身体：洗澡、划体毛、清理指甲</li>
+<li>衣服倒过来，氧气设备准备</li>
+<li>吃饭阶段1：饮食不允许吃有渣食物，方便后续手术防止清理不净</li>
+<li>吃饭阶段2：术前多少小时禁止喝水吃饭</li>
+<li>吃饭阶段3：清肠：舒泰清口服多次</li>
+<li>验血、验尿</li>
+<li>是否需要送礼</li>
+</ol>
+<p>术中</p>
+<ol>
+<li>手术7点只能1个家属在病房</li>
+<li>手术情况在家属等待区有电子屏</li>
+</ol>
+<p>术后处理</p>
+<ol>
+<li>护工：刚出院几天要请护工，一天70，预交7天，帮洗漱去厕所，差不多用了4天就可以自己下床走动了，然后退护工钱</li>
+<li>不良反应都属于正常：恶心，想吐；疼；头晕</li>
+<li>要动动身体，下半夜2次侧身防止肠粘连</li>
+<li>晚上家属看守排班，几个亲戚轮流看守：盯吊瓶、扶上厕所、帮吃饭、护士交流、特殊帮忙，如果床位空晚上可以偷偷睡在空床位上</li>
+</ol>
+<p>手术事项</p>
+<ol>
+<li>病区就是不一帮人，第一病区与第二病区就相当于是两个手术团队</li>
+<li>手术开始的很早，第一台7点半，手术时长2-4小时不等，也有更长时间的</li>
+<li>周六周日不手术</li>
+</ol>
+<h1 id="家里"><a href="#家里" class="headerlink" title="家里"></a>家里</h1><p>家务处理</p>
+<p>家人亲属衣食住行的安排</p>
+<ol>
+<li>定住宿，可以美团</li>
+</ol>
+<p>家人住宿物品准备</p>
+<ol>
+<li>备用毛巾、酒店备用拖鞋、酒店备用牙刷</li>
+<li>卷纸、抽纸、小包纸</li>
+</ol>
+<h1 id="医院观察总结"><a href="#医院观察总结" class="headerlink" title="医院观察总结"></a>医院观察总结</h1><p>医院部门</p>
+<ol>
+<li>员工餐厅与家属分开2个，不在一起饮食</li>
+<li>教学，门诊，急诊，行政，餐饮xx楼；教学，门诊占地面积较大</li>
+<li>病房楼5大座：普通最高，内科，外科，9舍（有食堂），感染呼吸科的（需要隔离）</li>
+</ol>
+<p>其他感受</p>
+<ol>
+<li>医院里陪床最讨厌的事情：打呼噜睡不着，连续两天经历打呼噜，一天出差跟同事，接着在医院陪床隔壁也打呼噜，连续2天没睡好</li>
+<li>人家说来医院哪有不花钱的，所以该花的花，这种手术有一半进口材料不给报销，剩余报销85%，然后有商保可以再报销剩余15%，所以花钱主要是自费的项目</li>
+</ol>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+	<div>
+	 
+	</div>
+	
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+	
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2019/01/06/如何高效的记录知识与任务管理/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -467,6 +1728,158 @@
 <h3 id="4-思维导图"><a href="#4-思维导图" class="headerlink" title="4. 思维导图"></a>4. 思维导图</h3><p>知识碎片在变为知识时需要梳理，梳理用思维导图最好不过，目前免费好用的也就是Xmind了<br>不过Mindjet MindManager我最喜欢，不过是收费的</p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在用电脑时记录大多都保存在记事本中，直到工作之后知识多了起来需要逐步管理与总结才开始挖掘工具的使用<br>最初用的最多的就是OneNote了，我的很多记录还都在那里面<br>从最初11年使用OneNote到现在最佳实践的搭配，基本上也摸索了6、7年了，这些记录真的可以说是伴随我工作的第二大脑了<br>对于我这种强迫症来说，使用过这么多工具其实中间经历过好多次笔记的迁移工作，现在想想真的是蛋疼，不过每次迁移笔记都是一次过滤与回顾，时间花的也算有些价值</p>
 <p>目前的这套搭配非常适合程序员，对于不要求那么灵活与非程序员来说可能有道云笔记or其他笔记软件就比较适合，这里只是展示给大家一些个人使用心得吧，希望对大家有用！</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+	<div>
+	 
+	</div>
+	
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+	
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2018/12/26/漫展2018总结/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dawell">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Dawell的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/26/漫展2018总结/" itemprop="url">漫展2018总结</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-26T13:57:03+08:00">
+                2018-12-26
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+             <span id="/2018/12/26/漫展2018总结/" class="leancloud_visitors" data-flag-title="漫展2018总结">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>参加漫展</p>
+<ol>
+<li>12月16日：CP23</li>
+</ol>
+<h1 id="CP23感悟"><a href="#CP23感悟" class="headerlink" title="CP23感悟"></a>CP23感悟</h1><p>趋势</p>
+<ol>
+<li>游戏，手办，周边杂货，虚拟偶像（好赚钱？）</li>
+<li>女性向游戏不少，看到有5个，都是男人的游戏</li>
+</ol>
+<p>参加这次CP，感觉短短半年女性向ACG突然崛起了，随便逛逛开发商手游就见到5、6款，是男性向的钱被榨干还是市场不景气大家都开始扩大用户群了[流汗]</p>
+<p>小裙子（有美女cos），cos化妆品，假发</p>
+<p>艾漫，微笑社</p>
+<p>emefans？人好多<br>杨天翔？</p>
+<p>猫耳app平台，广播剧？？</p>
+<p>现在体验好，不过想要的主题无法搜索，其实只想逛自己感兴趣的部分，其他新奇的也可以看看，做线上下结合才行，目前太累</p>
+<p>千篇一律，不如自己定制什么样的图片，有图片库就好了</p>
+<p>做一个二次元同人物品网站，物品方便搜索与定位</p>
+<p>tap与bili现在刚需，家家需要关注预约！</p>
+<p>感觉本子少了，周边特别多，重复的物品类型</p>
+<p>神乐坂真冬！写真</p>
+<p>随直播赚钱还在cp卖自己的写真</p>
+<p>现在盖章了，真麻烦</p>
+<p>漫展人多，怎么容纳呢，要验签票，卡，所以为了提高吞吐量不至于在门口阻塞导致请求拒绝，在里面增加蛇行栅栏，同事设定vip请求直接进去，这样提高了吞吐量，不过队列会占用一部分内存场地而已</p>
+<p>验签与拦截，先验证行李（安全检验），多并发入口，里面再去验签票</p>
+<p>bili会员购有专门票验票地点</p>
+<p>刺客五六七</p>
 
           
         
@@ -930,1522 +2343,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2018/11/08/DNF私服怀旧体验/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Dawell">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Dawell的博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/11/08/DNF私服怀旧体验/" itemprop="url">DNF私服怀旧体验</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-08T20:54:02+08:00">
-                2018-11-08
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/娱乐/" itemprop="url" rel="index">
-                    <span itemprop="name">娱乐</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-             <span id="/2018/11/08/DNF私服怀旧体验/" class="leancloud_visitors" data-flag-title="DNF私服怀旧体验">
-               <span class="post-meta-divider">|</span>
-               <span class="post-meta-item-icon">
-                 <i class="fa fa-eye"></i>
-               </span>
-               
-                 <span class="post-meta-item-text">阅读次数 </span>
-               
-                 <span class="leancloud-visitors-count"></span>
-             </span>
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>高中玩过的最好玩的网友：DNF，10年过去了，现在又想重温总结下</p>
-<p>但是这是个超级耗时间的游戏，腾讯的游戏还耗费金钱，所以找到了私服or单机版的玩了玩，做完了所有主线与支线任务花了1周左右，也完整了体验到了最新的剧情</p>
-<p>其实以前是很少关注剧情的，做任务都是快速跳过了，这次回顾发现DNF的剧情可以说是非常的赞，当做小说看都可以，其实官方就有编年史与小说等剧情完善，但是一直都不care</p>
-<p>所以这篇总结主要分2部分，一个是游戏体验，一个是剧情</p>
-<h3 id="体验历程"><a href="#体验历程" class="headerlink" title="体验历程"></a>体验历程</h3><h4 id="私服目的"><a href="#私服目的" class="headerlink" title="私服目的"></a>私服目的</h4><ol>
-<li>其他职业其实可以生满级然后看看大招什么的，就没必要这样一条龙看剧情了，可以快速升级尝试</li>
-<li>把DNF当做一个单机游戏来玩，并且做回有钱人，看看最终自己能否刷完所有的图，这样体验更完整，看下整体的剧情<ol>
-<li>现在就是可以挑战一些人民币才能挑战的地下城，其实这些地下城才是有核心剧情的地方</li>
-</ol>
-</li>
-<li>手感没了，按键大招一排，有的职业多了还有连击设计，无语，累，不爽</li>
-</ol>
-<h4 id="新老区别"><a href="#新老区别" class="headerlink" title="新老区别"></a>新老区别</h4><ol>
-<li>现在的等级差异：过去满级60级，现在是90级，19年2月开放95级</li>
-<li>地图差异：开放了异次元（70级副本）、三番街（GBL、酒馆、绿都）、天界的3块地图（根特、海上列车、发电厂）、虚祖（时间之门、擂台）、盗贼那边里开放了新地下城、多出了一些NPC</li>
-<li>功能差异：增加了任务地下城分类、技能树、TP点、新技能</li>
-<li>角色：新增了女角色、其他特殊角色</li>
-</ol>
-<h4 id="地下城区域"><a href="#地下城区域" class="headerlink" title="地下城区域"></a>地下城区域</h4><p>基础：新手（5级），森林（20级），海底（30级），天空（40级），地下（45级），山上（50级）<br>高级：三海（55级），沙漠（60级），根特（70级），虚祖时间（70级，阿拉德真相！），列车（80级），发电（90级）<br>额外：各种塔挑战，山麓？，擂台<br>高难（刷装备）：远古（需开挂），深渊（需开挂），异次元空间（需开挂），虚祖时间之门次元异界（需开挂）</p>
-<ol>
-<li>先是阿尔特防线新手区森林（2个地图，<strong>2个隐藏远古地下城</strong>）</li>
-<li>格兰之森（5个地图，1个隐藏暗黑僵尸）：森林，哥布林，猫妖，僵尸，隐藏暗黑</li>
-<li>水下（天空之城，6个地图，1个隐藏悬空城），龙人，玩偶人偶，钢铁士兵，隐藏悬天空城</li>
-<li>天上飞城（天帷巨兽，默认7个地图，1个隐藏天帷禁地）:教会，章鱼，炮头，树精，夜叉</li>
-<li>地下溶洞（诺伊佩拉+暗黑城，默认只有6个地图，<strong>2个隐藏古代地下城</strong>）：暗夜精灵，地下醉鬼，鬼魂，巨人，各种召唤精灵<ol>
-<li>诺伊佩拉古代地下城：诺伊佩拉</li>
-<li>暗黑城古代地下城：王的遗迹，每关都是boss（风火光）</li>
-</ol>
-</li>
-<li>雪山（8张地图，2个隐藏地图）：猩猩，石巨人，族人，狼人，石头人，各种大召唤精灵<ol>
-<li>冰心少年守护站：新玩法</li>
-<li>隐藏：布加族挑战组人赛</li>
-<li>隐藏：冰龙王最难</li>
-</ol>
-</li>
-<li>三番街（3+2+1，6张地图）：海岸三岔路，坠落之殿GBL、绿都超能力者、垃圾、酒馆小弟<ol>
-<li>坠落之殿GBL：罗杰斯的信徒，什么人体实验，孵化地搞死结束</li>
-<li>月光酒馆:也是越打房间越多，挑战</li>
-<li>还有陌路者要塞：绿都，稻草人，虫子，德鲁伊，也是挑战型，每次多房间，异能</li>
-<li>黑帮老大与小弟，哥布林，热血总是进深渊，没法刷了，而且只能第一次进去，从天界掉下来的人</li>
-</ol>
-</li>
-<li>诺斯玛尔（4个地下城，<strong>1个隐藏远古地下城</strong>）：盗贼，狗，人，石像，蚂蚁，蝴蝶，泥巴，沙漠，魔女</li>
-<li>虚祖-时间之门（8个图）</li>
-<li>天界-根特：士兵</li>
-<li>天界-海上列车:</li>
-<li>天界-发电厂：</li>
-<li>异次元裂缝（6张地图）：</li>
-<li>虚祖时间之门次元异界（真远古6张图）：</li>
-</ol>
-<h4 id="私服刷图经验"><a href="#私服刷图经验" class="headerlink" title="私服刷图经验"></a>私服刷图经验</h4><ol>
-<li>刷图太难，95级70多的图刷不动，真的是累觉不爱，放弃，太浪费时间，如果有外挂就很开心了，自动化刷图，私服里后来开启GM工具发点装备就好刷很多了</li>
-<li>有些任务需要材料很多要频繁刷图：无重力碎片，炮身，坚韧的触须，邪恶结晶，在凯里那里都有卖，根本不用刷图！</li>
-<li>地下城，每个都有隐藏地图，做任务触发</li>
-<li>很多称号任务要刷好几遍，没意思，这种称号任务可以不做</li>
-<li>有一些装备任务也要刷图好几遍，不过如果是90级之前的装备也可以不去做，淘汰了</li>
-<li>选物品费时间，直接退出即可，虚弱，不过这样刷图快</li>
-<li>作为一个人民币玩家，一天一个大片区域，后面虚弱退出的话更效率点</li>
-</ol>
-<p>刷图节奏（1行1天，一共玩了10天做完了所有任务）</p>
-<ol>
-<li>洛兰+格兰之森</li>
-<li>天空之城</li>
-<li>天帷巨兽</li>
-<li>诺伊佩拉+暗黑城</li>
-<li>雪山</li>
-<li>三番街+盗贼</li>
-<li>阿拉德难图：远古+异次元裂缝（效率开挂）</li>
-<li>虚祖2图：时间之门+真远古（效率开挂）</li>
-<li>天界3图用了2天（效率开挂）</li>
-</ol>
-<h4 id="游戏场景设计"><a href="#游戏场景设计" class="headerlink" title="游戏场景设计"></a>游戏场景设计</h4><p>主要有4个大版图</p>
-<ol>
-<li>阿拉德大陆（60级）</li>
-<li>阿拉德天空之上是海，海上是天界，也就是人类的地方（70级）</li>
-<li>阿拉德往北连接虚祖（80级）</li>
-<li>天界通过寂静城连接魔界（90级）</li>
-</ol>
-<p>海陆空都有场景，其中陆地最为丰富</p>
-<ol>
-<li>海：天空之城里</li>
-<li>空：天帷巨兽</li>
-<li>陆：细分为山上，地下，路面，路面分森林，沙漠，人类多个城市<ol>
-<li>山上：雪山</li>
-<li>地下：暗夜精灵溶洞，暗黑城</li>
-<li>森林：格兰之森、洛兰</li>
-<li>沙漠戈壁：盗贼</li>
-<li>人类：三番街（GBL、酒馆、绿都），天界3个地方，虚祖</li>
-</ol>
-</li>
-</ol>
-<p>人类城市特点</p>
-<ol>
-<li>天界根特：日本，海贼</li>
-<li>虚祖：武士都，中国元素</li>
-</ol>
-<p>规律</p>
-<ol>
-<li>一个地区会有4-8个地下城，前几个都是单兵种，最后一个混合兵种</li>
-<li>每个都有个固定的BOSS：悬空城BOSS，天帷巨兽罗杰斯，地下锁链，雪山冰雪女+雪山冰龙王，GBL有个</li>
-<li>任务刷多遍套路：第一遍见他/调查，第二遍打到他，第三遍通知他/研究他</li>
-</ol>
-<h3 id="剧情"><a href="#剧情" class="headerlink" title="剧情"></a>剧情</h3><p>我最剧情真正感兴趣的导火索是在刷时间之门的时候，先是感受到了西岚的厉害，然后得知了部分阿拉德这些地下城之所以这样的原因<br>产生了剧情上的兴趣，后来又去挖掘了下剧情发现了一个庞大的世界观与故事背景<br>后又去刷远古完善了线索与剧情<br>dnf里其他故事也参考历史故事改写，比如阿拉丁参考亚瑟王的故事，都是被背叛，都持有王者之剑<br>比较细节的是装备上都有故事有剧情的，以前都没注意到，谁的装备说谁的故事</p>
-<h4 id="远古地下城剧情"><a href="#远古地下城剧情" class="headerlink" title="远古地下城剧情"></a>远古地下城剧情</h4><p>远古地图位置</p>
-<ol>
-<li>洛兰（有2个远古）</li>
-<li>格兰之森、天空之城、天帷巨兽：无</li>
-<li>诺伊佩拉+暗黑城（有2个远古，有异次元裂缝）</li>
-<li>万年雪山、海岸三番街：无</li>
-<li>诺斯玛尔（一个远古，帝国骑士团）</li>
-<li>异次元裂缝（异次元裂缝，不一定算成远古）</li>
-<li>山麓（活动地图，限时开放，单机版恶搞了一个腾讯总部副本，4剑圣，死亡之塔里的高手）</li>
-<li>天界（有2个远古）</li>
-</ol>
-<p>阿拉德的远古（一共5个，3个与使徒有关，1个独立故事，1个与魔界泰拉有关）</p>
-<ol>
-<li>远古-悲鸣洞穴：就是鬼剑士开场动画中讨伐使徒希洛克后的洞穴，阿甘左伤心处，死去了爱人，希洛克使徒的遗留意志在这里，BOSS大虫子</li>
-<li>远古-比尔马克帝国试验场：当时帝国用泰拉石做实验的地方，机械牛，泰拉石，这里可以打造泰拉石装备</li>
-<li>远古地下城-王的遗迹（独立故事）：在暗黑城，古代阿拉丁，在千年以前用分封制统治阿拉德的国家，后分主背叛，王封印自己族人到地下保全，参考亚瑟王圆桌骑士故事</li>
-<li>远古-诺伊佩拉（主线）：BOSS为狄瑞吉使徒的幻影，记录有摩根的日记，有人用异次元传走了狄瑞吉，留下的幻影导致了暗黑城瘟疫<ol>
-<li>摩根记录还与伪装者有关，爱丽丝撒谎，爱丽丝转移话题指向使徒要一起打倒，暗夜精灵不信任爱丽丝了，这里有异次元裂缝</li>
-<li>主要是爆舔组织是希洛克的遗留导致，这回又盯上了异次元的狄瑞吉，感受到了相同的气息，瘟疫感染也会变为伪装者，爆舔组织还打算从异次元中找到使徒奥兹玛</li>
-<li>最终得知狄瑞吉转移到了诺斯玛尔，就是盗贼与变异地方</li>
-<li>爱丽丝的解释有点道理，不过她有点粉切黑：人类脆弱，只有与暗精灵强大对手战斗才能强大最终与使徒一站，如果没有外敌，人类会自相残杀死亡</li>
-</ol>
-</li>
-<li>远古:痛苦之村（主线）<ol>
-<li>狄瑞吉真身在这里，从异次元空间过来的</li>
-</ol>
-</li>
-</ol>
-<h4 id="时间之门剧情"><a href="#时间之门剧情" class="headerlink" title="时间之门剧情"></a>时间之门剧情</h4><p>先是有人森林一把火，精灵最终为了继续守护结界牺牲，只剩下赛利亚，赛丽亚失忆了<br>索西雅（酒店老板）捡回了赛丽亚，他们是仅存的2个精灵<br>格兰之森BOSS牛头人最终提议去天空之城避难<br>诺伊佩拉（暗夜精灵的感染界）找到一个神秘女人，开启异界大门吸引的当时的异界BOSS，只取得一片衣服，去天界荒野继续调查</p>
-<h4 id="世界观背景"><a href="#世界观背景" class="headerlink" title="世界观背景"></a>世界观背景</h4><p>神与使徒：神与恶，泰拉与阿拉德被毁，魔界与使徒诞生，使徒巴卡尔控制了天界，进攻了阿拉德，整体形成了灾难与大BOSS情况<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">有光明与邪恶，光明与伟大意志聚集诞生了神-卡罗索，邪恶在虚空中飘散</span><br><span class="line">有个高度发达的文明：泰拉人，泰拉科学家聚集了虚空邪恶力量，制造了12大战神，称作贝亚娜战神</span><br><span class="line">没想到12大战神内斗，同时神来讨伐导致泰拉星毁灭</span><br><span class="line">泰拉最大城市保留，不过最终在虚空中变为魔界</span><br><span class="line">12战神躯体毁灭，灵魂变化各异，最终变为了12使徒，有些使徒天生带有灾难，有一些则无害，他们最终聚集在魔界，目前还不够12个，具象化的只有几个，后面又因为恶诞生了新的使徒</span><br><span class="line">神也分裂为10个分身，守护者牺牲自己激活了神意志开始找分身，后寻找分身，在阿拉德找到迷之战士融合力量过于强大间接导致大转移灾难毁了阿拉德</span><br><span class="line">魔界没有光明因为使徒安哥拉一直在吸收能量，后另一个使徒卢克用泰拉石恢复了电力，照亮后巴卡尔发现了泰拉上石碑秘密，看到了所有使徒的死亡</span><br><span class="line">巴卡尔调查发现了第二使徒赫尔德的秘密计划：要聚集并牺牲全部使徒恢复泰拉星</span><br><span class="line">巴卡尔不想死，作为龙族老大，发起龙之战争，最终打不过第一使徒卡恩，但是泰拉也记录使徒杀死不了使徒，所以他成功逃脱</span><br><span class="line">巴卡尔通过寂静城次元裂缝逃离到天界，禁止天界使用魔法以免被赫尔德发现，天界发明科技力量，巴卡尔还封锁寂静城与天空之城，正好是阿拉德元年</span><br><span class="line">巴卡尔不但通知了天界，还派出3条龙到阿拉德</span><br></pre></td></tr></table></figure></p>
-<p>人类故事：阿拉德的人类因为背叛诞生了2个使徒，诞生职业圣职者及转职，巴卡尔与赫尔德的斗争，最终巴卡尔死了，诞生了职业神枪手及转职<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">阿拉德卡赞与奥兹玛战胜一条龙，不过帝国担心陷害2人，让其自相残杀，然后2个人都被背叛流放</span><br><span class="line">奥兹玛接受邪恶变为混沌之神，成为新使徒，散播血之诅咒，变为伪装者，卡赞失去双手但怨念形成瘟疫，散播卡赞瘟疫</span><br><span class="line">五圣者都是教堂的人，最初的职业，通过宗教感受神谕、启示，修炼成为圣职者，米希尔最强，神格拳创始者，圣职可以近身攻击，他少年姿态，可以区分伪装者与人类</span><br><span class="line">五胜者另一个格拉西亚的信徒演化为圣职分支复仇者</span><br><span class="line">圣职者因为能识别伪装者，所以最终对奥兹玛发起了战争-暗黑圣战</span><br><span class="line">奥兹玛驱逐到异次元裂缝，当时大家都认为是米歇尔战胜的，但是米歇尔也从此消失不见。真像其实是爱丽丝封的，米歇尔也是被封印进去了，米歇尔最终被人们怀疑变为了一个使徒</span><br><span class="line">巴卡尔为了毁了赫尔德而培养天界，诞生了天界7战神，盖波加终极武器，后得知其中一人就是赫尔德变化，所有发展都来源于她的魔法，巴克尔觉得中计这样下去毁不了魔界，所以杀了7战神</span><br><span class="line">他目的一是铲除赫尔德党羽，而是为了引起天界人的公愤，让天界人更想推翻自己，激励后人科技发展以打倒使徒赫尔德的计划，真是用心良苦，7战神吧发明科技盖波加放到异次元中，等待后人挖掘</span><br><span class="line">不过巴卡尔没能达成锻炼天界人的愿望就死了，赫尔德最终目的还是希望使徒可以死，她收集能量，赫尔德利用时空裂缝传送了500年后的冒险家攻陷了巴卡尔，最终死不瞑目</span><br></pre></td></tr></table></figure></p>
-<p>社会稳定与使徒威胁：合久必分，分久必合，最终形成了贝尔玛尔公国，赫顿玛尔也是阿拉德冒险者的核心地，但是使徒带来的灾难还在发生，冒险家这时候参与进来<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">佩鲁斯帝国衰弱，国家内部战争无数，大贤者玛尔诞生，魔法牛逼，把沙漠变为绿洲，逃离战争的人，贝尔玛尔公国诞生，核心城市赫顿玛尔，珍惜和平中立国</span><br><span class="line">崇尚魔法莎兰负责，不过也重视科学，所以让诺顿负责炼金术，天界人凯丽来到了阿拉德，爱丽丝是魔法预言者</span><br><span class="line">其他地区-班图族，血色战役，因为冰龙侵占了他们的雪山领地，后来巴卡尔死了，所以冰龙也冬眠，班图族又回去了</span><br><span class="line">有更多的使徒来到了阿拉德大陆，导致了暗夜精灵地区的瘟疫，导致了诺伊佩拉的荒芜，被盗贼侵占，导致了GBL教徒被洗脑</span><br><span class="line">罗杰斯被GBL干掉封印</span><br><span class="line">悲鸣洞穴里，阿甘左与其他4剑圣来这里打希洛克，最终牺牲1人杀死了使徒</span><br><span class="line">天界由于赫尔德搞起了卡加德反抗军，掳走了天界公主</span><br><span class="line">黑色噩梦又是另外一个线索，导致了各种问题等待冒险家探索</span><br><span class="line">鬼手一直存在诞生了鬼剑士，卡赞的诅咒一直在，柔道家诞生保卫和平，魔法师是与魔界人魔法师xx脱离魔界后的因为签订过第四师徒召唤的协议放心让他们徒弟出来历练掌握魔法力量</span><br></pre></td></tr></table></figure></p>
-<p>最新版本升级的剧情：层层面纱逐步揭开，目前巴卡尔、罗杰斯、希洛克、安图恩、卢克4个使徒都被干掉了，出场赫德尔、狄瑞吉、奥斯玛、米歇尔<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">次元裂缝的始作俑者发现是爱丽丝，爱丽丝被巴卡尔控制了，不过后来拜托了控制</span><br><span class="line">安图恩跑到了天界发电厂吸收能量，最终被冒险家干掉</span><br><span class="line">黑色噩梦的灾难找原因，黑色噩梦可以转移力量，打破次元世界，最终知道是使徒卢克制造的</span><br><span class="line">卢克有创造能力，后来来到魔界，第九使徒，他知道了死亡的语言，所以也在暗地反抗赫尔德反抗</span><br><span class="line">他创造寂静城，穿梭次元装置，寂静城其实就是为了自己吸收力量机器，吸收光恢复自身力量，希望能通过次元召唤以前的部下，贝奇拥有定位能力小女孩陪着卢克</span><br><span class="line">卢克比巴卡尔粗暴更智慧，制造了跟自己一样的机器人打算完成死亡使命</span><br><span class="line">最终成为众矢之的被赫尔德与阿拉德冒险一起攻击，寂静城失守，卢克被干掉，埋下伏笔巴恩吸收了卢克力量</span><br></pre></td></tr></table></figure></p>
-<p>后续95版本：进攻到魔界，打普雷，第三使徒，鸟人<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">卡恩第一力量</span><br><span class="line">大转移后萝莉安被异次元裂缝带到了魔界，成为小红帽</span><br><span class="line">魔界曾经是泰拉里最繁华城市，变异，还有泰拉人，元素师，赫尔德最早</span><br><span class="line">魔法师来自与魔界，男法师角色就是佧修派的</span><br><span class="line">天界发生叛乱剧情</span><br><span class="line">看来主要就是讲述泰拉残余魔界的事情，还有泰拉石的伏笔，有组织控制，巴恩以后也是boss</span><br></pre></td></tr></table></figure></p>
-<h4 id="平行世界设定"><a href="#平行世界设定" class="headerlink" title="平行世界设定"></a>平行世界设定</h4><p>时间轴衍生的世界：60级之前是镜像阿拉德，创世之后版本是真阿拉德，真阿拉德大转移的时候毁了，而60之前是在镜像阿拉德经历的，大转移还没毁，npc有的死有的活不太一样，2个时间同时存在</p>
-<p>10个平行世界，通过深渊可以穿越遇到其他世界人</p>
-<ol>
-<li>大转移后的阿拉德</li>
-<li>镜像阿拉德（时间轴之前的，主要给1-80级玩家升级用）</li>
-<li>[混乱的世界]异次元世界</li>
-<li>[恶魔的世界]异界虚空之境，恶魔世界</li>
-<li>[使徒-巴卡尔的世界]龙界，巴卡尔获胜的，暴龙王，龙族统治，12使徒之一</li>
-<li>[使徒-奥兹玛的世界]奥兹玛统治，伪装者，魔界人类结合，人心精神是最厉害的比物理征服厉害，引起内斗最终他赢了</li>
-<li>[和平-泰拉恢复的世界]魔界，和平泰拉</li>
-<li>[和平-和平世界]精灵和平世界，天界不行的世界</li>
-<li>[无魔界的世界，人类内斗]魔界不在阿拉德，人类武器发达核弹毁灭，统治与组织战斗，4女子</li>
-<li>[超能力世界，超级英雄]超能站联，dnf另一个平行世界游戏，超能者</li>
-</ol>
-<h4 id="使徒介绍"><a href="#使徒介绍" class="headerlink" title="使徒介绍"></a>使徒介绍</h4><p>官方原本计划天空之城后每一个副本关底boss都是一个使徒，后觉得使徒死的太简单，就改了剧本</p>
-<ol>
-<li>[原9][死]巴卡尔因为一位使徒心有灵犀去了魔界当使徒，本来傲慢的他就怕老大，了解到老大要恢复泰拉牺牲12使徒后造反，战败失去龙族去了天界，不魔法暴露，最终被天界人干掉，十篇章描述的男人（历史死）</li>
-<li>[5][死]希洛克出场第一个使徒，被4剑圣干，夜精灵卡赞获胜死亡，使徒气息感染一帮人形成信仰（开场死）</li>
-<li>[8][死]罗杰斯冬眠被逮到天帷巨兽，上天被gbl封印，最终干死，引出主题使徒一定是坏的么（天帷巨兽）</li>
-<li>[6][死]狄瑞吉，瘟疫，不死之身，狗（暗黑城+诺斯玛尔）</li>
-<li>[10][死]奥兹玛，法师，最初与卡赞帝国最强，最帝王陷害与卡赞自相残杀，混沌之神，血之诅咒，感染精神变为恶魔，伪装者，内部猜疑，有人借此铲除对方（异次元空间）</li>
-<li>[11][死]米歇尔，圣职者近战蓝拳创造者，被当做使徒（异次元空间）</li>
-<li>[7][死]安图恩，大乌龟，在天界发电站，吸收能源，塔尔坦族人共生（天界）</li>
-<li>[9][死]卢克（寂静城，连接魔界）</li>
-<li>[3][出现]鸟人，为了拯救族人流浪到魔界，有同卵双生，一正一邪（魔界，中央公园）</li>
-<li>[2][出现]泰拉科学家，魔法，赫尔德，魔界指挥者，为了复活泰拉，泰拉的创新世界第一章与第四章拥有，策划转移，异变</li>
-<li>[4]卡西利亚斯，好战，为了与阿拉德怪物战斗，找到最强召唤师签订契约，其他召唤师也可以召唤，觉醒技能，战斗能力强</li>
-<li>[1]卡恩，能力最强</li>
-<li>[12]使徒未知？知晓一切？赛利亚？</li>
-</ol>
-<h4 id="职业"><a href="#职业" class="headerlink" title="职业"></a>职业</h4><p>鬼剑士（鬼手）:剑魂（手速，单挑），鬼泣（buff，召唤），阿修罗（魔法师，远距离，输出），狂战（用红输出，本职），故事在开场<br>漫游（快，手速，单挑），枪炮师（远距离），弹药专家（子弹与手雷，本职），机械师（召唤），故事主要在天界<br>元素师（最强，配合神器最强，爱丽丝最强），战斗法师（单挑也最强，尼屋），召唤师（太慢），魔道学者<br>魔枪士，枪剑士，守护者，缔造者，暗夜xx这么多新职业，还没试过手感与剧情</p>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>这是一部故事完整，操作手感非常好的横版过关游戏，过去玩手感，现在玩剧情<br>不过玩到后期就是按一遍技能的节奏，手感已无，无外挂不充钱刷图困难<br>毕业的步骤：玩完剧情，最终就是刷装备了，刷完一整套满级装备就算是毕业了，然后换个角色体验下，然后等官方新版本推出<br>这个作为网游很成功，充钱地方很多，需要充钱买时装买复活币，尤其是每年各个节日的时候各种节日套装买买买<br>没有一起玩的人的时候完全可以当做单机游戏玩，不过当时这么热爱这块游戏应该主要还是因为能与朋友们一起刷图的快乐吧，DNF下个十年再见！</p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-	<div>
-	 
-	</div>
-	
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-	
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2018/09/22/日本旅游/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Dawell">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Dawell的博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/09/22/日本旅游/" itemprop="url">日本旅游</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-09-22T14:09:00+08:00">
-                2018-09-22
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/娱乐/" itemprop="url" rel="index">
-                    <span itemprop="name">娱乐</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-             <span id="/2018/09/22/日本旅游/" class="leancloud_visitors" data-flag-title="日本旅游">
-               <span class="post-meta-divider">|</span>
-               <span class="post-meta-item-icon">
-                 <i class="fa fa-eye"></i>
-               </span>
-               
-                 <span class="post-meta-item-text">阅读次数 </span>
-               
-                 <span class="leancloud-visitors-count"></span>
-             </span>
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>8月31日，终于踏上去日本的旅程了，在去往机场的路上，有些小兴奋~<br>小时候喜欢看动漫，喜欢玩游戏，所以冲着对二次元的爱好一直想着也该去一次日本吧，再加上大家都说日本适合旅游，就更加想去了<br>其实在12年左右因为公司支持原因有几次去日本的机会，不过当时各种阴差阳错都错过了，这次终于可以去成了，也算是满足一个小的愿望…</p>
-<p><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa3jw87n0j22bc3341kz.jpg" alt="启程"></p>
-<h3 id="计划不如变化"><a href="#计划不如变化" class="headerlink" title="计划不如变化"></a>计划不如变化</h3><p>这次是与同事公司outing的形式出来玩的，10人成团，虽然是同事，不过大部分人是其他团队的都不大熟，主要是与我们产品结伴而行<br>整体上这次去日本的计划是这样的：杭州，大阪，奈良，京都*2，大阪，杭州，一共玩4天左右，不过最后1天来了个刺激的台风打乱了返程计划，最终变成7天=。=<br>最后增加的3天，基本没怎么玩，把大阪剩余的地方逛了逛，冈山路过回家心切没怎么玩就去机场了<br>体验可以说是比较完整了，半深度游，有世界文化遗产、古城、寺庙、山林、市场与台风，吃吃吃，买买买，逛逛逛，前期略赶，后期略闲</p>
-<h3 id="衣服"><a href="#衣服" class="headerlink" title="衣服"></a>衣服</h3><p>虽然日本的酒店里都配有烘干机，不过也只适合洗洗小件的内衣袜子之类的，旅行大件衣服只能拿到专门的洗衣房去洗，有的旅馆配备就比较方便<br>大部分情况都是一天玩完都累得要死，回去只想洗澡睡觉了<br>所以多带了几套换洗衣服备用，虽然天气刚好，不过为了以防万一备用了眼罩与一件外套，这次露宿机场就用上了，真是亏了这次准备的齐全，不过我的行李箱一半都是衣服<br>路上会碰到穿和服的妹子，这个也就是拍拍照吧，自己带妹子可以穿上拍拍照</p>
-<h3 id="饮食"><a href="#饮食" class="headerlink" title="饮食"></a>饮食</h3><p>日本有很多的便利店，全家最多，其次罗森、7eleven，我才知道全家是日本的，还以为是北上广发展的呢，便利店买点早餐，水，奶之类的还是方便的<br>不过来了日本当然是吃这里的特色了，不去便利店吃午餐与晚餐，日本的特色饮食基本上就是拉面、盖饭、烧烤、寿司、海鲜之类的，这几天吃了个遍<br>天天下馆子，一顿饭的价格一般不低于1000日元，也就是60-100元的样子，日本的街上很少像国内还能消费到特别便宜饮食，基本想便宜吃的就只能去便利店吃了<br>不管是面还是饭还是肉，反正日本的饮食几乎没有菜没有水果，毕竟成本高，所以低端的饭就是主食+酱料or配料，而高端点的就+各种炸烤腌的肉，虽然好吃，但是不太健康<br>日本的饭上面上一般都会有半熟的鸡蛋，日文”温玉”，鸡蛋感觉在各种美食中都不可缺少。饮食注重颜色搭配，绿色主要靠葱花装饰，而且注重酱料与汤汁，酱料丰富，而汤汁浓郁算是对日本饮食的印象吧</p>
-<p>发现日本的生鲜文化，各种生吃的食物确实新鲜，不过我还不能适应，螃蟹、鱼肉倒是让我想起了国内的盒马鲜生这类产品，不过国内不仅是吃的新鲜还是做熟了吃的，想吃鲜还是熟的比较好</p>
-<p>随便发点吃过的照片<br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa9ic876nj23342bc4qs.jpg" alt=""><br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa9kqw15rj23342bce83.jpg" alt=""><br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa9l6yznlj23342bc7wk.jpg" alt=""><br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa9li56cxj22bc334x6r.jpg" alt=""><br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa9lusckwj23342bc4qs.jpg" alt=""></p>
-<h3 id="住宿"><a href="#住宿" class="headerlink" title="住宿"></a>住宿</h3><p>酒店价格时高时低，一般2个人订酒店可以订到400-1000之间的酒店，台风那天涨到850，之前差不多是650，而后面找酒店找到550的，而同事订的还有450的，都还不错，所以完全看能否找到便宜的酒店，平摊下来一个人300左右还不贵<br>这个价格预定的酒店不带水，早上也不含早餐，所以一般自己便利店解决更划算点<br>除了预定酒店，一个人可以住胶囊公寓，听同事反馈也很独特的体验，还可以使用资生堂全套化妆品，一个人也是300元左右<br>还有就是民宿的方式，民宿就便宜很多了，有的一晚上才100多元，不过很多没有空调或者独立卧室，与其他人一起住，同事住的有的被蚊子咬，不过可以体验传统榻榻米与日本住宅风格，独特的体验，一般用爱彼迎订</p>
-<p>除了周六周日酒店的价格都还好</p>
-<h3 id="出行"><a href="#出行" class="headerlink" title="出行"></a>出行</h3><p>这次日本体验的交通挺全的，飞机场、火车、大巴、地铁、新干线、公交，就没有体验打的与坐船了</p>
-<p>日本的交通很发达，地上铁很多，地铁也很复杂，去哪里都方便，跨城市可以做新干线，有300km/h的速度，关西的IC卡实在是方便，基本地上铁与地铁一卡通，而且多家铁路公司都是可以消费的<br>JR是日本的国铁，修建的铁路最多，其他公司也修建了很多铁路，所以有时候一个地方有多个重名的站点，不过会带着前缀标识不同的铁路公司，比如可以看看6个难波地铁站的介绍</p>
-<p>大阪有2个机场，不过只有关西机场是国际机场，另一个只有国内航班，隔壁的神户也只有一个国内航班，所以关西机场挂了后，我们这次只能去较远的左冈山，或者右名古屋机场是最近的机场了<br>刚从关西机场下来后还要做个铁路到城市感觉还挺新颖的，不过台风导致船闯了连接桥就发现这样设计挺愚蠢的，在软件架构里这就是单点故障呀，至少修建2条连接桥backup下还差不多<br>飞机日本全日空是不错的，吉祥航班也可以，不过这次台风来了，吉祥的提早取消给安排了其他航班，而我们最后取消安排的很晚，比我们更加幸运一些</p>
-<p>在车站买大巴票时最好用自动售票机买，以后可以退掉，而窗口买的是无法退票的，大巴的行李有专人安排并放到车上从车拿下，服务态度挺好的</p>
-<p><img src="http://ww1.sinaimg.cn/mw690/712a7015gy1fwa3nvmgr9j23342bc4qr.jpg" alt="IC卡"></p>
-<h3 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h3><p>支付：之前去过泰国，本以为日本也是支付宝微信的天下，其实日本大多还是用现金支付，信用卡也支持比较多，而支付宝微信只有不多的几家支持。不过自动化程度也挺高的，自动投币找零的机器到处都是，如拉面馆、章鱼小丸子的小摊、车站，基本都是大家自己投币找零，虽然不支持支付宝微信，但是也是比较高效方便的，就是口袋里一大堆硬币<br>记账：使用了挖财记账软件，记录日币消费发现是人民币符号，后来才知道日元与人民币的符号确实是一样的都是￥，所以不是软件的bug<br>网络：可以随身wifi携带，不过并不方便，如果开漫游很贵，我用的小米手机有全球上网服务，会虚拟一张本地卡，可以选择使用天数占用一个卡位，还是不错的一天12块钱还有优惠，网速不错，而且可以上youtube之类的网站</p>
-<h3 id="日本特点"><a href="#日本特点" class="headerlink" title="日本特点"></a>日本特点</h3><p>化妆：女性的腮红很夸张，不管好看不好看的都化妆<br>雨伞：用的都是透明长伞，并非折叠伞<br>出租车：出租车的司机大多是老头，难道是为了解决老龄化问题？而车子都是黑色统一样子，感觉非常绅士讲究<br>车辆：大多是日本国产车，丰田，雷克萨斯，德系车不多，偶尔看到奔驰车。日本的车都很干净，尤其是夜景各个都反光，可能空气与城市都干净的原因<br>信仰：日本人同时信仰2种神：一个是佛教，中国传进来的，一个是日本自己的神名，所以可以看到很多祭拜的地方一种是佛教的寺庙，一般都有金色灰色，一种就是门口有鸟居的寺堂，一般都是红白色</p>
-<h3 id="回忆经历"><a href="#回忆经历" class="headerlink" title="回忆经历"></a>回忆经历</h3><h4 id="第一天路线-奈良：小鹿公园、东大寺、春日大社、JR站门口的商业街、道顿崛、心斋桥"><a href="#第一天路线-奈良：小鹿公园、东大寺、春日大社、JR站门口的商业街、道顿崛、心斋桥" class="headerlink" title="第一天路线-奈良：小鹿公园、东大寺、春日大社、JR站门口的商业街、道顿崛、心斋桥"></a>第一天路线-奈良：小鹿公园、东大寺、春日大社、JR站门口的商业街、道顿崛、心斋桥</h4><p>一大早做JR环装倒车奈良高铁过去，路上就碰到了各种鹿，然后经过博物馆走向东大寺，旁边有卖150日元的喂鹿的饼干，鹿会盯着你的袋子，不给食物会咬你撞你跟着你，尤其是东大寺前面那群，带着角的还挺害怕的，不带角的可以调戏调戏，鹿跟你点头意思就是要吃的，还是挺可爱的<br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa3yiksdrj23342bc4qx.jpg" alt="小鹿" title="小鹿"></p>
-<p>东大寺确实够大，是我见过最大的佛像，而且寺庙建筑更大，还是非常震撼的，旁边还有一些小点的寺庙，不过里面也是收费的就没去看<br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa3zaunx2j23342bce84.jpg" alt="东大寺" title="东大寺"></p>
-<p>春日大社是日本的神教，里面有32个祠堂可以祭拜，每个神保佑的东西不一样，红白对比度很高很艳丽，是挺适合拍照的<br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa3vyr8yhj23342bckjq.jpg" alt="去春日大社路上" title="去春日大社路上"></p>
-<p>意外：春日大社那边走到导数第二个祠堂时突然从天上掉下来了一大段树干，我倒是没事，不过我同事受伤了，划破了头皮，后来被送到医院缝了3针然后管理人给了全额赔付，这个体检就不展开了，只能提醒大家要注意安全，而且记得买保险<br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa408wjzkj23342bcb2e.jpg" alt="意外" title="意外"></p>
-<p>总体上奈良第一天的体验非常的好，虽然出了一些意外，但是整体感觉就是小清新，而且那天是下雨过后来了大片森林中，感觉格外的好，如果正常进度，大约下午2点来钟就能玩完这3个景点，随后是返程，回JR时路过了商业街吃饭与买东西一把</p>
-<p>回到大阪：由于中间的意外，回去正好是晚上了，从难波去了道顿崛，再到心斋桥，基本上这3个连在一起的，就是一路向北大致逛了下，人是超级多，而各种药妆店与购物点也是超级多，不过我对购物欲望不大，主要是看看各种名场景吧<br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa43lj6x7j23342bcb2c.jpg" alt="道顿崛" title="道顿崛"><br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa42yg5bej23342bcb2c.jpg" alt="心斋桥" title="心斋桥"></p>
-<h4 id="第二天路线-京都：伏见、三十三间堂、清水寺、三连板二连板、祇园、花见小路、八坂神社、鸭川"><a href="#第二天路线-京都：伏见、三十三间堂、清水寺、三连板二连板、祇园、花见小路、八坂神社、鸭川" class="headerlink" title="第二天路线-京都：伏见、三十三间堂、清水寺、三连板二连板、祇园、花见小路、八坂神社、鸭川"></a>第二天路线-京都：伏见、三十三间堂、清水寺、三连板二连板、祇园、花见小路、八坂神社、鸭川</h4><p>一早我们做上去京都的高速火车出发了，那班火车特别点出了IC卡入站后坐上车后还需要买票，为了能到了就玩我们轻装上阵，行李箱放在了同事那边，第一站是伏见，千本鸟居地，一路爬山，我们按照最远最长路线攀爬体验了一把完整的千本鸟居，分为好几个阶段，整个路程从上山到下山花了一上午时间，在鸟居上阳光下来的一瞬间是特别美的，各种拍照，不过一路都在想做这么多鸟居要砍多少木头呀…<br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa4qqrpt8j23342bckjn.jpg" alt="伏见" title="伏见"><br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa9mquj1sj23342bcu12.jpg" alt="祈愿牌" title="祈愿牌"></p>
-<p>我们中午在附近吃了顿拉面，然后看了下路过火车的临时拦截与路灯的场景，想到了秒速五厘米与创越时空的少女的动画，甚是感动</p>
-<p>然后一路向北，第一站是三十三间堂，里面不允许拍照，光脚丫进，也是比较震撼，一千座佛像，还有千手观音，感觉就和兵马俑一样，数量多而且神圣，前面还站着天龙八部神仙，武器各种不同，火影中阿修罗的原型就是采用这里面的<br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa4q49z8ej23342bchdv.jpg" alt="三十三间堂外景" title="三十三间堂外景"></p>
-<p>再往北一些就到了清水寺，进去逛了一圈，不过最大的地方在装修，拍不到名场景，上面还有个求姻缘的地方，2个石头闭着眼从一个摸到另一个就有姻缘上的好运，让同事搞了一遍，然后一圈后下来了<br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa4pr5tubj25fw1u3hdz.jpg" alt="清水寺" title="清水寺"></p>
-<p>然后又是购物买买买的地方，这里有处抹茶搞点不错买了点，然后三连板二连板路过祇园，走到花见小路商业街，再走到鸭川，刚到鸭川感觉也没什么，不过夜景就很好了，所以晚上再来，我们去了酒店checkin<br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa4rrbml4j22bc334b2d.jpg" alt="二连板" title="二连板"></p>
-<p>酒店整理好去了去了夜景的八坂神社各种拍照，地方不大，这里吃到一家超级棒的拉面馆，然后又去鸭川待了一晚上，有个妹子一直在旁边唱歌，挺好听的，鸭川坐着的大多是小情侣亲亲我我的，看来是个调情的好地方<br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa4o6e9r8j23342bcnpg.jpg" alt="八坂神社" title="八坂神社"><br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa4ovu2avj23342bcu0y.jpg" alt="鸭川" title="鸭川"><br>总体上这一天稍微累了点爬山多景点多，但是很满足，而且最终在鸭川听着歌吹着风休息了好久，很舒服，今天把京都我最想去的几个地方玩了</p>
-<h4 id="第三天路线-京都：金阁寺、天龙寺、二条城、锦市场、大阪：友都八喜、蓝天大厦空中花园"><a href="#第三天路线-京都：金阁寺、天龙寺、二条城、锦市场、大阪：友都八喜、蓝天大厦空中花园" class="headerlink" title="第三天路线-京都：金阁寺、天龙寺、二条城、锦市场、大阪：友都八喜、蓝天大厦空中花园"></a>第三天路线-京都：金阁寺、天龙寺、二条城、锦市场、大阪：友都八喜、蓝天大厦空中花园</h4><p>一大早我们做公交一路赶到金阁寺，金阁寺的名票特别有意思，一进去就可以找到拍照的最佳位置，同时被金阁寺金灿灿的风景震撼一把，不过再往里走发现就没啥意思了，普通的花花草草<br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa7g75vbzj23342bcb2d.jpg" alt="金阁寺" title="金阁寺"></p>
-<p>紧接着走到了里金阁寺不远的天龙寺，天龙寺听说还是乔布斯特别喜欢的寺庙，当时商业失败郁闷的时候就是来这里修身养性的，然后回苹果搞出了iphone，金龙寺最有名的是枯水庭院设计，大致参观了下，一共15块石头，从哪个方向都只能最多看到14块，比较特别<br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa7gw445nj23342bc7wm.jpg" alt="天龙寺" title="天龙寺"></p>
-<p>中午就在天龙寺里的一家豆腐店吃了，最有名的是豆腐，不过这里最喜欢的还是布局与风景<br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa7hbbu9mj23342bcx6r.jpg" alt="天龙寺豆腐店" title="天龙寺豆腐店"></p>
-<p>吃完公交车去了二条城，二条城是德川家族居住的地方，整个城很大，有各种房间，接待宾客的，卧室，其中一间卧室的墙壁上还绘有西湖名胜，倍感亲切<br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa7i3zoycj23342bcb2d.jpg" alt="二条城护城河" title="二条城护城河"></p>
-<p>二条城出来一路向东，来到著名的锦市场，唯一的感觉是日本的蔬菜水果真心贵，10倍有余</p>
-<p>晚上来到酒店附近的大商场友都八喜，从地下一楼逛到顶楼，地下一楼简直是动漫游戏天堂，各种手办模型游戏电影漫画都能在这里买到，东西齐全，发现儿童玩具也是超级多<br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa7ihptrpj23342bcu0z.jpg" alt="友都八喜" title="友都八喜"></p>
-<p>最终在友都八喜顶楼碰到同事们一起吃了著名的铁板烧，国内也看到过这种日本料理店，这次吃个正宗的</p>
-<p>吃完饭，也没有回酒店，赶上去附近的蓝天大厦空中花园看看，一路升到最高层，没想到最高层的房顶也可以上去，视野很宽广，在上面静静地看着这座城市结束这一天的行程<br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa7ixamugj23342bc7wj.jpg" alt="蓝天大厦顶层" title="蓝天大厦顶层"></p>
-<h4 id="第四条路线-大阪：大阪城公园、BIC、道顿崛、吃饭问题"><a href="#第四条路线-大阪：大阪城公园、BIC、道顿崛、吃饭问题" class="headerlink" title="第四条路线-大阪：大阪城公园、BIC、道顿崛、吃饭问题"></a>第四条路线-大阪：大阪城公园、BIC、道顿崛、吃饭问题</h4><p>最后一天的行程，我们就差大阪的名景点了，大早上的我们赶到了大阪城公园，等到9点开放买门票，不过广播公告由于天气影响不开放了，郁闷，只能在公园里逛了下，随后我们就收到了航班取消的通知，领队同事在联系更换航班，于是我们接着玩了下<br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa8lom83dj23342bcx6r.jpg" alt="大阪城" title="大阪城"></p>
-<p>先是赶到了BIC购物商场，看了看比友都八喜要小点，中途还碰到了代购，与一帮中国人疯狂抢购保温杯</p>
-<p>心斋桥又去代购一番，中午在道顿崛吃了回转寿司，进去的时候下大雨，出来的时候就已经是狂风暴雨了，还看到了在说明天气情况电视台的人<br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa8mkti91j23342bcqv8.jpg" alt="电视台采访台风" title="电视台采访台风"></p>
-<p>发现地铁口都被封了，我们只能走到心斋桥附近的商场里，出口全是狂风，看到了吹倒的大树与马上上乱七八糟的物品，只能困在商场里了，很多店今天也是关门了，不过为了等台风过去还是随便逛了逛，台风小点的时候，出去找到大的地铁站南波站然后直接坐回了家<br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa8wopjp0j21hc0u0adt.jpg" alt="台风" title="台风"></p>
-<p>回旅馆休息了下，看了会日本的电视节目，不过目前报道的全是台风新闻，路上的时候就听同事说关西国际机场出事了，不过并不以为然，回到酒店发现各大频道都在播放关西机场的情况，竟然真的出问题了，一艘船把关西机场与大陆唯一的连接桥的撞了<br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa8xjuedwj23342bcqv6.jpg" alt="电视台" title="电视台"></p>
-<p>这时候出来玩的同事群里已经炸了，大家都在讨论机场是否可以修好，我们机票是否可以更换，不过带头的同事说是要等到第二天上午让全日空给更换机场，机场调换的话是免费的，有2个同事比较着急就当天买了名古屋的机票</p>
-<p>晚上出去已经没风了，感觉与平日的行人差不多，找了好远才找到一家不错的店解决了温饱问题，晚上续订了酒店，酒店价格因为台风瞬间就涨了300，没办法只能继续订</p>
-<h4 id="第五天路线-大阪：商量回去、书店、道顿崛、心斋桥、日本桥动漫街"><a href="#第五天路线-大阪：商量回去、书店、道顿崛、心斋桥、日本桥动漫街" class="headerlink" title="第五天路线-大阪：商量回去、书店、道顿崛、心斋桥、日本桥动漫街"></a>第五天路线-大阪：商量回去、书店、道顿崛、心斋桥、日本桥动漫街</h4><p>早上起来ANA说给安排换机，不过要等很久，我们也按捺不住了，我与我们产品买了从冈山出发的机票，剩余很多城市买了从福冈出发的机票，他们还打算去福冈玩玩</p>
-<p>到了下午收到通知，我们产品跟领队被航空公司调整好了，其他人估计要调整到13号，太晚，这样我们就商量分开返回国</p>
-<p>晚上预定了心斋桥附近的宾馆，过去落脚后，晚上赶到了日本街二次元天地逛了逛，不过去的有点晚，剩余的几家店看了看，发现日本真的是各种娃娃机，连手办都有，还有就是手办各种贵，因为都是正版货，简单看了看<br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa91plks4j23342bckjn.jpg" alt="日本桥animate" title="日本桥animate"><br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa916du61j23342bcb2c.jpg" alt="日本桥" title="日本桥"></p>
-<p>在心斋桥大丸百货又帮家人代购了一把</p>
-<h4 id="最终2天-冈山：懒床休息、新干线、桃太郎、上海磁悬浮"><a href="#最终2天-冈山：懒床休息、新干线、桃太郎、上海磁悬浮" class="headerlink" title="最终2天-冈山：懒床休息、新干线、桃太郎、上海磁悬浮"></a>最终2天-冈山：懒床休息、新干线、桃太郎、上海磁悬浮</h4><p>早上与产品告别，我一个人踏上行程，虽然是第二天的才从机场出发，不过担心过程中有什么问题，中午就从大阪赶到冈山去了，这次路上又体验了一把日本的新干线，一路到达冈山</p>
-<p>下车第一件事情是导航，不过时间还比较多，还打算去逛下，看到了桃太郎的雕像，这里也有故事，对面虽然是大商场，不过保险起见我先去买了汽车票<br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa92yllicj22bc334u10.jpg" alt="桃太郎" title="桃太郎"></p>
-<p>买汽车票的时候遇到了一行人买票困难，帮助了下，然后又来了一个会日语的妹子，发现都是因为关西机场原因来到这里，并且订的都是同一趟车</p>
-<p>我们都搜了下附近酒店与民宿，价格都超高，于是妹子提议直接去机场过夜，而刚那一行人还行去打听下酒店的情况自己出发了，妹子没网，靠我开的热点，她提议现在就去机场，她会日语感觉方便点，就跟着去了一趟机场</p>
-<p>去了一看是个小机场，沟通了一把，说是冈山晚上不允许逗留，要关门，不过好在妹子日语不错，沟通了一把，说是关西机场的难民，于是允许了逗留一晚，随后就看到很多中国人陆陆续续都来到了机场</p>
-<p>机场里有个咖啡厅，有充电的地方，也有网，我们就在那边呆了很久，然后在机场里的餐馆饱餐了一顿</p>
-<p>晚上本以为要躺在凳子上睡了，不过机场管事的日本人与保安推来了一大车毯子，给我们一人发了一床，然后在机场排队处铺了一些地铺，我看了直接上去帮忙，最终很多人都是在地铺中睡了一觉<br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa93uwb18j23342bce83.jpg" alt="冈山机场" title="冈山机场"><br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa94hi8o0j23342bckjn.jpg" alt="冈山机场" title="冈山机场"></p>
-<p>第二天早上我们验过行李，然后登机返回了上海</p>
-<p>在上海等行李等了半小时多，吐槽，然后又体验了一把上海浦东机场磁悬浮，可以直达公司附近，速度还不错，轨道比较刺激都是斜着的</p>
-<h3 id="购物"><a href="#购物" class="headerlink" title="购物"></a>购物</h3><p>药妆店：超级多，都有中文导购，像是给中国人开的<br>专柜：专柜买的人也很多，不知道为啥，有的比国内都要贵<br>代购的疯狂：路上带着行李箱逛游的几乎都是代购</p>
-<h3 id="二次元文化"><a href="#二次元文化" class="headerlink" title="二次元文化"></a>二次元文化</h3><p>游戏机厅真的不少<br>动漫电玩店<br>漫画店</p>
-<h3 id="费用"><a href="#费用" class="headerlink" title="费用"></a>费用</h3><p>除了额外花的：帽子、手办、小饰品、化妆品等给自己买的东西外<br>费用的话还是挺省的，如果是原计划应该在7000左右，不过多增加的3天费用增加3000左右，所以最终花了1w左右<br>这7天大头是交通费一共花了4500元，住宿花了2000，吃喝花了1400，购物花了2200，不过有800是帮其他人代购的，自己花了1400，其中1000多都是给同事家人带的吃的<br>最初预定的ANA的机票来回2400，属于比较便宜的特价票了，而住宿4天双人合租平摊1300元，所以住行大头才3700元，整体成本不高，后来台风来了航班取消，机票价格都涨了不少，机票变为2000，多住宿3天（最后一天睡了机场），剩余都是日本国内交通费用了<br>虽然是花了1w，不过因为航班延误是可以保险理赔的，最终赔付了2k，所以算下来整个旅程花了8k左右，真的是很便宜了</p>
-<h3 id="保险"><a href="#保险" class="headerlink" title="保险"></a>保险</h3><p>出国旅游保险是很有必要的，一个是在国外受伤或者住院的费用可以报销，还有就是飞机航班延误与取消会进行金额赔付，后者是大概率事件，尤其是日本动不动就地震台风的，所以保险非常必要<br>这次因为台风导致的延期3天的行程所有的住宿与交通费用由于买了报销都可以报销，而且公司人文关怀了下多给了3天outing假期，所以相当于免费多玩了3天，这种意外幸亏也不会产生额外的损失，保险费才几十块非常值<br>同事有的买的小额的20元的保险因为航班取消都赔付了1k元</p>
-<p>台风是真的够猛的，当时恰好去过2次的蓝田，对比图如下<br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa9zpgu6mj22bc334hdv.jpg" alt="" title="台风前"><br><img src="http://ww1.sinaimg.cn/mw690/712a7015ly1fwa9zekjbgj22bc334x6r.jpg" alt="" title="台风后"></p>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>整个过程真的是非常难忘，赶上台风，听说北海道又发生了地震，好多关西机场的难民还想去北海道回国，看来他们是最倒霉的一批人了<br>日本多灾多难食物匮乏不适合生活，台风、地震、核辐射、青菜水果贵的要死，容易得胃肠病，怪不得日本的保险业很发达，感觉多灾多难也是一个原因<br>但是适合旅游，倒不是特别喜欢日本的饮食、购物与普通的景点，但是日本很干净，有更多的樱花树，独特的和风体验，二次元天堂，如果不去安排特别满的行程，不去购物，只看下特别的景点，去泡泡温泉慢下来欣赏这个城市也许才是最享受的<br>最后公司员工关怀因为台风原因多给了3天outing假期，不用扣假期了，贴心~</p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-	<div>
-	 
-	</div>
-	
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-	
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2018/09/21/云栖大会2018一日游/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Dawell">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Dawell的博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/09/21/云栖大会2018一日游/" itemprop="url">云栖大会2018一日游</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-09-21T16:11:18+08:00">
-                2018-09-21
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-             <span id="/2018/09/21/云栖大会2018一日游/" class="leancloud_visitors" data-flag-title="云栖大会2018一日游">
-               <span class="post-meta-divider">|</span>
-               <span class="post-meta-item-icon">
-                 <i class="fa fa-eye"></i>
-               </span>
-               
-                 <span class="post-meta-item-text">阅读次数 </span>
-               
-                 <span class="leancloud-visitors-count"></span>
-             </span>
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>云栖大会是阿里组织的包含了最新的行业动态与技术分享的大会，每年一次，今年是第8次<br>往年真是关注技术分享，都是看在线直播，不过离杭州这么近，为啥不去亲身体验一把呢？于是这次请了一天假过去参加</p>
-<p>整个大会持续4天，分为主会场与分会场还有一些音乐节之类的活动，看了下大会行程，只有开发者专场比较感兴趣，所以这次目标明确的想去E会场看看<br>票务有VIP票与普通票，有4天的票也有只参加1天的票，很早就关注的，阿里云还给我发了优惠券，所以买了第二天的早鸟票90多元<br>云栖大会前几天发来短信提示需要用钉钉才能取到票二维码，看来阿里是无处不安利钉钉，钉钉里还需要人脸识别录入</p>
-<p>早上与同事打车过去，听说路上会堵，所以7点多就出发了，途径各种隧道到达云溪小镇（途中隧道有2条路径，导航指示往左走，但是有个很大的牌子指示云栖大会向右走，问了司机才知道，往右其实要绕远路，这样做得目的是为了分流，Get！）<br>我们从南门进，进去先到A座大楼前验票，先二维码验票，然后第二道关卡需要验证之前录入的人脸，感觉还是很有科技感的，拿了份大会的地图</p>
-<p><img src="http://ww1.sinaimg.cn/large/712a7015ly1fvh96g4zdrj23342bcx6r.jpg" alt="地图"></p>
-<p>C座看上去还是挺有艺术感的，楼上是塑胶跑道，还放着一个aliyun的热气球</p>
-<p>先在B馆逛了下</p>
-<p>待续。。。</p>
-<h3 id="赠品"><a href="#赠品" class="headerlink" title="赠品"></a>赠品</h3><p>勋章，冒充的勋章<br>布袋子，塑料袋子，茶叶，鸡蛋，糖，便利贴，笔，悠悠球，玩偶手办，洁屏指，雨伞，鼠标垫，文件夹，烟盒，抹布，饮料，水，贴画</p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-	<div>
-	 
-	</div>
-	
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-	
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2018/09/01/Dubbo生态/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Dawell">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Dawell的博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/09/01/Dubbo生态/" itemprop="url">Dubbo生态</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-09-01T10:40:32+08:00">
-                2018-09-01
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-             <span id="/2018/09/01/Dubbo生态/" class="leancloud_visitors" data-flag-title="Dubbo生态">
-               <span class="post-meta-divider">|</span>
-               <span class="post-meta-item-icon">
-                 <i class="fa fa-eye"></i>
-               </span>
-               
-                 <span class="post-meta-item-text">阅读次数 </span>
-               
-                 <span class="leancloud-visitors-count"></span>
-             </span>
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>Dubbo圈子最近也开源了各种产品，公司也主要以dubbo为主的微服务生态建设，而且也是自己从14年使用dubbo也做个总结</p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-	<div>
-	 
-	</div>
-	
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-	
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2018/08/22/剑的传说/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Dawell">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Dawell的博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/08/22/剑的传说/" itemprop="url">剑的传说</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-08-22T21:16:05+08:00">
-                2018-08-22
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/娱乐/" itemprop="url" rel="index">
-                    <span itemprop="name">娱乐</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-             <span id="/2018/08/22/剑的传说/" class="leancloud_visitors" data-flag-title="剑的传说">
-               <span class="post-meta-divider">|</span>
-               <span class="post-meta-item-icon">
-                 <i class="fa fa-eye"></i>
-               </span>
-               
-                 <span class="post-meta-item-text">阅读次数 </span>
-               
-                 <span class="leancloud-visitors-count"></span>
-             </span>
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>总结下各种剑的传说吧，他们的游戏系列，电视剧情况，网游情况，评分与推荐，剧情与特色<br>中国游戏改编的古装剧是很有特色的，基本都与剑有关，拍一部火一部<br>传统单机三剑是：轩辕剑、仙剑、剑侠情缘，不过剑侠情缘感觉后续剧情上不怎么火，也没怎么玩过</p>
-<p>这里介绍的有基本有这么几部</p>
-<ol>
-<li>轩辕剑</li>
-<li>仙剑</li>
-<li>古剑奇谭</li>
-<li>诛仙</li>
-</ol>
-<h2 id="轩辕剑"><a href="#轩辕剑" class="headerlink" title="轩辕剑"></a>轩辕剑</h2><p>轩辕剑第一部作品诞生在1991年，到现在已经27岁了，国产单机系列三剑之一，由台湾大宇的DOMO工作室研发的RPC单机游戏</p>
-<h3 id="作品"><a href="#作品" class="headerlink" title="作品"></a>作品</h3><p>首先回顾下历史朝代顺序：夏、<strong>商</strong>、<strong>西周</strong>、东周、<strong>春秋</strong>、<strong>战国</strong>、<strong>秦</strong>、<strong>汉</strong>、<strong>三国</strong>、<em>晋</em>、南北朝、<em>隋</em>、<strong>唐</strong>、宋、元、明、清<br>黑色的是轩辕剑涉及到的朝代，斜体是稍有交集</p>
-<p>单机作品</p>
-<ol>
-<li>轩辕剑1</li>
-<li>轩辕剑2、轩辕剑2外传枫之舞-战国</li>
-<li>轩辕剑3云和山的彼端-隋唐朝西方世界、轩辕剑3外传天之痕-隋唐</li>
-<li>轩辕剑4黑龙舞兮云飞扬-战国秦朝、轩辕剑4外传苍之涛春秋晋朝秦朝<ol>
-<li>苍之涛跟进司马光资治通鉴按时间顺序写的，往前10年，往后10年，时间表，事件。史记不是按时间写的，所以这段还好搞一些</li>
-<li>4与外传，一个是霸道，一个是王道，外传讲老百姓的感受</li>
-<li>水镜与姬良是那种结婚后的感觉，现在的爱情太过了，山盟海誓什么的，其实婚后才是爱情开始的时候，之前的去掉了</li>
-<li>砍头三人组里最后说我们要永远在一起，吐槽天之痕桥段</li>
-</ol>
-</li>
-<li>轩辕剑5一剑凌云山海情-山海界、轩辕剑5外传汉之云-三国、轩辕剑5外传云之遥-三国</li>
-<li>轩辕剑6凤凌长空千载云-商周时期、轩辕剑6外传穹之扉-商朝中期</li>
-<li>轩辕剑7-汉朝：轩辕剑柒（大写，为了区分网游小写七），虚幻4引擎，期待</li>
-<li>轩辕伏魔录</li>
-</ol>
-<p>轩辕剑壹、轩辕剑貮均时代不明<br>每一部时间顺序：6+商周、2+4+在战国秦朝、7+汉朝、5++三国、3+唐朝</p>
-<p>网游作品</p>
-<ol>
-<li>轩辕剑网游1、2：看过视频，好像一起刷蚩尤还有点意思，应该没啥剧情</li>
-<li>轩辕剑7：网游，占用了7的编号 </li>
-<li>轩辕剑手游：好像是基于天之痕背景的，不过没啥剧情，就是一个轩辕剑的皮</li>
-<li>轩辕剑群魔录：各种日常任务跑来跑去，剧情就是因为某种原因历史混乱了，见到了各代人物</li>
-<li>18年-轩辕剑龙舞云山：网易出品，水墨画风，回合制，剧情RPC，良心，不过玩完剧情就卸载了</li>
-</ol>
-<p>电视剧</p>
-<ol>
-<li>轩辕剑3小雪，拍的不好看</li>
-<li>轩辕剑汉之云：只是看颜值，不过胡晓彤火了</li>
-</ol>
-<p>电影</p>
-<ol>
-<li>18年轩辕剑大电影开拍</li>
-</ol>
-<p>动画</p>
-<ol>
-<li>苍之耀动画 <a href="http://xuanyuansword.net/index.html" target="_blank" rel="noopener">http://xuanyuansword.net/index.html</a> </li>
-</ol>
-<h3 id="特点"><a href="#特点" class="headerlink" title="特点"></a>特点</h3><p>轩辕剑最大的特色是把故事埋藏在历史中，符合历史故事不冲突又补全了一些历史，非常讲究<br>世界观方面，轩辕剑设定从始至终一套，而且世界观宏伟，有趣要素很多，想象力丰富<br>而且轩辕剑里的世界观宏大，讲的故事更偏向于针对不同立场的选择造成的历史问题，没有善恶，讲霸道与王道的取舍。不像仙剑系列偏向于一个爱情故事多一些。<br>每一个单机轩辕界中都隐藏了DOMO工作室的地点，DOMO工作室印象挺深的作者：蔡明宏、曾志豪、吴欣叡、鲍弘修等人物</p>
-<h4 id="黑科技"><a href="#黑科技" class="headerlink" title="黑科技"></a>黑科技</h4><p>轩辕剑里有十大神器：盘古斧（空间）、东皇钟（造界）、昆仑镜（时间）、轩辕剑（力量）、昊天塔（杀神）、炼妖壶（炼化）、神农鼎（炼药）、伏羲琴（心智）、女娲石（复活）、崆峒印（永生）</p>
-<ol>
-<li>前4样其实是挺逆天的，可以改变时间空间力量，中间3个算是不同种族的特殊神器，最后3个偏灵魂方面，与漫威宇宙中的5个宝石挺像的</li>
-<li>神器还能组合成各种阵法：失却之阵（不同的神器放到中间效果还不一样）、九五之阵等</li>
-<li>其实还有一些神器：造物仙鼎、太一轮之类的又属于神器中的神器了，一般见不着</li>
-</ol>
-<p>其他黑科技</p>
-<ol>
-<li>天书：壶中仙给辅子彻展示用的小世界</li>
-<li>机关术：墨家发明的木头机械装置</li>
-<li>黑火：从古蜀国柒发明的黑火与紫水晶</li>
-</ol>
-<h4 id="世界"><a href="#世界" class="headerlink" title="世界"></a>世界</h4><p>轩辕剑有多个世界，这里只是列举几个常出现的</p>
-<ol>
-<li>轩辕界（人界）</li>
-<li>云中界（融合了桃源界-天书世界-桃源仙境-仙人岛）：壶中仙用东皇钟创建的，想与神州大地融合来着，不过被壶中仙实验黑火时玩坏了大半，后与天书世界融合</li>
-<li>天上界：天界，包含伏羲殿，华胥国守护天门，很多仙与华胥国有关系，如伏羲与女娲是华胥子民</li>
-<li>昊天界（太一神殿）：昊天帝的地盘，昊天帝又叫东皇太一，太一神殿在这里面维护世间万物生克关系控制世界的规则</li>
-<li>山海界：黄帝为了用东皇钟创造的，妖怪出自山海经，有青龙白虎朱雀玄武，不过这些神兽当时都是炎帝的部下，跟天女一样被黄帝丢到山海界中了，兼职是神话异族回收厂呀。只能通过盘古斧进来</li>
-<li>壶中界：炼妖壶中的世界，妖怪比较多，也有很多功能区域</li>
-</ol>
-<p>天山（昆仑仙境）、巫山、云中界都是仙界<br>仙是没有神厉害的，仙是世间万物修炼的最高境界，神是天生神力</p>
-<p>网友总结<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">主体【轩辕界】，黄帝所创【山海界】，山海界正中印天女之地【中央界】，耶和华所在【西方天界】，撒旦所在【西方魔界】，万物轮回的【幽冥地界】，天帝居所【天界】，炼妖壶内【壶中世界】又称【壶中界】，壶中仙所创【云中界】，竹简内的【天书世界】，姬良手中天书发展而来的【桃源界】，云梦泽底【湘君界】，之罘山下【苍龙界】，太一神殿所在【昊天界】，西王母【昆仑界】，赤贯星与白贯星所在的【天上界】，紫雾源头【梵天异界】，【镜界】日向一族的神镜世界。</span><br></pre></td></tr></table></figure></p>
-<h4 id="轩辕剑-1"><a href="#轩辕剑-1" class="headerlink" title="轩辕剑"></a>轩辕剑</h4><p>轩辕剑里有很多跨越千年的故事，包含穿越的剧情，形成闭环的小改变还会在原世界发送，生克太一轮重大改变事件会造成平行世界</p>
-<ol>
-<li>轩辕剑6商周时期姜太公改变过太一轮周克商</li>
-<li>轩辕剑4外传苍之涛，太一轮秦晋相克跨越整整一千年。七曜使者的穿越故事在苍之耀动画里会涉及，导致秦朝异常发达的另一个平行世界的故事</li>
-<li>轩辕剑6种凤天凌在商朝末期，最终结局时穿越到唐朝见女主，主角在唐朝老死，女主再回到男主活着的时候，然后直到女主死在这个世界，男主再穿越到唐朝形成循环</li>
-</ol>
-<p>轩辕剑有一些化身，集中在三国时期转世成人，诞生轩辕剑仙</p>
-<ol>
-<li>轩辕剑5的3部曲里介绍了轩辕剑诞生于黄帝与天女青儿之手，后转世2子朝云与暮云，后分别加入三国时期蜀与魏，最终双子合一回到山海界以暮云身份拯救母亲，在5种自杀，后朝云回到轩辕界与耶亚希在一起</li>
-<li>云之遥中暮云小时候被剥离大部分灵魂到狼王身上，变为金狼，后化为人形，一直各种穿越学习王道精神，其中在轩辕剑6的故事中化为白王引领主角，后回到唐朝已经老到在轩3中遇到的轩辕剑仙老头形象</li>
-</ol>
-<h4 id="重要人物"><a href="#重要人物" class="headerlink" title="重要人物"></a>重要人物</h4><p>古月仙人：古月圣<br>壶中仙：炼妖壶之主<br>柒：古蜀国聪明少年<br>撒旦：路西法，西服世界魔神老大</p>
-<p>妖怪有很多神话传说的，如饕餮，蚩尤<br>氐人是炎帝的后代</p>
-<h4 id="有个分析帖子"><a href="#有个分析帖子" class="headerlink" title="有个分析帖子"></a>有个分析帖子</h4><ol>
-<li>世界分析：<a href="http://www.lkong.net/thread-1896558-1-1.html" target="_blank" rel="noopener">http://www.lkong.net/thread-1896558-1-1.html</a></li>
-<li>民间编年史：<a href="https://tieba.baidu.com/p/4331248113?red_tag=2218108712" target="_blank" rel="noopener">https://tieba.baidu.com/p/4331248113?red_tag=2218108712</a></li>
-</ol>
-<h3 id="仙剑"><a href="#仙剑" class="headerlink" title="仙剑"></a>仙剑</h3><p>仙剑的世界观没有打开，只是一个个独立的爱情故事<br>目前比较喜欢的是仙剑1与仙剑3、仙剑4，特别喜欢仙剑4</p>
-<h4 id="作品-1"><a href="#作品-1" class="headerlink" title="作品"></a>作品</h4><ol>
-<li>仙剑1 剧情好，不过电视剧垃圾</li>
-<li>仙剑2，剧情垃圾</li>
-<li>仙剑3、仙剑3外传，剧情好，电视剧胡歌、杨幂火了</li>
-<li>仙剑4，剧情好，拍摄中</li>
-<li>仙剑5，电视剧仙剑云之凡没火</li>
-<li>仙剑6，讲神农，发现最终也有鱼人在鲲里，与轩辕剑氐人族一样设定，七零石的动画是一个特色</li>
-<li>仙剑7，19年下半年，虚幻四引擎</li>
-</ol>
-<h3 id="古剑奇谭"><a href="#古剑奇谭" class="headerlink" title="古剑奇谭"></a>古剑奇谭</h3><p>古剑是从仙剑里因意见不和分裂出的团队，制作的作品也挺良心的，买了第一部玩过</p>
-<h4 id="作品-2"><a href="#作品-2" class="headerlink" title="作品"></a>作品</h4><ol>
-<li>古剑1，电视剧火了，李易峰，杨幂，霍建华</li>
-<li>古剑2，电视剧有了，没火</li>
-<li>古剑3，8月20日试玩版游戏刚出来</li>
-</ol>
-<h3 id="诛仙"><a href="#诛仙" class="headerlink" title="诛仙"></a>诛仙</h3><p>很早在网吧里听说过过的特别火的网游，不过没有玩过，直到后面出了电视剧才了解的剧情</p>
-<h4 id="作品-3"><a href="#作品-3" class="headerlink" title="作品"></a>作品</h4><ol>
-<li>电视剧青云志，诛仙，那tfboys火了，李易峰，杨紫火了</li>
-</ol>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-	<div>
-	 
-	</div>
-	
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-	
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2018/08/17/轩辕剑龙舞云山体验感悟/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Dawell">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Dawell的博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/08/17/轩辕剑龙舞云山体验感悟/" itemprop="url">轩辕剑龙舞云山体验感悟</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-08-17T15:13:32+08:00">
-                2018-08-17
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/娱乐/" itemprop="url" rel="index">
-                    <span itemprop="name">娱乐</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-             <span id="/2018/08/17/轩辕剑龙舞云山体验感悟/" class="leancloud_visitors" data-flag-title="轩辕剑龙舞云山体验感悟">
-               <span class="post-meta-divider">|</span>
-               <span class="post-meta-item-icon">
-                 <i class="fa fa-eye"></i>
-               </span>
-               
-                 <span class="post-meta-item-text">阅读次数 </span>
-               
-                 <span class="leancloud-visitors-count"></span>
-             </span>
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>好久没有玩游戏了，手游RPC类型的也没有玩过，这次尝试下<br>小时候单机最爱玩的RPC游戏是轩辕剑，最近网易推出了这个IP的手游轩辕剑龙舞云山，听说继承了轩辕剑水墨画风非常唯美<br>正好删档公测申请体验了下，8月23日删档</p>
-<p>游戏体验目的</p>
-<ol>
-<li>一个是想看下轩辕剑有什么新剧情</li>
-<li>一个是看看现在的RPC手游都做成什么样子了</li>
-<li>如果自己开发一个这样的游戏是否复杂</li>
-<li>我玩的到底是什么，是什么让我放弃了这款游戏，游戏的本质是什么？</li>
-</ol>
-<h2 id="体验过程"><a href="#体验过程" class="headerlink" title="体验过程"></a>体验过程</h2><p>进去后先是取个名字，皇帝姓氏“姬”代表正统与历史，然后偏爱轩辕剑4里的墨家机关术，取一“墨”字，组合为“姬墨”（寂寞），好名~<br>有6个角色可以相当于传统游戏中的角色吧<br>剑士T（龙武军-男）、剑士输出（沧剑盟-男）、法师（琉璃会-女）、奶妈（灵素庄-女）、萨满（天道师-男童）、机械师（隐墨宗-女童）<br><img src="https://images.gitee.com/uploads/images/2018/0821/141357_aa120c5a_697510.png" alt="输入图片说明" title="屏幕截图.png"><br>隐墨宗继承了墨家机关术，是我比较钟爱的门派，不过只能选女号<br><img src="https://images.gitee.com/uploads/images/2018/0821/141529_97086a5a_697510.png" alt="输入图片说明" title="屏幕截图.png"><br>本以为还有捏脸环节，实际只是选个3种发型与3种容貌，衣服也没法换，不过角色还算ok，不Care<br><img src="https://images.gitee.com/uploads/images/2018/0821/141607_8af0197a_697510.png" alt="输入图片说明" title="屏幕截图.png"><br>游戏的功能随着等级提升逐步开放，基本上60级功能就开的差不多了<br>等级提升前期非常快，第一天任务做完就差不多40级了，第二天50级，第三天57级，第四天60级，直到后面一天只能生1级左右，然后我最终玩到了74级就停止了<br>剧情都玩完了，活动基本玩了一遍，副职业都开启了，宠物也都差不多了</p>
-<h2 id="剧情"><a href="#剧情" class="headerlink" title="剧情"></a>剧情</h2><p>背景设定在天之痕之后的100年唐盛时期<br>整个剧情有主线，围绕着撒旦魔王利用妮可复活假赛特，指挥核心骨干康那里士去收集黑火企图消灭神州大地的部分<br>同时有唐歌主线，体现唐朝表面繁荣，而内部各种政治斗争，贵妃+国舅党、太子+忠臣党、安禄山+西方妖魔党3者的冲突<br>轩辕主线与唐歌主线是有剧情交差的，只是突出的重点不太一样<br>也有各种支线任务，与各种NPC有关系，也有各种护驾的支线剧情任务，介绍各种护驾的历史吧</p>
-<p>整体上还挺像单机游戏的风格，而且还接入了类似轩辕剑的DOMO工作室的设计人物与场地，用一口井进去，肥鱼宫，应该是游戏制作工作室的名字吧<br><img src="https://images.gitee.com/uploads/images/2018/0821/143346_9931118a_697510.png" alt="输入图片说明" title="屏幕截图.png"><br><img src="https://images.gitee.com/uploads/images/2018/0821/143830_1447ba3f_697510.png" alt="输入图片说明" title="屏幕截图.png"></p>
-<h3 id="主线剧情"><a href="#主线剧情" class="headerlink" title="主线剧情"></a>主线剧情</h3><p>进去后剧情遇到古月仙人，喝三杯酒，然后穿越到100年前封印天之痕的时候，与小雪、玉儿、靖仇相遇，然后回到现实中与玉儿的转世结缘<br><img src="https://images.gitee.com/uploads/images/2018/0821/141659_1cc0f623_697510.png" alt="输入图片说明" title="屏幕截图.png"><br><img src="https://images.gitee.com/uploads/images/2018/0821/142529_e9c3120c_697510.png" alt="输入图片说明" title="屏幕截图.png"><br>主角还有个特殊身份是神器守护者，只是剧情需要，暂时没什么特殊技能之类的<br><img src="https://images.gitee.com/uploads/images/2018/0821/142714_f08542f0_697510.png" alt="输入图片说明" title="屏幕截图.png"><br>转世的玉儿体内有黑火，康那里士来取黑火，然后被主角救走，主角买了一个天道师山寨的炼妖壶可以收纳万物，将玉儿放入其内，黑火结晶紫水晶也带走一些<br>主角先是带到江湖百晓生唐佑那里打探情报，然后被指引到琉璃会长那里，琉璃会发现紫水晶与琉璃的宝物差不多质地，而且牵起一段回忆，发现副会长也是被琉璃中的妖邪附身与康那里士变为一伙<br>后指引到隐墨宗看病，五长老也牵出一段当时因为利用黑火力量搞机关术失败导致妻儿死亡的回忆，结果康那里士找到了这里，为了迎战康那里士几位长老凑齐了，大长老出现，宇文拓也出现了，众人赶走了康师傅（大长老是个利用宗门技法的童颜美少女，大长老一直迷着宇文拓）<br>妮可复活假赛特不惜一切代价，所以与主角发生几次正面冲突，第一次还与天神李靖交战，后来妮可发现了被魔王利用，而黑火导致各种失魂的人也越来越多<br><img src="https://images.gitee.com/uploads/images/2018/0821/144902_3bd05559_697510.png" alt="输入图片说明" title="屏幕截图.png"><br>安禄山想用魔族给他的黑火反兵皇帝，不过后面还没展开剧情<br>在墨家大长老出现的还是还介绍了一段与宇文拓认识的黑历史，当时宇文拓想要封印天之痕需要上天上界的方法，询问了隐墨宗，宇文拓解释一番，是个火车难题，隐墨宗权衡后提供了万灵血珠的制作方法，宇文拓独立背负罪名这点让大长老就迷上他了<br><img src="https://images.gitee.com/uploads/images/2018/0821/144415_eff8ad1f_697510.png" alt="输入图片说明" title="屏幕截图.png"><br><img src="https://images.gitee.com/uploads/images/2018/0821/144533_0ffb3d03_697510.png" alt="输入图片说明" title="屏幕截图.png"><br>后面剧情就没了…感觉主创们还没做完</p>
-<h2 id="系统"><a href="#系统" class="headerlink" title="系统"></a>系统</h2><h3 id="功能拆分"><a href="#功能拆分" class="headerlink" title="功能拆分"></a>功能拆分</h3><ol>
-<li><em>个人+提升、地图、境界（剧情+任务）、设置+拍照、战斗</em></li>
-<li><em>物品：装备、行囊、宠物、商城+摆摊</em></li>
-<li>（网游加强）副职业：闲趣、行当、书斋</li>
-<li>（网游加强）统计：传记（成就）、排行</li>
-<li><em>【网游特有】关系与交互：好友、聊天、队伍、帮派</em></li>
-<li>【网游特有】活动与扩展：活动、福利</li>
-<li>游戏外功能：选择大区与用户，创建用户，公告，用户协议，客服，修复，用户中心账号，二维码扫描</li>
-</ol>
-<p>如果是做单机，前2个有了，基本上可玩性就有了，接下来就是打磨剧情与任务了<br>如果是做网游，最核心的是第5条，其次是第6条<br>目前看一共有170级吧，不过剧情大约70级就没了，所以应该是个半成品</p>
-<h3 id="从最小产品去开发"><a href="#从最小产品去开发" class="headerlink" title="从最小产品去开发"></a>从最小产品去开发</h3><p>首先要有主角（等级、属性）、剧情任务、战斗、地图、设置这5个模块</p>
-<ol>
-<li>主角具备等级，通过任务引导玩家去战斗，然后提升等级完成更多的任务看到剧情，然后任务+打怪给经验继续提升，任务完成取决于等级，而等级取决于战斗，任务又引导战斗形成闭环</li>
-<li>整个RPC的目前是为了完成更多的任务，看到更多的剧情，体验战斗的乐趣，等级本身只是条件。任务与战斗是RPC的核心，升级是手段</li>
-<li>人数属性：生命、物理攻击-防御，回合制</li>
-</ol>
-<p><img src="https://images.gitee.com/uploads/images/2018/0821/141806_5d37558e_697510.png" alt="输入图片说明" title="屏幕截图.png"></p>
-<p>基于水墨风格的场景设计是好的，画面流畅优雅，看了下其实很多场景是指几个图片增加一些层次做出的并非是3D的，只有人物是3D的，减少了页面元素渲染的成本<br><img src="https://images.gitee.com/uploads/images/2018/0821/142205_23f6c489_697510.png" alt="输入图片说明" title="比如这个井看上去是3D的但是就是一个图片而已"><br><img src="https://images.gitee.com/uploads/images/2018/0821/142317_e0410289_697510.png" alt="输入图片说明" title="这里边缘没控制好，可以看到这个悬崖只是一个图片加一个边缘限制"></p>
-<h3 id="围绕人物-任务-战斗3个核心属性，丰富-amp-差异化人物属性、更有趣的战斗体验、添加物品要素提升各种环节"><a href="#围绕人物-任务-战斗3个核心属性，丰富-amp-差异化人物属性、更有趣的战斗体验、添加物品要素提升各种环节" class="headerlink" title="围绕人物+任务+战斗3个核心属性，丰富&amp;差异化人物属性、更有趣的战斗体验、添加物品要素提升各种环节"></a>围绕人物+任务+战斗3个核心属性，丰富&amp;差异化人物属性、更有趣的战斗体验、添加物品要素提升各种环节</h3><p>先将个人属性丰富起来，然后差异化个人属性，然后丰富战斗，然后添加通用设计-物品加强属性、任务、战斗整个环节</p>
-<ol>
-<li>人数属性增加<ol>
-<li>增加法力、控制2个类型输出、增加攻击前、攻击后的各种属性效果，增加速度</li>
-<li>生命、法力、控制-控制抵抗（辅助效果）、速度、物理攻击-防御（输出-中）、法术攻击-防御（输出-中）、命中-躲闪（打中-前）、暴击-强化-吸收（打中效果叠加-后）、阴阳属性（加强+追击-后）<br><img src="https://images.gitee.com/uploads/images/2018/0821/142757_06716d38_697510.png" alt="输入图片说明" title="战斗生克关系"></li>
-</ol>
-</li>
-<li>人物属性加持优化<ol>
-<li>添加职业</li>
-<li>装备，装备打造+强化属性+随机属性的炼化</li>
-<li>战斗模式切换（群攻、单攻）</li>
-<li>添加属性加点，奇异果实提升，补天宝石，天数灵修加属性</li>
-</ol>
-</li>
-<li>法力+控制的战斗优化<ol>
-<li>增加技能，添加技能书，技能升级加点</li>
-</ol>
-</li>
-<li>物品分为药品+功能道具、任务、装备，这些东西有些是可以进行交易的（过一会再讲交易），有些则不可只能丢弃<ol>
-<li>装备，每个部位的，头饰、衣服、腰带、武器、鞋子、项链、戒指、玉佩、通宝1，通宝2</li>
-<li>特殊武器-宠物系统可以丰富（宠物的等级、属性、技能，不需要装备），不过有天资（有上限，耐力、力量、灵性、智慧、敏捷、成长率），增长不同的属性，玩家可以洗练天赋+突破提升阶级+提升属性（氪金材料）</li>
-<li>除了物品，还有金币，铜币等金钱的奖励</li>
-<li>物品的话可以通过官方商城买卖，不过像模式这种都是用户自己在拍卖行里操作，没有上帝颁发东西，不需要氪金，更加公平</li>
-<li>物品位不够了需要放到仓库，仓库可以分几个，多的需要额外收费</li>
-</ol>
-</li>
-</ol>
-<p>可以看出人物差异通过人物属性加持自己配置的，需要方法论固定提升，而宠物则避免复杂采用一个随机的天资控制，有一些随机性，生成需要炼妖系统合成<br>技能是基于属性发挥的效果，宠物的技能需要收集配置通用，而角色职业是固定的，其实也可以差异化加点激活，类似魔兽不过复杂一些<br>技能还能让战斗更加华丽，不过大家在升级时一直用华丽技能也腻了，所以现在回合制都开发了自动战斗的模式，而开放式战斗自己控制更有意思些</p>
-<p>最终除了核心3要素，又增加了物品这一要素丰富了玩法成为4要素</p>
-<ol>
-<li>人物通过物品加持更改，消费物品</li>
-<li>任务不止奖励经验，还奖励金币+物品，生产消费物品，不过更偏向于生产</li>
-<li>战斗也可以消耗金币与物品，除了经验，也可以奖励金币与物品，生产消费物品，不过更偏向于生产</li>
-</ol>
-<p>排列组合</p>
-<ol>
-<li>前2个形成供需关系（任务完成奖励提升能力）</li>
-<li>后2个也可以形成供需（战斗生产完成任务物品消耗，战斗消耗品只能任务领取发放）</li>
-<li>而头尾2个也可以形成供需（战斗胜利品提升能力）</li>
-<li>中自己形成供需（上个任务的奖励是下个任务的消费）</li>
-<li>尾自己形成供需（上个战斗的奖励是下个战斗的消耗品）</li>
-</ol>
-<p>通过形成的这6种组合组成了更加丰富的任务、提升方式、战斗方式</p>
-<h4 id="战斗系统"><a href="#战斗系统" class="headerlink" title="战斗系统"></a>战斗系统</h4><p>回合制在个人战斗是携带5个宠物，而团战时满员只携带第一只宠物<br>回合制只需要操作2个单位，剩余单位是自动的<br>一般发怪用自动战斗<br>回合制的灵活性差一些，所以针对boss的打法相对固定，挑战性小一些</p>
-<p>隐墨宗的战斗系统是特殊一些的，分为2个形态<br>形态1就是普通输出，单控能力强，可以增加锁定控制的特殊效果<br>形态2是大规模输出，比其他职业输出更强，但是需要牺牲一个符鬼，而且不能连续2回合使用，而中间环节普通输出技能也无法使用只能普通攻击与使用物品或者召唤控制多一些<br>所以这里面使用时机需要把握，召唤兽的顺序也很重要，还是挺好玩的</p>
-<p>助战就是选择一组宠物，可以配置3组选1</p>
-<p><img src="https://images.gitee.com/uploads/images/2018/0821/150257_0e78ac7a_697510.png" alt="输入图片说明" title="屏幕截图.png"></p>
-<h4 id="任务"><a href="#任务" class="headerlink" title="任务"></a>任务</h4><p>因为任务与战斗都提供了自动机制，所以有些活动都是全自动的每日完成，只要手机挂在那里就行了，多少让我觉得有些浪费时间，这些每天不得不做又要占用手机的时间，还不如让我好好玩玩<br>其实最讨厌的就是自动任务了，自己也玩不了，但是每天都要强迫自己去浪费这个时间…</p>
-<p>任务亮点在于NPC是有配音的，并且有些还用了方言，所以一听就是良心作品，不过只有主线有配音，这个做的挺好的</p>
-<h4 id="炼妖-amp-合成系统"><a href="#炼妖-amp-合成系统" class="headerlink" title="炼妖&amp;合成系统"></a>炼妖&amp;合成系统</h4><p>分为2种：炼妖与机关组装2种，玩法不一样</p>
-<ol>
-<li>炼妖：通过炼妖炉合成，需要遵循五行相生，相克失败更高</li>
-<li>机关：需要收集组件合成</li>
-</ol>
-<p><img src="https://images.gitee.com/uploads/images/2018/0821/143124_39921bfc_697510.png" alt="输入图片说明" title="屏幕截图.png"></p>
-<p>他们引入这2个系统真的是结合了单机的玩法，还是挺良心的<br>2种模式要考虑平衡性，炼妖与零件合成的概率应该是差不多的</p>
-<p>炼妖要去壶中界去炼，这里游戏设定壶中界因为某种原因与炼妖壶神器脱离了成了一个地方<br><img src="https://images.gitee.com/uploads/images/2018/0821/142928_6dddf0d7_697510.png" alt="输入图片说明" title="屏幕截图.png"></p>
-<h4 id="天书系统"><a href="#天书系统" class="headerlink" title="天书系统"></a>天书系统</h4><p>天书的概念也是轩辕剑的一个特点，这次也加进去了<br>不过天书搞得与炼妖壶很像了，有各种工厂其实都是固定的设施，功能其实也比较鸡肋，炼化符，制成一些水晶用于升级技能用<br>基本上天书其实是对物品要素的加强，就是炼化物品<br>不过单机里天书可以自己选择地方建造建筑物，类似一个建造型的内部游戏了，针对我这种钟爱建设发展的用户真是喜欢的不得了，不过这网游没那么灵活的建造功能，只能升级，当时的天书里还有DOMO入口<br>单机天书里还能炼妖合成，妖怪属性的提升等，不过这里只是炼化物品（一个是普通的药品、一个是战斗特殊buff），而炼妖放到了壶中界中炼化，而妖怪属性提升是单独的洗练操作<br>其实天书炼妖壶是个很好的设定，可以在这里炼化物品，炼化宠物，同时培养一些副职业，还可以搞建筑发展</p>
-<p>这里游戏中天书世界也是独立存在，只需要有天书入口的密码即可进入这个世界，并且由姬良（张良）管理，也就是轩辕剑4的男主<br><img src="https://images.gitee.com/uploads/images/2018/0821/143605_b8723d9d_697510.png" alt="输入图片说明" title="屏幕截图.png"></p>
-<h3 id="副职业"><a href="#副职业" class="headerlink" title="副职业"></a>副职业</h3><p>其实一般的游戏中都有点小游戏会有趣一些，或者说有时候还会给出一些彩蛋与惊喜</p>
-<p>休闲包括：画画、知识问答、诗词、弹曲、打牌、演戏几个方向，对应了行当（副职业）的几种：画师、博士、诗人、乐师、谋士、怜人6大副职业</p>
-<ol>
-<li>画师就是收集各种场景中的植物山水然后拼图打分</li>
-<li>博士一个是找NPC答题考核，一个是每次会弹出一些知识问答答对了提升学识</li>
-<li>诗人就是完成活动任务给一些诗词的单句最终凑齐一首诗，然可以与匹配的一个人比对诗词，就看自己收集了多少用于应答各种场景</li>
-<li>乐师比较好玩，瞬间变成音乐节奏游戏，跟进游戏中的乐谱找NPC收集，然后选择难度弹奏，困难的的是真的很难~<br><img src="https://images.gitee.com/uploads/images/2018/0821/150114_1f753c5a_697510.png" alt="输入图片说明" title="屏幕截图.png"></li>
-<li>谋士也是找NPC收集卡片，类似简单的扑克，然后与NPC打牌</li>
-<li>怜人就是排练舞台剧，类似一个简单的动画制作软件，可以选择背景，出场人物，音乐，转场效果，指定台词，排练完了发布，会受到点赞与评论<br><img src="https://images.gitee.com/uploads/images/2018/0821/144001_28043b15_697510.png" alt="输入图片说明" title="屏幕截图.png"></li>
-</ol>
-<p><img src="https://images.gitee.com/uploads/images/2018/0821/145426_b7b87ab0_697510.png" alt="输入图片说明" title="屏幕截图.png"></p>
-<p>书斋分为4个：一个是副职业的NPC、一个是豪杰就是重点NPC人物、一个是神魔记录，还有一个收集的诗句<br>每一个都会记录里面的任务事件与人物背景</p>
-<p>副职业</p>
-<ol>
-<li>里面维护与每个NPC的好感度，好感度好的话NPC就会把自己的副职业的道具给出来</li>
-<li>NPC的好感度有个氪金的花买了后可以直接提升到满级</li>
-<li>NPC的情报可以去小二那边打听，每次只能打听到3条情报，而且每天只有一次问小二的机会，这个设计还挺好的</li>
-</ol>
-<p>神魔记录类似单机里的神魔记录簿，图鉴，也算是继承了特色了</p>
-<h3 id="统计"><a href="#统计" class="headerlink" title="统计"></a>统计</h3><p>成就、排行其实就是一般的统计数据的结果吧，这个没啥好说的</p>
-<p>特别点</p>
-<ol>
-<li>每个地点有些眼睛点击后可以看到地点的一些故事，收集多了会达成成就</li>
-</ol>
-<h3 id="关系与交互"><a href="#关系与交互" class="headerlink" title="关系与交互"></a>关系与交互</h3><p>好友、聊天</p>
-<ol>
-<li>频道聊天，包含系统、世界、当前、帮派、队伍</li>
-<li>好友列表与最近联系，可以添加好友，会跟你个人兴趣标签去匹配推荐</li>
-<li>圈子主要是朋友做过哪些事件</li>
-<li>邮箱，接收奖励与任务通知</li>
-<li>聊天窗口可以配置显示哪些频道信息，相当于频道聊天的快捷显示</li>
-<li>提供了连接麦克风的语音聊天方式，比较有趣的是在战斗中语音会自动翻译成弹幕飘在屏幕中</li>
-</ol>
-<p>队伍、帮派</p>
-<ol>
-<li>可以创建队伍，也可以便捷组队，选定哪些任务加入or创建，NPC里接任务时也会提示便捷组队，等待一段后会提示是否自己当队长</li>
-<li>帮派：可以管理成员，帮派是每小时是耗费资金的，所以需要做帮派任务才行，否则会解散，活动任务主要是丝绸之路与对战了，奇异果实可以在这里买</li>
-</ol>
-<p>副职业是每个角色都可以学习的，没有差异性，魔兽中只有法师能开传送门，做水与面包，每个职业的副职业都有特殊点促进好友交流<br>魔兽中有意思的还有语言差异，听不懂对方说的</p>
-<h4 id="空间"><a href="#空间" class="headerlink" title="空间"></a>空间</h4><p>空间感觉是在关系里是个亮点，可以配置自己的个性化标签，然后用于推荐好友用<br>一个是背景除了竹林与角色图还可以配置几张个人上传的图片<br>个人标签可以从性格、兴趣、行业、特征4个维度配置8个标签<br>空间还可以互赞，所以里面还有一个小的消息系统<br>可以配置定位、里面的动态就是个人的圈子的内容<br>还有一个盆栽是好友赠送用的</p>
-<p><img src="https://images.gitee.com/uploads/images/2018/0821/145548_83ccdaf2_697510.png" alt="输入图片说明" title="屏幕截图.png"></p>
-<p>感觉这个空间的设计可以加强好友互动，社交用的，可惜好友都是陌生人，也没发挥什么作用…</p>
-<h3 id="活动"><a href="#活动" class="headerlink" title="活动"></a>活动</h3><p>每天都有各种活动，有丰富奖励，活动内容每天不一样，所以活动里还提供了日历的预告功能<br>活动每天有经验限制，并且完成个数后有额外奖励，最多8个任务完成有额外奖励。活动提供3种玩法<br>悠闲、江湖、一剑凌云，休闲小游戏偏多，一剑凌云是剧情与挑战PK等任务，而江湖偏向于支线任务与混合<br>活动基本上是做副职业的挑战，刷各种副本，完成历史剧情任务，完成帮派任务，完成日常任务</p>
-<p>还有比较大的活动</p>
-<ol>
-<li>帮派任务：丝绸之路、挑战个人战绩</li>
-<li>日常任务：师门任务、抓盗贼、机器人选策略挑战、抓符鬼</li>
-<li>历史剧情任务：回到天之痕的各个阶段协助主角做任务，不过里面的任务都比较有挑战，需要技巧才能获胜，比如有的时候需要防御，阴阳相克，特殊技能</li>
-<li>各种副本：限时开放的刷龙九子、遗迹、封印妖怪</li>
-<li>副职业挑战：各种闲趣完成次数</li>
-</ol>
-<p><img src="https://images.gitee.com/uploads/images/2018/0821/145002_37a72556_697510.png" alt="输入图片说明" title="屏幕截图.png"></p>
-<p>福利也有很多</p>
-<ol>
-<li>每日登陆奖励</li>
-<li>绑定手机号</li>
-<li>神秘暗号（外部活动奖励码）</li>
-<li>充值奖励？</li>
-</ol>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>总体上还是很有诚意的作品，不过坚持玩不会超过7天吧，差不多战斗与社交没有亮点，冲着画面与剧情发力更像是在玩单机RPC游戏</p>
-<ol>
-<li>画面：水墨风好评，看着自动转动3D视角也很有电影的感觉，这个也是继承了单机的设计</li>
-<li>失败点：RPC玩单机玩的是剧情与战斗，而网游玩的是社交与战斗，我觉得这游戏做的最失败的一点是社交，好友都是虚的，都是不认识的人，这点会丧失RPC网游里最核心持之以恒的玩法</li>
-<li>战斗：有挑战的副本战斗我其实玩隐墨宗还是挺爽的，但是因为是回合制，大多都是自动战斗，所以不是每次都能体会到战斗的乐趣的</li>
-<li>任务：不过除了社交的玩法，其他传统单机优点剧情任务做的不错，确实也有些轩辕剑剧情的干货。不过我要是单纯为了剧情我可以去看网上的剧情剪辑流，不玩就能看，没必要去氪金与感受中间的不公平</li>
-<li>副业：而还有不错就是可以闲情小游戏的各种玩法也比较有趣，不过这种如果专门去玩就没必要在这么大RPC里去玩了，更像是成就系统，社交有得玩这个才有意义，所以这里就有些鸡肋了</li>
-</ol>
-<p>而轩辕剑在我周围认识的人里对其着迷的还只是少数人，而宣传为魔兽这样的游戏又不具备公平而完善的玩法，而且动画各种成本太高对于手游，其实发展社交确实挺难的，除非有腾讯的那种资源天然就有社交优势<br>所有手机RPC如果不重视社交与战斗注定是失败的快餐游戏，即使消费单机的IP，大家也都是冲着剧情来玩的，没有剧情玩完就走了<br>其实这种类似的游戏也挺多的，打着一个好的IP，然后做的网游也就是体验下，在氪金的情况下后期就放弃完了，比如什么火影呀日漫游戏的IP，而轩辕剑这部还好点，有不错的剧情任务，比其他IP游戏要良心，不过战斗与社交都是硬伤，注定都不能持久<br>现在手机游戏排行榜一般都是一些低频爽的游戏，如吃鸡、荣耀、部落、穿火、飞车、音乐对战类的游戏，这种游戏适合在手机上与旁边的好友同事偶尔玩一下，自己也可以爽一下得到放松，比RPC要更加持久<br>不过因为是公测，剧情与升级吸引我的地方所需要的氪金都是没有的，而真正玩家在玩的时候可能会氪金玩剧情，所以走剧情模式也不一定赔钱，只是玩完剧情后很空虚，所以后面会变为一个一次性游戏了吧</p>
-<h3 id="游戏模式感悟"><a href="#游戏模式感悟" class="headerlink" title="游戏模式感悟"></a>游戏模式感悟</h3><p>从开发角度看下开发的复杂性，其实游戏做个最简单的模式也不难，但是一旦把元素丰富起来，玩法就非常多了，不过这正好可以充分去使用面向对象的思路去设计，才能做到如此灵活而扩展<br>如果是建造类其实闭环更加简单，比如开罗游戏，城市建设需要钱，则钱需要通过订单服务（战斗+任务）然后生产钱，钱又可以造更好的建设生产更多的钱，形成一个循环，不过这个的核心是升级发展重点在主角（城市），订单是手段，因为只有2个核心，可以将2个核心扩大到更复杂<br>魔兽是社交与战斗做的都很好，帮派分明有特色，而DNF是战斗做的好，专注于副本，只有在网游特点中突出的游戏才能持久<br>后面尝试自己去设计一款游戏试试（开新坑=。=），估计会很有意思~</p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-	<div>
-	 
-	</div>
-	
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-	
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2018/08/13/SpringCloud-番外篇-源码解析/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Dawell">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Dawell的博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/08/13/SpringCloud-番外篇-源码解析/" itemprop="url">SpringCloud-番外篇-源码解析</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-08-13T16:07:04+08:00">
-                2018-08-13
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/技术/" itemprop="url" rel="index">
-                    <span itemprop="name">技术</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-             <span id="/2018/08/13/SpringCloud-番外篇-源码解析/" class="leancloud_visitors" data-flag-title="SpringCloud-番外篇-源码解析">
-               <span class="post-meta-divider">|</span>
-               <span class="post-meta-item-icon">
-                 <i class="fa fa-eye"></i>
-               </span>
-               
-                 <span class="post-meta-item-text">阅读次数 </span>
-               
-                 <span class="leancloud-visitors-count"></span>
-             </span>
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="SpringCloud文章系列"><a href="#SpringCloud文章系列" class="headerlink" title="SpringCloud文章系列"></a>SpringCloud文章系列</h1><ol>
-<li><a href="http://dawell.cc/2018/08/01/SpringCloud/" target="_blank" rel="noopener">SpringCloud</a></li>
-<li><a href="http://dawell.cc/2018/08/02/SpringCloud-%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83/" target="_blank" rel="noopener">SpringCloud-注册中心</a></li>
-<li><a href="http://dawell.cc/2018/08/03/SpringCloud-%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83/" target="_blank" rel="noopener">SpringCloud-配置中心</a></li>
-<li><a href="http://dawell.cc/2018/08/04/SpringCloud-%E9%93%BE%E8%B7%AF%E8%B7%9F%E8%B8%AA/" target="_blank" rel="noopener">SpringCloud-链路跟踪</a></li>
-<li><a href="http://dawell.cc/2018/08/05/SpringCloud-%E6%B6%88%E6%81%AF%E6%80%BB%E7%BA%BF/" target="_blank" rel="noopener">SpringCloud-消息总线</a></li>
-<li><a href="http://dawell.cc/2018/08/06/SpringCloud-API%E7%BD%91%E5%85%B3/" target="_blank" rel="noopener">SpringCloud-API网关</a></li>
-<li><a href="http://dawell.cc/2018/08/07/SpringCloud-%E5%BC%82%E6%AD%A5%E6%B6%88%E6%81%AF/" target="_blank" rel="noopener">SpringCloud-异步消息</a></li>
-<li><a href="http://dawell.cc/2018/08/08/SpringCloud-%E5%90%8C%E6%AD%A5%E8%B0%83%E7%94%A8/" target="_blank" rel="noopener">SpringCloud-同步调用</a></li>
-<li><a href="http://dawell.cc/2018/08/09/SpringCloud-%E6%96%AD%E8%B7%AF%E9%99%8D%E7%BA%A7/" target="_blank" rel="noopener">SpringCloud-断路降级</a></li>
-<li><a href="http://dawell.cc/2018/08/10/SpringCloud-%E7%9B%91%E6%8E%A7%E7%AE%A1%E7%90%86/" target="_blank" rel="noopener">SpringCloud-监控管理</a></li>
-<li><a href="http://dawell.cc/2018/08/11/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E4%B8%B4%E6%97%B6%E4%BB%BB%E5%8A%A1/" target="_blank" rel="noopener">SpringCloud-番外篇-临时任务</a></li>
-<li><a href="http://dawell.cc/2018/08/12/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E6%96%87%E6%A1%A3%E7%94%9F%E6%88%90/" target="_blank" rel="noopener">SpringCloud-番外篇-文档生成</a></li>
-<li>【当前文章】<a href="http://dawell.cc/2018/08/13/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" target="_blank" rel="noopener">SpringCloud-番外篇-源码解析</a></li>
-</ol>
-<p>敬请期待…</p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-	<div>
-	 
-	</div>
-	
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-	
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
@@ -2495,7 +2392,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">51</span>
+                <span class="site-state-item-count">58</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -2506,7 +2403,7 @@
             
             <div class="site-state-item site-state-categories">
               <a href="/categories/index.html">
-                <span class="site-state-item-count">4</span>
+                <span class="site-state-item-count">8</span>
                 <span class="site-state-item-name">分类</span>
               </a>
             </div>
@@ -2517,7 +2414,7 @@
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">25</span>
+                <span class="site-state-item-count">34</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
