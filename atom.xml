@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://dawell.github.io/"/>
-  <updated>2019-10-08T07:49:03.825Z</updated>
+  <updated>2019-10-08T09:34:18.644Z</updated>
   <id>https://dawell.github.io/</id>
   
   <author>
@@ -20,7 +20,7 @@
     <link href="https://dawell.github.io/2019/10/07/%E5%8D%9A%E5%AE%A2%E6%8F%92%E5%85%A5%E5%9B%BE%E7%89%87/"/>
     <id>https://dawell.github.io/2019/10/07/博客插入图片/</id>
     <published>2019-10-07T02:20:36.000Z</published>
-    <updated>2019-10-08T07:49:03.825Z</updated>
+    <updated>2019-10-08T09:34:18.644Z</updated>
     
     <content type="html"><![CDATA[<h1 id="Hexo插入图片解决方案"><a href="#Hexo插入图片解决方案" class="headerlink" title="Hexo插入图片解决方案"></a>Hexo插入图片解决方案</h1><p>如果使用公共博客，其实没这么麻烦，图片、评论、推广都帮你做了，个人博客就要分别解决这些问题</p>
 <h2 id="方案"><a href="#方案" class="headerlink" title="方案"></a>方案</h2><p>一般博客插入图片有以下几种方案</p>
@@ -70,7 +70,16 @@
 <p>这样在线下编写插入的图片就是如下格式，这样本地搜索路径就是<code>../../source</code>（typora-root-url）+<code>/imgs/image-20191007165004059.png</code>能在typora中正确显示</p>
 <p>而在线上相对路径前面会加上域名：变为域名+<code>/imgs/image-20191007165004059.png</code>也可以正确显示</p>
 <p>这样就完美了！ </p>
-<h2 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h2><p>TODO：考虑图片压缩替换上传，加速加载</p>
+<h2 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h2><p>可以用2个工具配合，先规整大小，然后再进行无损压缩！</p>
+<p>简单的话mac自带的可以，不过只能减少大小，图片一般1280 即可先等比例缩小大小 <code>sips -Z 1280 *.png</code></p>
+<p>压缩会按照照片的最大边限定1280等比缩放</p>
+<p>真正无损压缩，或者优化有部分损失压缩的工具比较好用的可以用ImageOptim</p>
+<ol>
+<li>官网下载<a href="https://imageoptim.com/howto.html" target="_blank" rel="noopener">https://imageoptim.com/howto.html</a></li>
+<li>使用非常方便，只要当前图片拖进去就开始压缩了，直接替换过去图片，可以先设置好启动有损，默认80%就可以，基本上6M图片能压缩到2M左右</li>
+</ol>
+<p>最好是图片写博客的时候都是经过裁剪的，如截屏之类的</p>
+<p>总体上多张图片115M，先进行像素标准化40M，然后压缩80%图片质量边25M左右，将近1/5的大小</p>
 ]]></content>
     
     <summary type="html">
@@ -87,7 +96,7 @@
     <link href="https://dawell.github.io/2019/10/05/%E5%8C%97%E4%BA%AC%E6%97%85%E6%B8%B8/"/>
     <id>https://dawell.github.io/2019/10/05/北京旅游/</id>
     <published>2019-10-05T11:28:07.000Z</published>
-    <updated>2019-10-08T07:54:22.865Z</updated>
+    <updated>2019-10-08T09:37:08.629Z</updated>
     
     <content type="html"><![CDATA[<h2 id="路线"><a href="#路线" class="headerlink" title="路线"></a>路线</h2><p>这次出行主要是父母一直想来北京玩玩，自己也想来北京玩过，中秋正好父母歇班有空就来玩了</p>
 <p>父母需求很简单，就是去故宫、长城就行了，其他的地方去不去都行，所以主要是这2个地方安排吧</p>

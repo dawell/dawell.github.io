@@ -79,6 +79,8 @@
 
 
 
+  
+
 
   <link rel="alternate" href="/atom.xml" title="Dawell的博客" type="application/atom+xml" />
 
@@ -99,7 +101,7 @@
 <meta property="og:site_name" content="Dawell的博客">
 <meta property="og:description" content="Hexo插入图片解决方案如果使用公共博客，其实没这么麻烦，图片、评论、推广都帮你做了，个人博客就要分别解决这些问题 方案一般博客插入图片有以下几种方案  公共图床 如网站上csdn、码云、百度链接上的图片，会因为定期扫描外链直接屏蔽   私有图床 微博图床，配合浏览器图床插件上传、mac用ipic方便上传，但是半年后会清理丢失 ipic提供私有存储：收费 自己的cdn服务开通：七牛云、又拍云、阿里">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2019-10-08T07:49:03.825Z">
+<meta property="og:updated_time" content="2019-10-08T09:34:18.644Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="博客插入图片">
 <meta name="twitter:description" content="Hexo插入图片解决方案如果使用公共博客，其实没这么麻烦，图片、评论、推广都帮你做了，个人博客就要分别解决这些问题 方案一般博客插入图片有以下几种方案  公共图床 如网站上csdn、码云、百度链接上的图片，会因为定期扫描外链直接屏蔽   私有图床 微博图床，配合浏览器图床插件上传、mac用ipic方便上传，但是半年后会清理丢失 ipic提供私有存储：收费 自己的cdn服务开通：七牛云、又拍云、阿里">
@@ -409,7 +411,16 @@
 <p>这样在线下编写插入的图片就是如下格式，这样本地搜索路径就是<code>../../source</code>（typora-root-url）+<code>/imgs/image-20191007165004059.png</code>能在typora中正确显示</p>
 <p>而在线上相对路径前面会加上域名：变为域名+<code>/imgs/image-20191007165004059.png</code>也可以正确显示</p>
 <p>这样就完美了！ </p>
-<h2 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h2><p>TODO：考虑图片压缩替换上传，加速加载</p>
+<h2 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h2><p>可以用2个工具配合，先规整大小，然后再进行无损压缩！</p>
+<p>简单的话mac自带的可以，不过只能减少大小，图片一般1280 即可先等比例缩小大小 <code>sips -Z 1280 *.png</code></p>
+<p>压缩会按照照片的最大边限定1280等比缩放</p>
+<p>真正无损压缩，或者优化有部分损失压缩的工具比较好用的可以用ImageOptim</p>
+<ol>
+<li>官网下载<a href="https://imageoptim.com/howto.html" target="_blank" rel="noopener">https://imageoptim.com/howto.html</a></li>
+<li>使用非常方便，只要当前图片拖进去就开始压缩了，直接替换过去图片，可以先设置好启动有损，默认80%就可以，基本上6M图片能压缩到2M左右</li>
+</ol>
+<p>最好是图片写博客的时候都是经过裁剪的，如截屏之类的</p>
+<p>总体上多张图片115M，先进行像素标准化40M，然后压缩80%图片质量边25M左右，将近1/5的大小</p>
 
       
     </div>
