@@ -277,6 +277,639 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2018/08/02/SpringCloud-注册中心/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dawell">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Dawell的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/08/02/SpringCloud-注册中心/" itemprop="url">SpringCloud-注册中心</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-08-02T19:29:32+08:00">
+                2018-08-02
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/技术/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+             <span id="/2018/08/02/SpringCloud-注册中心/" class="leancloud_visitors" data-flag-title="SpringCloud-注册中心">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="SpringCloud文章系列"><a href="#SpringCloud文章系列" class="headerlink" title="SpringCloud文章系列"></a>SpringCloud文章系列</h1><ol>
+<li><a href="http://dawell.cc/2018/08/01/SpringCloud/" target="_blank" rel="noopener">SpringCloud</a></li>
+<li>【当前文章】<a href="http://dawell.cc/2018/08/02/SpringCloud-%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83/" target="_blank" rel="noopener">SpringCloud-注册中心</a></li>
+<li><a href="http://dawell.cc/2018/08/03/SpringCloud-%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83/" target="_blank" rel="noopener">SpringCloud-配置中心</a></li>
+<li><a href="http://dawell.cc/2018/08/04/SpringCloud-%E9%93%BE%E8%B7%AF%E8%B7%9F%E8%B8%AA/" target="_blank" rel="noopener">SpringCloud-链路跟踪</a></li>
+<li><a href="http://dawell.cc/2018/08/05/SpringCloud-%E6%B6%88%E6%81%AF%E6%80%BB%E7%BA%BF/" target="_blank" rel="noopener">SpringCloud-消息总线</a></li>
+<li><a href="http://dawell.cc/2018/08/06/SpringCloud-API%E7%BD%91%E5%85%B3/" target="_blank" rel="noopener">SpringCloud-API网关</a></li>
+<li><a href="http://dawell.cc/2018/08/07/SpringCloud-%E5%BC%82%E6%AD%A5%E6%B6%88%E6%81%AF/" target="_blank" rel="noopener">SpringCloud-异步消息</a></li>
+<li><a href="http://dawell.cc/2018/08/08/SpringCloud-%E5%90%8C%E6%AD%A5%E8%B0%83%E7%94%A8/" target="_blank" rel="noopener">SpringCloud-同步调用</a></li>
+<li><a href="http://dawell.cc/2018/08/09/SpringCloud-%E6%96%AD%E8%B7%AF%E9%99%8D%E7%BA%A7/" target="_blank" rel="noopener">SpringCloud-断路降级</a></li>
+<li><a href="http://dawell.cc/2018/08/10/SpringCloud-%E7%9B%91%E6%8E%A7%E7%AE%A1%E7%90%86/" target="_blank" rel="noopener">SpringCloud-监控管理</a></li>
+<li><a href="http://dawell.cc/2018/08/11/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E4%B8%B4%E6%97%B6%E4%BB%BB%E5%8A%A1/" target="_blank" rel="noopener">SpringCloud-番外篇-临时任务</a></li>
+<li><a href="http://dawell.cc/2018/08/12/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E6%96%87%E6%A1%A3%E7%94%9F%E6%88%90/" target="_blank" rel="noopener">SpringCloud-番外篇-文档生成</a></li>
+<li><a href="http://dawell.cc/2018/08/13/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" target="_blank" rel="noopener">SpringCloud-番外篇-源码解析</a></li>
+</ol>
+<h3 id="接入说明"><a href="#接入说明" class="headerlink" title="接入说明"></a>接入说明</h3><ol>
+<li>目前采用最新的1.xRelease版本：1.5.15.RELEASE</li>
+<li>SpringCloud项目可以在start.spring.io下载，不过更方便的应该是通过idea新建项目，建立Spring Initializr项目</li>
+<li>我一般习惯将具体实现服务用具体的服务名，而公共组件用service-xxx来命名，当然还有一些比较固定名字的公共组件</li>
+</ol>
+<h3 id="Eureka"><a href="#Eureka" class="headerlink" title="Eureka"></a>Eureka</h3><h4 id="1-新建项目"><a href="#1-新建项目" class="headerlink" title="1. 新建项目"></a>1. 新建项目</h4><p>新建artifactId为eureka-service的服务</p>
+<h4 id="2-导入依赖"><a href="#2-导入依赖" class="headerlink" title="2. 导入依赖"></a>2. 导入依赖</h4><p>依赖说明</p>
+<ol>
+<li>actuator用于暴露监控的接口</li>
+<li>eureka-server是Eureka服务器的依赖</li>
+</ol>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-actuator<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-netflix-eureka-server<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h4 id="3-编写启动类"><a href="#3-编写启动类" class="headerlink" title="3. 编写启动类"></a>3. 编写启动类</h4><p>打开EurekaServiceApplication，在class上加入@EnableEurekaServer注解</p>
+<h4 id="4-修改配置"><a href="#4-修改配置" class="headerlink" title="4. 修改配置"></a>4. 修改配置</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">server.port=8761</span><br><span class="line">spring.application.name=eureka-service</span><br><span class="line"></span><br><span class="line"># private</span><br><span class="line">eureka.client.register-with-eureka=false</span><br><span class="line">eureka.client.fetch-registry=false</span><br></pre></td></tr></table></figure>
+<p>注册中心默认端口号8761<br>eureka.client.register-with-eureka代表开启自我注册，单机关闭<br>eureka.client.fetch-registry用于开启同步其他Eureka数据，单机关闭</p>
+<h4 id="5-启动main"><a href="#5-启动main" class="headerlink" title="5. 启动main"></a>5. 启动main</h4><h4 id="6-验证"><a href="#6-验证" class="headerlink" title="6. 验证"></a>6. 验证</h4><p>访问 <a href="http://localhost:8761/" target="_blank" rel="noopener">http://localhost:8761/</a> 可以看到单台的”System Status”、”DS Replicas”、”Instances currently registered”、”General Info”、”Instance Info”<br>Instance Info的status为UP，说明启动成功</p>
+<h3 id="Eureka集群"><a href="#Eureka集群" class="headerlink" title="Eureka集群"></a>Eureka集群</h3><p>作为注册中心，是非常关键的服务，几乎所有服务的启动与调用都依赖于注册中心，需要保证注册中心高可用，所以Eureka一般配置为集群模式</p>
+<p>如果不清楚在同一个工程中如何启动2种不同配置的服务器，请观看文章：<a href="">idea中同项目不同端口与配置启动多个步骤</a></p>
+<h4 id="1-修改配置文件"><a href="#1-修改配置文件" class="headerlink" title="1. 修改配置文件"></a>1. 修改配置文件</h4><p>配置2个server，server1使用端口8761，server2使用端口8762</p>
+<p>server1<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">server.port=8761</span><br><span class="line">spring.application.name=eureka-service</span><br><span class="line"></span><br><span class="line"># private</span><br><span class="line">eureka.client.register-with-eureka=true</span><br><span class="line">eureka.client.fetch-registry=true</span><br><span class="line">eureka.client.service-url.defaultZone=http://localhost:8762/eureka</span><br></pre></td></tr></table></figure></p>
+<p>server2<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">server.port=8762</span><br><span class="line">spring.application.name=eureka-service</span><br><span class="line"></span><br><span class="line"># private</span><br><span class="line">eureka.client.register-with-eureka=true</span><br><span class="line">eureka.client.fetch-registry=true</span><br><span class="line">eureka.client.service-url.defaultZone=http://localhost:8761/eureka</span><br></pre></td></tr></table></figure></p>
+<p>如果超过2台的集群怎么配置？</p>
+<ol>
+<li>defaultZone可以配置多个用”,”隔开，其实链接其中一个就能整个集群链接同步，不过一般担心某一台出现问题，还是配置多台</li>
+</ol>
+<h4 id="2-启动"><a href="#2-启动" class="headerlink" title="2. 启动"></a>2. 启动</h4><p>启动server1<br>启动server2</p>
+<h4 id="3-验证"><a href="#3-验证" class="headerlink" title="3. 验证"></a>3. 验证</h4><p>访问 <a href="http://localhost:8761/" target="_blank" rel="noopener">http://localhost:8761/</a> 看到”Instances currently registered”中EUREKA-SERVICE的UP是2个<br><a href="http://localhost:8762/" target="_blank" rel="noopener">http://localhost:8762/</a> 看到”Instances currently registered”中EUREKA-SERVICE的UP是2个</p>
+<h3 id="客户端使用"><a href="#客户端使用" class="headerlink" title="客户端使用"></a>客户端使用</h3><h4 id="1-添加依赖"><a href="#1-添加依赖" class="headerlink" title="1. 添加依赖"></a>1. 添加依赖</h4><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-netflix-eureka-client<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h4 id="2-开启注解"><a href="#2-开启注解" class="headerlink" title="2. 开启注解"></a>2. 开启注解</h4><p>启动类+@EnableEurekaClient</p>
+<h4 id="3-修改配置"><a href="#3-修改配置" class="headerlink" title="3. 修改配置"></a>3. 修改配置</h4><p>eureka.client.serviceUrl.defaultZone的默认值是 <a href="http://localhost:8761" target="_blank" rel="noopener">http://localhost:8761</a></p>
+<p>基于以上集群可以配置如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">spring.application.name=xxx-service</span><br><span class="line">eureka.client.serviceUrl.defaultZone=http://localhost:8761/eureka,http://localhost:8762/eureka</span><br></pre></td></tr></table></figure>
+<p>注意事项</p>
+<ol>
+<li>/eureka这个必须加上，否则是注册不上去的</li>
+<li>spring.application.name是必须设置的，用于标识注册中心中服务的名称</li>
+</ol>
+<h4 id="疑问"><a href="#疑问" class="headerlink" title="疑问"></a>疑问</h4><p>为什么客户端也需要配置2台，配置1台可以么？<br>可以配置一台。如果之前已经注册过server1了，会同步给server2，即使server1挂了，注册上的服务依然可以通过server2路由到<br>但是如果server1挂了，则后续只指定server1的client就无法启动成功，无法注册到Eureka上，所以为了启动注册的高可用需要配置多台</p>
+<ol>
+<li>优化：后续公共配置可以抽离到配置中心中，避免修改不同步问题，后续配置中心章节会讲</li>
+</ol>
+<h4 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h4><ol>
+<li>spring.application.name 不能包含下划线，因为在eureka中java.net.URI不能区分下划线，否则在进行服务调用的时候报错（host name may not be null）；</li>
+<li>注意eureka的Maven坐标发布过2种命名方式，其中一种已经废弃，使用最新版的命名可以保证后续更新（明确了客户端与服务器依赖，与公司名称）<ol>
+<li>历史上的废弃版本：spring-cloud-starter-eureka与spring-cloud-starter-eureka-server</li>
+<li>最新版本命名：spring-cloud-starter-netflix-eureka-client与spring-cloud-starter-netflix-eureka-server</li>
+</ol>
+</li>
+</ol>
+<h3 id="SpringCloud注册中心抽象层"><a href="#SpringCloud注册中心抽象层" class="headerlink" title="SpringCloud注册中心抽象层"></a>SpringCloud注册中心抽象层</h3><p>目前用到的注解都是@EnableEurekaClient，@EnableEurekaServer，而且配置都是eureka开头的，耦合了Eureka<br>其实为了方便替换注册中心实现，或者规范配置中心，SpringCloud针对多种实现提供一个抽象层，提供了通用的注解与配置，Eureka也是其中的一种实现而已</p>
+<h4 id="抽象层配置"><a href="#抽象层配置" class="headerlink" title="抽象层配置"></a>抽象层配置</h4><p>主要防止客户端的强依赖，所以只提供了客户端的注解，服务端直接就是具体的注册中心实现<br>客户端注解：@EnableDiscoveryClient<br>客户端配置：略…</p>
+<h3 id="其他注册中心"><a href="#其他注册中心" class="headerlink" title="其他注册中心"></a>其他注册中心</h3><p>目前业界有Consul、Zookeeper、etcd等实现方案，这里列举常用的2种</p>
+<h3 id="快速接入"><a href="#快速接入" class="headerlink" title="快速接入"></a>快速接入</h3><h4 id="Consul"><a href="#Consul" class="headerlink" title="Consul"></a>Consul</h4><p>下载consul启动，server.port=8503，spring.cloud.consul.host=127.0.0.1，spring.cloud.consul.port=8500 #设置不需要注册到 consul 中spring.cloud.consul.discovery.register=false 消费端可以不注册<br>    服务器：spring-boot-starter-actuator + spring-cloud-starter-consul-discovery + @EnableDiscoveryClient spring.cloud.consul.host spring.cloud.consul.port=8500  spring.cloud.consul.discovery.serviceName=service-producer</p>
+<h4 id="Zookeeper"><a href="#Zookeeper" class="headerlink" title="Zookeeper"></a>Zookeeper</h4><p>dependencys:spring-cloud-zookeeper-dependencies + spring-cloud-zookeeper-discovery + Apache Curator + Zookeeper Java Client + @EnableDiscoveryClient：自动连接 <a href="http://localhost:2181" target="_blank" rel="noopener">http://localhost:2181</a> 的注册中心（zookeeper.connectString）<br>    服务器：zookeeper集群</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+	<div>
+	 
+	</div>
+	
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+	
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2018/08/01/SpringCloud/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dawell">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Dawell的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/08/01/SpringCloud/" itemprop="url">SpringCloud</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-08-01T16:11:31+08:00">
+                2018-08-01
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/技术/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+             <span id="/2018/08/01/SpringCloud/" class="leancloud_visitors" data-flag-title="SpringCloud">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数 </span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>今天开始介绍了业界比较火的SpringCloud生态</p>
+<h1 id="SpringCloud文章系列"><a href="#SpringCloud文章系列" class="headerlink" title="SpringCloud文章系列"></a>SpringCloud文章系列</h1><ol>
+<li>【当前文章】<a href="http://dawell.cc/2018/08/01/SpringCloud/" target="_blank" rel="noopener">SpringCloud</a></li>
+<li><a href="http://dawell.cc/2018/08/02/SpringCloud-%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83/" target="_blank" rel="noopener">SpringCloud-注册中心</a></li>
+<li><a href="http://dawell.cc/2018/08/03/SpringCloud-%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83/" target="_blank" rel="noopener">SpringCloud-配置中心</a></li>
+<li><a href="http://dawell.cc/2018/08/04/SpringCloud-%E9%93%BE%E8%B7%AF%E8%B7%9F%E8%B8%AA/" target="_blank" rel="noopener">SpringCloud-链路跟踪</a></li>
+<li><a href="http://dawell.cc/2018/08/05/SpringCloud-%E6%B6%88%E6%81%AF%E6%80%BB%E7%BA%BF/" target="_blank" rel="noopener">SpringCloud-消息总线</a></li>
+<li><a href="http://dawell.cc/2018/08/06/SpringCloud-API%E7%BD%91%E5%85%B3/" target="_blank" rel="noopener">SpringCloud-API网关</a></li>
+<li><a href="http://dawell.cc/2018/08/07/SpringCloud-%E5%BC%82%E6%AD%A5%E6%B6%88%E6%81%AF/" target="_blank" rel="noopener">SpringCloud-异步消息</a></li>
+<li><a href="http://dawell.cc/2018/08/08/SpringCloud-%E5%90%8C%E6%AD%A5%E8%B0%83%E7%94%A8/" target="_blank" rel="noopener">SpringCloud-同步调用</a></li>
+<li><a href="http://dawell.cc/2018/08/09/SpringCloud-%E6%96%AD%E8%B7%AF%E9%99%8D%E7%BA%A7/" target="_blank" rel="noopener">SpringCloud-断路降级</a></li>
+<li><a href="http://dawell.cc/2018/08/10/SpringCloud-%E7%9B%91%E6%8E%A7%E7%AE%A1%E7%90%86/" target="_blank" rel="noopener">SpringCloud-监控管理</a></li>
+<li><a href="http://dawell.cc/2018/08/11/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E4%B8%B4%E6%97%B6%E4%BB%BB%E5%8A%A1/" target="_blank" rel="noopener">SpringCloud-番外篇-临时任务</a></li>
+<li><a href="http://dawell.cc/2018/08/12/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E6%96%87%E6%A1%A3%E7%94%9F%E6%88%90/" target="_blank" rel="noopener">SpringCloud-番外篇-文档生成</a></li>
+<li><a href="http://dawell.cc/2018/08/13/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" target="_blank" rel="noopener">SpringCloud-番外篇-源码解析</a></li>
+</ol>
+<h2 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h2><p>所有演示代码都已经公开到github中<br><a href="https://github.com/Dawell/springcloud-demo" target="_blank" rel="noopener">点我查看</a></p>
+<h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><p>我们登录 <a href="https://spring.io" target="_blank" rel="noopener">https://spring.io</a> 可以看到Spring的发展计划了<br><img src="https://images.gitee.com/uploads/images/2018/0802/161451_98cf806f_697510.png" alt="Spring官网" title="Spring官网"></p>
+<p>可以看到现在Spring主推3个东西：SpringBoot（构造一切）、SpringCloud（协调一切）、SpringCloudDataFlow（链接一切SpringXD，类似编排与管道处理）<br>在整个Java生态中，从开发工具集成—大规模分布式业务处理集成—走向大数据处理，生态在逐步扩大，而且可能是仅次于Java规范标准的开发标准了</p>
+<p>Java程序员中应该都知道并且用过Spring框架去开发项目</p>
+<h2 id="回顾下整个Spring的发展"><a href="#回顾下整个Spring的发展" class="headerlink" title="回顾下整个Spring的发展"></a>回顾下整个Spring的发展</h2><p>Spring创始人：Rod Johnson，Spring本身是免费的，主要靠培训与付费咨询赚钱<br>Spring公司叫做SpringSource，2009年被VMware收购，Rod用这个钱又收购了一批公司，其中有GemStone，12年12306挂掉的时候进行了17种技术选型PK，最终选择了他们家的Pivotal GemFire 分布式解决方案，去掉小型机用x86机器耗时减少75倍以上<br>后来VMare与EMC等公司成立Privotal，发展大数据技术，诞生了SpringBoot、SpringCloud等技术，可以看到未来大数据领域逐步会发展起来</p>
+<h3 id="Spring"><a href="#Spring" class="headerlink" title="Spring"></a>Spring</h3><p>2004年发布了Spring，2006发布2.0，2007年发布2.5，2009年发布3.0，2013年发布4.0，2017年发布了5.0</p>
+<ol>
+<li>Spring2个特性：IOC（依赖注入）与AOP（面向切面编程）</li>
+<li>遵循Spring设计可以保持良好的设计与扩展能力，Spring里帮你实现了常用的设计模式，按照规范开发可以天然的实现解耦与扩展能力</li>
+<li>可以快速标准的接入Java生态中的各种功能组件，因为他们都对Spring进行了支持，需要什么就加对应的依赖+bean配置+参数配置，然后注入使用</li>
+<li>Spring的缺点：就是配置很多，接入什么组件都需要去找标准的使用配置方式粘贴过来改改，大项目要拆分出一大堆xml配置，后来虽然推出了JavaConfig方式也依然有较多配置</li>
+<li>目前3已经停止维护，4与5在维护，5是目前的重点</li>
+</ol>
+<h3 id="SpringMVC"><a href="#SpringMVC" class="headerlink" title="SpringMVC"></a>SpringMVC</h3><p>在Spring1.0就有SpringMVC，最初自己的MVC是基于bean配置的，2007年2.5发布时推出了注解式的SpringMVC编写，在2009年Spring推出3.x之后加入Restful支持，SpringMVC逐渐出名，后面逐步干掉了Struts1+Struts2（WebWork）</p>
+<ol>
+<li>与Spring框架的浑然一体</li>
+<li>基于注解处理请求，大多提高了开发效率，对Restful规范支持的比较好</li>
+<li>Struts非常臃肿，SpringMVC简单，开发效率高</li>
+<li>相比Struts安全性较高（Struts各种安全漏洞助攻SpringMVC的发展）</li>
+</ol>
+<h3 id="SpringBoot"><a href="#SpringBoot" class="headerlink" title="SpringBoot"></a>SpringBoot</h3><p>2014年推出了SpringBoot框架，2018年推出了2.0（基于Spring5）</p>
+<ol>
+<li>提升了开发效率，遵守约定大于配置的原则，遵循82原则，80%配置一般都是不需要自定义的，同时统一了依赖版本号</li>
+<li>解决了配置多的问题，提供AutoConfig的机制自动加载默认配置，可以按照条件自动替换bean实现，自动加载新的bean功能，依赖各种Starter使得扩展功能开箱即用</li>
+<li>web项目简化了容器如tomcat的集成，可以直接main启动，这不仅仅是因为方便，还因为一个更大的计划：基于Spring5的SpringBoot2.x版本还想用WebFlux干掉Servlet规范=。=</li>
+<li>提供了Actuator工具，标准化监控的指标</li>
+</ol>
+<h3 id="SpringCloud"><a href="#SpringCloud" class="headerlink" title="SpringCloud"></a>SpringCloud</h3><p>2014年推出了SpringCloud生态工具集，17年E版本与SpringBoot1.4达到最佳，F版本对应SpringBoot2.x（SpringBoot与SpringCloud双子星发展）</p>
+<ol>
+<li>跟进业界流程的微服务的设计理念提供了一整套的微服务配套服务的标准抽象，提供中间件、分布式工具、监控3个分布式系统需要的能力，给大部分分布式系统的问题提供了能落地的解决方案</li>
+<li>联合Netflix公司与业界开源实现，推出了现成的技术实现，目前的技术选型中立，也可以基于标准适配其他分布式组件</li>
+<li>提供了各种云服务平台的集成，AWS，CloudFoundry等平台的集成</li>
+</ol>
+<h1 id="SpringCloud包含什么"><a href="#SpringCloud包含什么" class="headerlink" title="SpringCloud包含什么"></a>SpringCloud包含什么</h1><p>SpringCloud可以说是基于SpringBoot的一套生态，定义了一些抽象层与标准，具体的实现可以是开源的方案，不单单是Spring自己实现的<br>所以可以看到SpringCloud每次推出版本号不是基于数字的（”大版本不兼容.新功能版本.bug修复小版本”，如3.4.12.RELEASE），而是基于名字来代表一套组件的<br><img src="https://images.gitee.com/uploads/images/2018/0802/172548_35b0381d_697510.png" alt="SpringCloud版本" title="SpringCloud版本 目前维护E、F，而D不再升级"><br>名字是基于伦敦的地铁站名字命名，每个大版本命名就是根据ABCDEF等字母顺序排列，后面的SRx就是第几个功能升级版本，从Finchley开始，基于SpringBoot2.x版本开发了，不过现在业界大多用的都是1.x</p>
+<h2 id="SpringCloud基于以下组件"><a href="#SpringCloud基于以下组件" class="headerlink" title="SpringCloud基于以下组件"></a>SpringCloud基于以下组件</h2><h3 id="中间件类："><a href="#中间件类：" class="headerlink" title="中间件类："></a>中间件类：</h3><ol>
+<li>Spring Cloud Netflix Eureka</li>
+<li>Spring Cloud Consul</li>
+<li>Spring Cloud Zookeeper</li>
+<li>Spring Cloud Config</li>
+<li>Spring Cloud Bus</li>
+<li>Spring Cloud Netflix Zuul</li>
+<li>Spring Cloud Gateway</li>
+<li>Spring Cloud Task</li>
+<li>Spring Cloud Stream</li>
+<li>Spring Cloud Dataflow</li>
+</ol>
+<h3 id="工具类："><a href="#工具类：" class="headerlink" title="工具类："></a>工具类：</h3><ol>
+<li>Spring Cloud Netflix Hystrix</li>
+<li>Spring Cloud Cluster</li>
+<li>Spring Cloud Security</li>
+<li>Feigon</li>
+<li>Ribbon</li>
+</ol>
+<h3 id="监控类："><a href="#监控类：" class="headerlink" title="监控类："></a>监控类：</h3><ol>
+<li>Spring Cloud Sleuth</li>
+<li>Spring Cloud Turbine</li>
+<li>Spring Boot Actuator</li>
+<li>Spring Boot Admin</li>
+</ol>
+<h3 id="云服务类："><a href="#云服务类：" class="headerlink" title="云服务类："></a>云服务类：</h3><ol>
+<li>Spring Cloud for Cloud Foundry</li>
+<li>Spring Cloud for Amazon Web Services（AWS）</li>
+</ol>
+<p>这些服务一会都会介绍下作用，在介绍之前我们要先了解下分布式系统中的问题，为什么需要这么多组件？</p>
+<h1 id="分布式系统的问题"><a href="#分布式系统的问题" class="headerlink" title="分布式系统的问题"></a>分布式系统的问题</h1><p>分布式系统面临着很多问题要解决，那为什么一定是分布式的呢？微服务架构与SOA有啥区别？分布式系统为啥问题这么多，我们怎么解决？这里将会逐步展开说明</p>
+<h2 id="服务架构的演化"><a href="#服务架构的演化" class="headerlink" title="服务架构的演化"></a>服务架构的演化</h2><p>不同的阶段与公司的发展阶段有关，服务架构都是逐步进化而来<br>在架构升级的过程中中间的2种架构形态没必要去经历，针对中小型企业建议最初单体应用不能满足时直接升级到微服务架构中来，不过这需要一个拆分迁移的过程</p>
+<h3 id="单体应用"><a href="#单体应用" class="headerlink" title="单体应用"></a>单体应用</h3><p>单体应用就是所有业务逻辑与实现都在同一个工程中<br><img src="https://images.gitee.com/uploads/images/2018/0802/212545_8c4945f9_697510.png" alt="输入图片说明" title="屏幕截图.png"><br>单体应用适用于企业早期，人少业务少的情况下，为了专注于业务逻辑与分工代价，一个人负责全部或者一大堆业务开发时，这种方式简单高效<br>但是随着企业发展，业务多样人员增多时，单体的缺点逐步暴露出来</p>
+<p>单体应用缺点</p>
+<ol>
+<li>复杂性高：难以维护，耦合，依赖多个jar</li>
+<li>技术债务：不坏不修，所以遗留问题多，错误的调用也多了</li>
+<li>发布频率不一样：提高风险，发布慢</li>
+<li>扩展能力不一样：有CPU密集与IO型，耦合一起</li>
+<li>稳定性，任何一个bug都会导致整个服务挂</li>
+<li>阻止创新：比如Struts的无法升级SpringMVC</li>
+</ol>
+<h3 id="垂直应用"><a href="#垂直应用" class="headerlink" title="垂直应用"></a>垂直应用</h3><p>垂直应用架构就是不同的业务进行了拆分，比如理财业务、信贷业务、电商业务，但是数据库都还用一套，而且公共的模块比如用户中心、短信发送等功能都用jar来共享的方式减少重复代码<br><img src="https://images.gitee.com/uploads/images/2018/0802/212600_d9ef67dc_697510.png" alt="输入图片说明" title="屏幕截图.png"><br>这种服务中过去就都用SSH框架或者SSM框架去开发，然后nginx配置个域名或者挂到同域不同path下就完事了</p>
+<h3 id="服务化架构（如SOA）"><a href="#服务化架构（如SOA）" class="headerlink" title="服务化架构（如SOA）"></a>服务化架构（如SOA）</h3><p>随着业务进一步发展，发现有很多公共的服务jar也无法满足了，每次升级jar都需要把依赖的服务全部重启升级，而且无法做到松耦合高内聚，jar内功能的使用情况未知<br>而且不止jar共享，业务线之间也需要相互调用，而且一个业务线服务为了把相对不变的服务层与变化多端的MVC逻辑拆分开希望改为远程调用<br>这时候引入一种合适的远程调用方式而且又能高效与适配是最好了，所以诞生了很多这种框架，如java体系的dubboRPC，Thift，WebServiceSOAP、SOA的解决方案<br>SOA这个就非常重了，通信方式比较麻烦，引入了ESB企业服务总线的设计，服务通信都需要走ESB，这一层还有很多业务聚合逻辑，非常复杂<br>dubbo相对是非常好的框架了，dubbo在2012年开源到SpringCloud火之前，很多企业使用dubbo进行了服务化改造<br><img src="https://images.gitee.com/uploads/images/2018/0802/212635_44f57d55_697510.png" alt="输入图片说明" title="屏幕截图.png"><br>于是最终像用户中心、通知中心、订单中心、库存中心这类公共的服务不再是jar包，而升级为了独立部署的服务，逐步做大发展为后期的大中台小前台结构</p>
+<h3 id="微服务架构"><a href="#微服务架构" class="headerlink" title="微服务架构"></a>微服务架构</h3><p>其实服务化架构下已经非常的可靠了，基本满足了企业架构的要求，不过服务之间还会有很多影响，没有做到完全的独立，比如服务实例几个部署在同机器，数据库还是共用一个库<br>而且因为服务化架构很多服务的调用拆分没有特定的指导原则导致一些链路超级长的拆分模式如：跟进控制器-服务-数据库3层模式拆分为3个服务，一次请求就要经历至少2次RPC调用<br>在微服务的设计中提倡垂直业务线聚合一个业务逻辑，保持业务的服务层与数据访问层在一起，减少横向拆分，进行竖向的业务拆分，而且保持一个数据库只被一个微服务使用，做到数据库层面的隔离<br>除此之外部署最好也是完全隔离的，不但是一个tomcat只部署一个web网站，而且一台机器最好只部署一个服务，当然实际可以使用虚拟化技术如VM虚拟机与docker技术去隔离，docker与微服务目前是最佳搭档<br>在SOA中有很多中心化的设计，如ESB，服务编排各种链路上的调用a依赖b，b依赖c，c依赖d，而在微服务中希望有一个总调度改为a调用b、c、d这种模式，减少链路<br>同时并不提倡使用分布式事务，而是采用一些最终一致性的解决方案去正面迎击分布式问题<br>微服务希望调用之间的协议保持轻量，而且具备跨语言通用性，推荐使用RestfulHTTP通信<br><img src="" alt="图片"><br>所以微服务其实更像是基于服务化架构之上教你怎么去设计服务拆分的原则，更像是一个不包含某些功能的SOA架构<br>所以服务化中的很多问题的解决方案，微服务是直接继承的，本质上都是分布式系统中的一些问题，所以接下来聊一下分布式系统中的问题怎么解决</p>
+<h2 id="微服务架构下的分布式系统问题"><a href="#微服务架构下的分布式系统问题" class="headerlink" title="微服务架构下的分布式系统问题"></a>微服务架构下的分布式系统问题</h2><p>分布式下的应用失去了很多单体应用的优势，比如在内存中方法直接的调用变为了远程网络的调用，水平扩展后服务实例变多如何做路由如何在服务挂了的时候感知到<br>微服务分布式下独立多个DB如何保证事务性，外部服务如何调用内部服务呢？接下来进一步讨论</p>
+<h3 id="进程间通信"><a href="#进程间通信" class="headerlink" title="进程间通信"></a>进程间通信</h3><p>其实在单体普通的方法调用直接就可以区分出几种类型同样适用于网络中的场景<br>参考单体方法调用，网络通信按照大类分为同步、异步的方式，同时有的请求需要返回值，有的则不需要，而异步请求还存在一对多的情况，所以排列组合就有了几种模式</p>
+<p>不同服务主机通过网络进行通信的几种模式</p>
+<ol>
+<li>同步需要返回值：请求/响应模式：HTTP请求</li>
+<li>同步不需要返回值：通知模式：dubbo oneWay模式</li>
+<li>异步单调用需要返回值：请求/异步响应模式：nio与netty（相当于）、aio、CompletableFuture与RxJava类似的网络异步通信模式</li>
+<li>异步单调用不需要返回值：异步通知模式</li>
+<li>异步多调用需要返回值：发布/异步相应模式</li>
+<li>异步多调用不需要返回值：发布/订阅模式：消息队列</li>
+</ol>
+<p>基于服务开发的难度与模型的复杂度，一般开发常用到的是同步使用”请求/响应模式”与异步使用”发布/订阅模式”<br>在微服务中针对同步调用一般使用HTTPRestful请求服务，因为远程调用，所以这里会涉及注册发现的机制<br>异步一般使用消息中间件来请求服务</p>
+<h4 id="最终一致性"><a href="#最终一致性" class="headerlink" title="最终一致性"></a>最终一致性</h4><p>由于微服务拆分了，所以事务去掉了，改为了最终一致性，所以一般设计为事件驱动模式，所有的业务事件发生后发布订阅模式通知另一个业务，而另一个业务再通过事件回执调用方结果<br>如果中间业务不通则调用方要进行处理，所以出现了很多中间态的设计，而且如果是同步模型，则可能会调用失败，则需要状态位维护一致性，则消费方要可支持重试</p>
+<p>基于”发布/订阅模式”演化出了基于事件驱动的架构模式，所有的服务间通信都使用异步消息的模式请求与响应，同时业务场景中要多出各种中间态展示给用户<br>比如下单服务：因为订单能不能下成功取决于最终一致性请求所有依赖服务（用户额度、库存、物流）都回执ok后才能算作成功，否则只能取消该订单，当然在下单之前会进行各种同步查询检查，只是在检查通过最终执行时需要等待所有状态位都变为有效才能算作成功<br>这里还会引发另一个问题：如何保证我做完业务操作后发送消息队列一定是成功的，假设中间中断了呢？一旦中断则会造成最终的数据不一致<br>所以一种是通过本地事务队列，还有通过事务日志与db更新日志去扫描请求队列，当然还有一种就是常用的通过db中保存状态位+补偿定时任务去做这种错误情况的处理了</p>
+<h3 id="注册与发现"><a href="#注册与发现" class="headerlink" title="注册与发现"></a>注册与发现</h3><p>在微服务中客户端调用服务端，最简单的模式我是可以直接写死对方的地址去调用的<br><img src="" alt="图"><br>但是如果服务端水平扩展了多条机器，我就要在调用端写多台了，如果调用端也有多台，而运行时服务端加减任何机器都要修改所有的请求地址就很难处理了</p>
+<p>所以这时候需要采用一种方式避免这个问题，最终目的是客户端只要写死一个固定的地址or名字，每次请求的时候就能请求到真实的地址了<br>我可以在请求之前查找地址然后请求或者我请求一个代理的地址，所以服务发现有2种模式</p>
+<ol>
+<li>客户端发现：就是客户端主动查询注册表然后负载均衡请求一个端，缺点是不同的端都有这个逻辑，需要依赖一个client端，如Eureka、zk</li>
+<li>服务端发现：类似nginx，nginx来做注册表与负载请求，缺点是需要保证nginx的高可用，类似的还有consul</li>
+</ol>
+<p><img src="https://images.gitee.com/uploads/images/2018/0803/102309_fa3f9424_697510.png" alt="输入图片说明" title="基于客户端发现的发现方式"></p>
+<p>哪些服务可以用需要使用服务发现的技术<br>服务注册有2种模式</p>
+<ol>
+<li>自注册，自注册就是自己启动就自己去注册注册表，缺点是这个逻辑每个端都要写，同样需要依赖一个client端，如Eureka、zk</li>
+<li>第三方注册，类似consul，consul主动与应用心跳，然后传播给consul的注册表，缺点是需要保证consul高可用</li>
+</ol>
+<p>综合2种主要看你运行的环境是否具备发现与负载能力，有的云平台本身提供了这种能力如：kubernetes，可以自注册与路由服务，则可以用第二种模式<br>否则发现机制与注册机制都耦合一个统一的客户端也可以接受，这个客户端可以同时做这2个事情<br>目前dubbo也是基于客户端发现与自注册的模式去设计的<br>同时客户端发现与自注册还可以结合软负载做注册表没有及时更新的重路由请求，建议在没有强大的运维能力与云平台的支持下都采用这种设计，可以减少对环境的依赖，更具通用性，同时减少了链路的长度</p>
+<h3 id="服务的适配与屏蔽—API网关"><a href="#服务的适配与屏蔽—API网关" class="headerlink" title="服务的适配与屏蔽—API网关"></a>服务的适配与屏蔽—API网关</h3><p>API网关的作用一般用于做外部系统到内部系统转换的中间层，可以提供统一的服务端的公共功能，那这个东西为什么一定要统一到一个中间层呢？</p>
+<p>假设一个客户端要展示一个产品页面，上面有商品、用户、订单、评价、推荐等等需要集成8个微服务的接口调用<br>如果客户端直接调用8个服务端的微服务也可以实现，比如在nginx配置暴露同一个api.company.com/xxx/客户端发Rest调用到后端，请求8个微服务接口，但是会有几个缺点</p>
+<ol>
+<li>网络请求太多，客户端需求与服务暴露粒度不匹配</li>
+<li>技术实现不一样，有些面向二进制RPC对浏览器与防火墙不友好</li>
+<li>关注细节，难以重构，后续合并拆分客户端无法改动</li>
+</ol>
+<p>API网关：设计模式中的门面模式：网关封装内部系统的架构，并且提供 API 给各个客户端。它还可能还具备授权、监控、负载均衡、缓存、请求分片和管理、静态响应处理等功能</p>
+<ol>
+<li>优点：使用 API 网关的最大优点是，它封装了应用程序的内部结构</li>
+<li>缺点；API 网关也有一些不足。它增加了一个我们必须开发、部署和维护的高可用组件。还有一个风险是，API 网关变成了开发瓶颈，所以必须足够简单！</li>
+</ol>
+<p>一般针对大型互联网公司会有多套API网关，比如针对web端、APP端，还有开放平台端，APP端可能会有额外加密通信的逻辑，开放平台端会限制外部第三方的接口调用与计费<br>有的API网关直接使用nginx与插件去实现，不过nginx不太适合加太多扩展功能，更适合做静态分离，而在nginx后端的API网关可以负责更多职责<br>所以推荐是如下的架构模式<br><img src="" alt="图"></p>
+<h3 id="监控"><a href="#监控" class="headerlink" title="监控"></a>监控</h3><p>因为微服务众多，过去一次请求响应的过程会经过很多服务处理，如果一次请求失败了，如何才能知道是哪个环节出了问题呢，微服务中的监控非常重要，没有足够的监控手段执行微服务改造后问题将会难以排查<br><img src="https://images.gitee.com/uploads/images/2018/0803/102221_43653bba_697510.png" alt="输入图片说明" title="复杂的都动态调用关系"><br>监控一般分为几种</p>
+<ol>
+<li>机器状态的监控</li>
+<li>服务状态的监控：自身依赖的状态，降级的触发</li>
+<li>业务监控</li>
+<li>链路追踪</li>
+</ol>
+<p>分布式中主要解决链路追踪的问题<br>现今业界分布式服务跟踪的理论基础主要来自于 Google 的一篇论文《Dapper, a Large-Scale Distributed Systems Tracing Infrastructure》，使用最为广泛的开源实现是 Twitter 的 Zipkin，为了实现平台无关、厂商无关的分布式服务跟踪，CNCF 发布了布式服务跟踪标准 Open Tracing。<br>国内，淘宝的“鹰眼”、京东的“Hydra”、大众点评的“CAT”、新浪的“Watchman”、唯品会的“Microscope”、窝窝网的“Tracing”都是这样的系统。<br><img src="https://images.gitee.com/uploads/images/2018/0803/111737_9c660718_697510.png" alt="输入图片说明" title="屏幕截图.png"></p>
+<p>服务追踪的追踪单元是从客户发起请求（request）抵达被追踪系统的边界开始，到被追踪系统向客户返回响应（response）为止的过程，称为一个“trace”。每个 trace 中会调用若干个服务，为了记录调用了哪些服务，以及每次调用的消耗时间等信息，在每次调用服务时，埋入一个调用记录，称为一个“span”。这样，若干个有序的 span 就组成了一个 trace。在系统向外界提供服务的过程中，会不断地有请求和响应发生，也就会不断生成 trace，把这些带有span 的 trace 记录下来，就可以描绘出一幅系统的服务拓扑图。附带上 span 中的响应时间，以及请求成功与否等信息，就可以在发生问题的时候，找到异常的服务；根据历史数据，还可以从系统整体层面分析出哪里性能差，定位性能优化的目标。</p>
+<h1 id="SpringCloud组件介绍"><a href="#SpringCloud组件介绍" class="headerlink" title="SpringCloud组件介绍"></a>SpringCloud组件介绍</h1><p>SpringCloud里有很多组件，我简单的将其分成4类，相对独立部署的组件叫做”中间件”，嵌入到服务中的组件叫做”工具类”，与监控有关的属于”监控类”，剩余组件属于”其他”</p>
+<p>Spring项目可以使用<a href="http://start.spring.io脚手架生成项目，非常方便" target="_blank" rel="noopener">http://start.spring.io脚手架生成项目，非常方便</a></p>
+<p>SpringCloud中为了区别应用业务配置独立了bootstrap.properties文件，独立的BootstrapContext，与application.properties共存，并且bootstrap要比application优先级高<br>并且很多SpringCloud组件的配置必须配置在bootstrap中才生效，如配置中心的git path地址</p>
+<h2 id="中间件"><a href="#中间件" class="headerlink" title="中间件"></a>中间件</h2><p>中间件基本可以概括为3类：服务注册配置管理、API网关、异步处理</p>
+<ol>
+<li>服务注册配置管理：解决分布式系统中的”注册与发现”问题，同时”配置中心”作为分布式系统的一种标配与注册中心形成一对搭档</li>
+<li>API网关：解决分布式系统中的”服务的适配与屏蔽”问题</li>
+<li>异步处理：在前面章节中我们介绍过”进程间通信”，微服务领域之间是松耦合的，所以分布式中很多逻辑都是异步在处理，比如异步通知，定时任务与聚合计算处理</li>
+</ol>
+<h3 id="服务注册配置管理"><a href="#服务注册配置管理" class="headerlink" title="服务注册配置管理"></a>服务注册配置管理</h3><h4 id="SpringCloud组件"><a href="#SpringCloud组件" class="headerlink" title="SpringCloud组件"></a>SpringCloud组件</h4><ol>
+<li>Spring Cloud Netflix Eureka</li>
+<li>Spring Cloud Consul</li>
+<li>Spring Cloud Zookeeper</li>
+<li>Spring Cloud Config</li>
+<li>Spring Cloud Bus</li>
+</ol>
+<h4 id="注册中心"><a href="#注册中心" class="headerlink" title="注册中心"></a>注册中心</h4><p>Eureka、Consul、Zookeeper都是注册中心的解决方案</p>
+<ol>
+<li>SpringCloud层提供了一个注册中心的抽象层，具体的第三方组件可以作为这层抽象层的一种具体的实现，提供了一套基于注解的注册发现功能</li>
+<li>Eureka是SpringCloud首推的注册中心，基于客户端发现与自注册模型，对SC体系支持性最好，属于Netflix公司的开源实现，其没有实现配置中心的功能，需要额外的配置中心组建配合，可以使用SpringCloudConfig组合<ol>
+<li>Eureka在CAP中属于AP，牺牲了一致性，保证了可用性，所以其注册过程中只要1台注册成功就可以发现到，注册过程比较快，但是多台Eureka可能数据不一致</li>
+<li>本质上A其实也不是完全保证的，Eureka的数据是存储在内存中，重启会丢失，相对没有zk可靠</li>
+<li>目前大多用的1.x，而2.x近期Netflix公司选择了闭源，所以目前不推荐使用</li>
+</ol>
+</li>
+<li>Consul基于Go语言编写，基于服务端发现与第三方注册模型，基于CP，使用raft算法，比zk的paiox算法要快，在SC体系中也有不错的支持，有支持配置中心的功能<ol>
+<li>不过目前跟进大厂经验，consul的节点线上部署最好不要超过3000个，所以大规模使用需要谨慎</li>
+</ol>
+</li>
+<li>Zookeeper是基于CP的，采用paixos算法，至少部署3台，只有超过半数机器同步成功后才认为注册成功，所以注册时间会长一些。zk支持配置存储，所以也支持配置中心功能<ol>
+<li>老牌的注册中心了，起初在大数据领域诞生使用，后面dubbo的注册中心一般也使用zk<br>注册中心这3种其实都是不错的选择，具体的选择一般看社区的活跃支持程度与公司运维的熟悉程度，目前比较推荐的还是使用Zookeeper作为配置中心</li>
+</ol>
+</li>
+</ol>
+<h4 id="注册中心-使用"><a href="#注册中心-使用" class="headerlink" title="注册中心-使用"></a>注册中心-使用</h4><p><a href="http://dawell.cc/2018/08/02/SpringCloud-%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83/" target="_blank" rel="noopener">点我阅读</a></p>
+<h4 id="配置中心"><a href="#配置中心" class="headerlink" title="配置中心"></a>配置中心</h4><p>Config是配置中心的解决方案</p>
+<ol>
+<li>目前在3套注册中心中只有Eureka不具备配置中心的功能，所以可以使用SpringCloud提供的配置中心</li>
+<li>Config与Spring中的Environment与PropertySource抽象相同，配置存储在git中</li>
+<li>配置中心不但在服务启动时去提供配置，配置是可以进行更改的，而更改之后需要通知到所有依赖此配置的服务实例，这时候就需要SpringCloudBus来支持了<ol>
+<li>Bus：消息总线，通知一般要通知多台主机，所以一般是异步的，如果想通知所有的服务从哪里得知呢？当然在注册中心中可以获得，所以Bus是通过注册中心get到需要通知服务的所有实例，然后异步调用所有实例的接口</li>
+<li>Bus一般目前支持RabbitMQ来实现</li>
+</ol>
+</li>
+</ol>
+<h4 id="配置中心-使用"><a href="#配置中心-使用" class="headerlink" title="配置中心-使用"></a>配置中心-使用</h4><p><a href="http://dawell.cc/2018/08/03/SpringCloud-%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83/" target="_blank" rel="noopener">点我阅读</a></p>
+<h3 id="API网关"><a href="#API网关" class="headerlink" title="API网关"></a>API网关</h3><h4 id="SpringCloud组件-1"><a href="#SpringCloud组件-1" class="headerlink" title="SpringCloud组件"></a>SpringCloud组件</h4><ol>
+<li>Spring Cloud Netflix Zuul</li>
+<li>Spring Cloud Gateway</li>
+</ol>
+<h4 id="API网关-1"><a href="#API网关-1" class="headerlink" title="API网关"></a>API网关</h4><ol>
+<li>Zuul是集成了Netflix公司的开源组件</li>
+<li>Gateway可以说是SC的亲儿子，比起Zuul干儿子肯定会是未来的一个趋势，虽然SC技术选型中立，不过自身的实现的支持性是最好的</li>
+</ol>
+<h4 id="API网关-使用"><a href="#API网关-使用" class="headerlink" title="API网关-使用"></a>API网关-使用</h4><p><a href="http://dawell.cc/2018/08/06/SpringCloud-API%E7%BD%91%E5%85%B3/" target="_blank" rel="noopener">点我阅读</a></p>
+<h3 id="异步处理"><a href="#异步处理" class="headerlink" title="异步处理"></a>异步处理</h3><h4 id="SpringCloud组件-2"><a href="#SpringCloud组件-2" class="headerlink" title="SpringCloud组件"></a>SpringCloud组件</h4><ol>
+<li>Spring Cloud Task</li>
+<li>Spring Cloud Stream</li>
+<li>Spring Cloud Dataflow</li>
+</ol>
+<h4 id="定时调度"><a href="#定时调度" class="headerlink" title="定时调度"></a>定时调度</h4><p>一般一个服务实例都有多个，如果要写个定时任务可以有3种方式</p>
+<ol>
+<li>每个实例对等都启动，同时加一把锁保证实际只有1个在执行</li>
+<li>只有一个实例启动时配置开启定时任务，其他实例不开启</li>
+<li>独立调度的触发逻辑，需要调度时使用负载均衡算法去请求一个服务实例<br>在分布式系统中第三种才是通用做法，Task就是做定时任务（又叫短命任务）的触发逻辑的</li>
+</ol>
+<p>使用<a href="http://dawell.cc/2018/08/11/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E4%B8%B4%E6%97%B6%E4%BB%BB%E5%8A%A1/" target="_blank" rel="noopener">点我阅读</a></p>
+<h4 id="消息中间件"><a href="#消息中间件" class="headerlink" title="消息中间件"></a>消息中间件</h4><p>使用<a href="http://dawell.cc/2018/08/07/SpringCloud-%E5%BC%82%E6%AD%A5%E6%B6%88%E6%81%AF/" target="_blank" rel="noopener">点我阅读</a></p>
+<h4 id="大数据聚类处理"><a href="#大数据聚类处理" class="headerlink" title="大数据聚类处理"></a>大数据聚类处理</h4><p>SpringCloudDataflow</p>
+<h2 id="工具类"><a href="#工具类" class="headerlink" title="工具类"></a>工具类</h2><h3 id="SpringCloud组件："><a href="#SpringCloud组件：" class="headerlink" title="SpringCloud组件："></a>SpringCloud组件：</h3><ol>
+<li>Spring Cloud Netflix Hystrix：降级限流 <a href="http://dawell.cc/2018/08/09/SpringCloud-%E6%96%AD%E8%B7%AF%E9%99%8D%E7%BA%A7/" target="_blank" rel="noopener">点我阅读</a></li>
+<li>Spring Cloud Cluster：选举，锁</li>
+<li>Spring Cloud Security：安全</li>
+</ol>
+<h2 id="监控类"><a href="#监控类" class="headerlink" title="监控类"></a>监控类</h2><h3 id="SpringCloud组件：-1"><a href="#SpringCloud组件：-1" class="headerlink" title="SpringCloud组件："></a>SpringCloud组件：</h3><ol>
+<li>Spring Cloud Sleuth</li>
+<li>Spring Cloud Turbine</li>
+<li>Spring Boot Actuator</li>
+<li>Spring Boot Admin</li>
+</ol>
+<h3 id="监控-1"><a href="#监控-1" class="headerlink" title="监控"></a>监控</h3><ol>
+<li>Sleuth是链路追踪平台 <a href="http://dawell.cc/2018/08/04/SpringCloud-%E9%93%BE%E8%B7%AF%E8%B7%9F%E8%B8%AA/" target="_blank" rel="noopener">点我阅读</a></li>
+<li>Turbine是属于Hystrix的监控聚合平台，可以聚合在一起看所以服务的断路器状态</li>
+<li>Actuator是SpringBoot中提供的监控Endpoint，通过访问/xxx的urlpath可以看到服务的机器、服务、依赖、日志等数据，而admin则是针对这些数据接口做一个友好的展示平台</li>
+</ol>
+<h2 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h2><p>微服务的配套还是比较齐全的，包括了如何测试、如何继承各种云平台、如何连接各种第三方组件都有考虑</p>
+<h3 id="云服务类：-1"><a href="#云服务类：-1" class="headerlink" title="云服务类："></a>云服务类：</h3><h4 id="SpringCloud组件：-2"><a href="#SpringCloud组件：-2" class="headerlink" title="SpringCloud组件："></a>SpringCloud组件：</h4><ol>
+<li>Spring Cloud for Cloud Foundry</li>
+<li>Spring Cloud for Amazon Web Services（AWS）</li>
+</ol>
+<h4 id="辅助类"><a href="#辅助类" class="headerlink" title="辅助类"></a>辅助类</h4><ol>
+<li>连接器</li>
+<li>测试平台</li>
+</ol>
+<h1 id="除了SpringCloud其他微服务解决方案"><a href="#除了SpringCloud其他微服务解决方案" class="headerlink" title="除了SpringCloud其他微服务解决方案"></a>除了SpringCloud其他微服务解决方案</h1><p>目前国内除了SC的解决方案，国内也有基于dubbo的方案</p>
+<h2 id="基于Dubbo体系的微服务解决方案"><a href="#基于Dubbo体系的微服务解决方案" class="headerlink" title="基于Dubbo体系的微服务解决方案"></a>基于Dubbo体系的微服务解决方案</h2><p>17年底阿里复活了dubbo的开源维护，并且接入了apache项目中，后续还会更好的支持http协议<br>18年又开源了Alibaba Nacos注册发现与配置中心<br>不过总体上如果要搭建一套完整的微服务组件，光有dubbo的这2个组件还不够，还需要其他开源组件or自研组件配合，如果有自己的平台技术团队可以选择支持</p>
+<p>一般开源的平台技术实现</p>
+<ol>
+<li>远程调用：apache dubbo</li>
+<li>注册中心+配置中心：alibaba nacos、zookeeper、阿波罗、自研</li>
+<li>API网关：nginx+lua、自研</li>
+<li>异步任务-调度中心：xxxjob、自研</li>
+<li>异步任务-消息组件可以直接使用kafka、rabbitMQ、activeMQ的实现</li>
+<li>异步任务-聚合处理：spark、storm、akka</li>
+<li>工具-熔断器：alibaba Sentinel</li>
+<li>工具-分布式锁：zookeeper、redis</li>
+<li>工具-认证：shiro、自研</li>
+<li>监控-机器监控：zabbix</li>
+<li>监控-日志监控收集：ELK</li>
+<li>监控-链路跟踪：zipkin</li>
+</ol>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><ol>
+<li>SpringCloud是Spring目前主推的一套微服务生态的治理组件，提供了较全的解决方案，非常适合中小型企业在进行微服务改造时使用</li>
+<li>分布式系统带来的问题有多方面，我们重点讲了进程调用、服务发现、API网关与监控主题，针对这些问题有多种解决方案，而这些解决方案在SpringCloud的组件中都有选择</li>
+<li>SpringCloud的组件大致分为中间件、工具与监控3大类，中间件中的服务注册配置管理组件应该说是必备组件，而其他组件属于可选组件，按需引入</li>
+<li>最后除了SC还有其他的选择，比如DUBBO，提供了微服务必须的服务注册配置管理组件，而其他可选组件则需要采用开源or自研方案，需要一定的整合能力的团队</li>
+</ol>
+<h2 id="坑"><a href="#坑" class="headerlink" title="坑"></a>坑</h2><ol>
+<li>约定大于配置缺点：有时候你配置了但是不确定有没有用上，可能读取的是默认配置，所以有时候会故意避免默认配置防止配置错误</li>
+<li>多个配置文件如果改名了，一定要clean，否则会读到过去的老编译带过去的文件</li>
+</ol>
+<h1 id="引用"><a href="#引用" class="headerlink" title="引用"></a>引用</h1><ol>
+<li><a href="https://my.oschina.net/polly/blog/1790057?nocache=1524474258058" target="_blank" rel="noopener">https://my.oschina.net/polly/blog/1790057?nocache=1524474258058</a></li>
+</ol>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+	<div>
+	 
+	</div>
+	
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+	
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2018/07/01/SpringBoot/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -4201,364 +4834,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2018/04/17/开罗游戏-合战忍者村/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Dawell">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Dawell的博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/04/17/开罗游戏-合战忍者村/" itemprop="url">开罗游戏-合战忍者村</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-04-17T19:18:20+08:00">
-                2018-04-17
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/娱乐/" itemprop="url" rel="index">
-                    <span itemprop="name">娱乐</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-             <span id="/2018/04/17/开罗游戏-合战忍者村/" class="leancloud_visitors" data-flag-title="开罗游戏-合战忍者村">
-               <span class="post-meta-divider">|</span>
-               <span class="post-meta-item-icon">
-                 <i class="fa fa-eye"></i>
-               </span>
-               
-                 <span class="post-meta-item-text">阅读次数 </span>
-               
-                 <span class="leancloud-visitors-count"></span>
-             </span>
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>游戏比较有意思的是除了攻打地图上的城市，最终还有最终boss，其中还有一个隐藏boss，棒球队，要求不能用炮兵，挑战没有现代工具原始的主将攻击方式</p>
-<p>（衣食）住行</p>
-<ol>
-<li>住：茅屋、住宅、豪宅</li>
-<li>行：道路、桥</li>
-</ol>
-<p>原料</p>
-<ol>
-<li>食：稻田，水田</li>
-<li>原材料：采石、伐木</li>
-</ol>
-<p>工坊：转换原料—&gt;店铺商品</p>
-<p>店铺</p>
-<ol>
-<li>饮食：餐馆、茶馆</li>
-<li>穿着：和服、小饰品</li>
-<li>艺术：特产、书画</li>
-<li>忍者：道具、铁匠</li>
-</ol>
-<p>炮兵果真是高次元武器，输出猛如虎，骑兵+炮兵兼职无敌，原始攻击模式是步兵+弓箭</p>
-<p>兵种</p>
-<ol>
-<li>步兵：攻防兼备，T，看防御，体力不够+丸子回复，体力够+炸弹；连击技能、斩击抗性</li>
-<li>弓箭：输出，看臂力；带动物</li>
-<li>骑兵：重点输出，看攻击；必须匹配马，否则会变为轻步兵；连击技能</li>
-<li>炮兵：超级输出，看射击；带眼镜；可以带动物；连射技能</li>
-</ol>
-<p>棒球队打法</p>
-<ol>
-<li>保留3个轻步兵满级，卸载防御攻防武器换超级忍者刀，满级的也能低于3轮攻击</li>
-<li>弓兵有的话顶多选1-2个高输出的</li>
-<li>骑兵：8人超级忍者刀、各种马，不够挑战幕府+劳动马凑1-2个</li>
-<li>步兵+弓兵携带所有动物辅助输出</li>
-<li>将领技能：斩击抗性4、战术4、步兵连击</li>
-</ol>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-	<div>
-	 
-	</div>
-	
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-	
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="https://dawell.github.io/2018/04/08/开罗游戏-都市大亨/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Dawell">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="http://ww3.sinaimg.cn/small/712a7015jw1famx12cnpbj204q04r0sm.jpg">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Dawell的博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/04/08/开罗游戏-都市大亨/" itemprop="url">开罗游戏-都市大亨</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-04-08T00:00:00+08:00">
-                2018-04-08
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/娱乐/" itemprop="url" rel="index">
-                    <span itemprop="name">娱乐</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-             <span id="/2018/04/08/开罗游戏-都市大亨/" class="leancloud_visitors" data-flag-title="开罗游戏-都市大亨">
-               <span class="post-meta-divider">|</span>
-               <span class="post-meta-item-icon">
-                 <i class="fa fa-eye"></i>
-               </span>
-               
-                 <span class="post-meta-item-text">阅读次数 </span>
-               
-                 <span class="leancloud-visitors-count"></span>
-             </span>
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>清明3天假，放假的前一天晚上突然特别想玩游戏，于是去扒一些评分比较高的游戏，最近玩完的就是这款开罗游戏了<br>总共玩完了2周目，中间有几次简短失败的尝试重新来过<br>虽然是款小游戏，但是完整的体会到了建造城市的乐趣，玩完还是有点收获的</p>
-<p>整个城市分为那么几个部分</p>
-<ol>
-<li>基础产业</li>
-<li>餐饮业</li>
-<li>娱乐业</li>
-<li>制造业</li>
-<li>服务业</li>
-<li>文化财产业</li>
-</ol>
-<p>自己总结的建筑关系<br><img src="https://gitee.com/uploads/images/2018/0408/194129_b4f85da9_697510.png" alt="建筑关系" title="屏幕截图.png"></p>
-<p>玩游戏建议</p>
-<ol>
-<li>我觉得上来基础产业要有，同时重点发展餐饮业，制造的建筑可以先重点专业街的</li>
-<li>建筑最好都是9宫格形式，中间一开始可以塞棵树还能涨物价，等后期可以改造为工作楼用于发现更多专业</li>
-<li>多造几个连续专业街，专业街相邻有效距离也是自己建筑的9宫格内，堆一座建筑的地价每天有大量奖励</li>
-<li>树木有时候可以挖到金矿，中间地贵，还是放在边缘建点</li>
-<li>人员的培养很重要，新职业抓紧找一个挣钱较少的居民去转职，可以偶尔得到一笔钱</li>
-<li>制造业尽快搞，大部分是出行相关，可以加快居民效率</li>
-</ol>
-<p><img src="https://gitee.com/uploads/images/2018/0408/201148_5bb1e88c_697510.png" alt="输入图片说明" title="屏幕截图.png"></p>
-<p>感悟</p>
-<ol>
-<li>玩这个游戏还是挺费时间的，尤其是中间发展阶段，要等好久，弹出一个新闻就要点击下才能进行下去，有些无聊，二周目时可以加速导致好了很多</li>
-<li>想起了小时候玩红警、帝国、星际的时候，自己总是不停的搞发展，不造军队，自己就是喜欢建造发展升级的感觉，所以这种游戏特别对我胃口，不过玩完后又发现这其实很空虚，以后还是不玩开罗了吧，除非开罗出了好友比拼的话，这游戏就有毒了</li>
-<li>不玩这个游戏对城市功能了解并没什么系统化的概念，虽然是游戏但是完了后发现服务业真的丰富了我们的城市功能，一个城市必要的是基础+餐饮+娱乐，而制造、服务、文化属于加分项，自己选择城市居住也可以多看中后面的设施完善度</li>
-</ol>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-	<div>
-	 
-	</div>
-	
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-	
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
@@ -4608,7 +4883,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">58</span>
+                <span class="site-state-item-count">60</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>

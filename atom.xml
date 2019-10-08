@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://dawell.github.io/"/>
-  <updated>2019-08-31T15:37:37.884Z</updated>
+  <updated>2019-10-08T07:49:03.825Z</updated>
   <id>https://dawell.github.io/</id>
   
   <author>
@@ -16,13 +16,236 @@
   <generator uri="http://hexo.io/">Hexo</generator>
   
   <entry>
+    <title>博客插入图片</title>
+    <link href="https://dawell.github.io/2019/10/07/%E5%8D%9A%E5%AE%A2%E6%8F%92%E5%85%A5%E5%9B%BE%E7%89%87/"/>
+    <id>https://dawell.github.io/2019/10/07/博客插入图片/</id>
+    <published>2019-10-07T02:20:36.000Z</published>
+    <updated>2019-10-08T07:49:03.825Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="Hexo插入图片解决方案"><a href="#Hexo插入图片解决方案" class="headerlink" title="Hexo插入图片解决方案"></a>Hexo插入图片解决方案</h1><p>如果使用公共博客，其实没这么麻烦，图片、评论、推广都帮你做了，个人博客就要分别解决这些问题</p>
+<h2 id="方案"><a href="#方案" class="headerlink" title="方案"></a>方案</h2><p>一般博客插入图片有以下几种方案</p>
+<ol>
+<li>公共图床<ol>
+<li>如网站上csdn、码云、百度链接上的图片，会因为定期扫描外链直接屏蔽</li>
+</ol>
+</li>
+<li>私有图床<ol>
+<li>微博图床，配合浏览器图床插件上传、mac用ipic方便上传，但是半年后会清理丢失</li>
+<li>ipic提供私有存储：收费</li>
+<li>自己的cdn服务开通：七牛云、又拍云、阿里云之类、收费</li>
+</ol>
+</li>
+<li>博客本地保存引用<ol>
+<li>这种不会丢失就是上传内容多，需要本地工具配合更方便快捷</li>
+</ol>
+</li>
+</ol>
+<h2 id="经历"><a href="#经历" class="headerlink" title="经历"></a>经历</h2><p>个人一开始用公共图床，很快失效了图片，然后改用新浪图床结果半年后也失效了，现在使用最保险的第三种方式，真的是走过的血泪史，老文章的图片找时间恢复下</p>
+<p>网上有说用，hexo-asset-image图片插件，原理是通过识别替换符替换生成html的路径，而且图片插入挺麻烦，要手工放入目录，然后再用快捷标识符引用</p>
+<ol>
+<li>提前配置：<ol>
+<li>修改根目录的_config.yml文件，这样创建时自动创建同名文件夹 <code>post_asset_folder: true</code></li>
+<li>安装插件<code>npm install hexo-asset-image --save</code></li>
+</ol>
+</li>
+<li>使用方式：<ol>
+<li>不过这样插入图片太麻烦，需要用<code>{</code> <code>%</code> <code>%</code> <code>}</code>插入，一般的md的编辑器不识别</li>
+<li>好像还有一种使用<code>![你想输入的替代文字](博文标题/图片名.jpg)</code>也会变化链接方式，不过没尝试成功</li>
+</ol>
+</li>
+<li>如果已经安装想卸载：<code>npm uninstall hexo-asset-image</code></li>
+</ol>
+<p>推荐大家使用Typora编写markdown内容，所见即所得，使用Typora图片插入非常方便，直接复制粘贴即可，不过图片插入一个固定的全局目录中，所以为了让hexo与typora都能看到正确的图片内容，需要做一些配置</p>
+<h2 id="Action"><a href="#Action" class="headerlink" title="Action"></a>Action</h2><p>一开始搜索了下与typora结合，网上没有一个能把图片插入说对的说全的</p>
+<p>要么是root、要么是copy全局设置，其实只要2个同时设置就对的了</p>
+<p>还一点是如果用每个文章的相对目录都生成一个文件夹的话需要路径变化，就需要hexo-asset-image一起配合使用了，这里不这么麻烦，直接把所有图片都集中在一个目录下，这样还能复用图片</p>
+<h3 id="第一步"><a href="#第一步" class="headerlink" title="第一步"></a>第一步</h3><p>在本地source中建立imgs文件夹，将引用到的图片全部放在此文件夹中</p>
+<h3 id="第二步"><a href="#第二步" class="headerlink" title="第二步"></a>第二步</h3><p>可以scaffolds-&gt;post.md增加</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">typora-copy-images-to: ../imgs</span><br><span class="line">typora-root-url: ../../source</span><br></pre></td></tr></table></figure>
+<p>这样new的时候就有了，如果idea有设置live也可以改下</p>
+<h3 id="第三步"><a href="#第三步" class="headerlink" title="第三步"></a>第三步</h3><p>hexo n “xxxx”时就生成：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">typora-copy-images-to: ../imgs</span><br><span class="line">typora-root-url: ../../source</span><br></pre></td></tr></table></figure>
+<p>在拖动图片到typora中时因为<code>typora-copy-images-to</code>设置为imgs中，而root在source，所以会形成下面的相对路径</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">![image-20191007165004059](/imgs/image-20191007165004059.png)</span><br></pre></td></tr></table></figure>
+<p>这样在线下编写插入的图片就是如下格式，这样本地搜索路径就是<code>../../source</code>（typora-root-url）+<code>/imgs/image-20191007165004059.png</code>能在typora中正确显示</p>
+<p>而在线上相对路径前面会加上域名：变为域名+<code>/imgs/image-20191007165004059.png</code>也可以正确显示</p>
+<p>这样就完美了！ </p>
+<h2 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h2><p>TODO：考虑图片压缩替换上传，加速加载</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;Hexo插入图片解决方案&quot;&gt;&lt;a href=&quot;#Hexo插入图片解决方案&quot; class=&quot;headerlink&quot; title=&quot;Hexo插入图片解决方案&quot;&gt;&lt;/a&gt;Hexo插入图片解决方案&lt;/h1&gt;&lt;p&gt;如果使用公共博客，其实没这么麻烦，图片、评论、推广都帮你做了
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title>北京旅游</title>
+    <link href="https://dawell.github.io/2019/10/05/%E5%8C%97%E4%BA%AC%E6%97%85%E6%B8%B8/"/>
+    <id>https://dawell.github.io/2019/10/05/北京旅游/</id>
+    <published>2019-10-05T11:28:07.000Z</published>
+    <updated>2019-10-08T07:54:22.865Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="路线"><a href="#路线" class="headerlink" title="路线"></a>路线</h2><p>这次出行主要是父母一直想来北京玩玩，自己也想来北京玩过，中秋正好父母歇班有空就来玩了</p>
+<p>父母需求很简单，就是去故宫、长城就行了，其他的地方去不去都行，所以主要是这2个地方安排吧</p>
+<p>整体行程3天半左右，网上看了下马蜂窝、飞猪、携程的相关攻略，参考导游路线，还有各种景点的点评评分</p>
+<p>期间9月12日-9月15日，包括实际路线情况，行程如下</p>
+<ol>
+<li>D1：火车 → 天坛公园(2小时)→ 前门大街(1.5小时)  → <del>北京全聚德烤鸭</del>(前门店)(1小时)</li>
+<li>D2：天安门广场&amp;人民英雄纪念碑&amp;人民大会堂4.6(1.5小时)4.7 → 城楼 → 故宫4.8(3小时) → 景山公园(1小时)  →  北海公园(1.5小时)  </li>
+<li>D3：八达岭长城4.6(3小时以上,另一种是坐缆车到中间，登剩下的险峻的几段，然后走下坡) → 明十三陵4.5(3小时以上) → 奥林匹克公园站下 鸟巢 4.6 水立方 可以晚上夜景</li>
+<li><del>D4</del>：颐和园4.7(3小时以上) → 圆明园&amp;明园展览馆4.7(3小时以上) → 北京大学4.6(1-3小时) → 火车</li>
+<li>备选：<ol>
+<li>中国国际博物馆 4.6</li>
+<li>恭王府 4.5  雍和宫 4.6</li>
+<li>慕田峪长城 4.8</li>
+<li>国家大剧院 4.6，要买票进去</li>
+</ol>
+</li>
+</ol>
+<p>这次旅游完美的错过所有禁止游玩的时间，旅游之前陆续发出各种国庆封路的新闻</p>
+<ol>
+<li>北京7-8日天安门排练禁止旅游</li>
+<li>中间中秋节：12日-15日4天竟然没有任何干扰！！！真的是夹缝中选对了日子</li>
+<li>故宫博物院于9月21日至10月1日暂停对外开放，后面故宫14日也封了</li>
+<li>后续中秋14日晚封路等等</li>
+</ol>
+<p>一直还挺担心的，不过全部都完美错过，真的是太庆幸了，免得重新安排行程</p>
+<h2 id="详细情况"><a href="#详细情况" class="headerlink" title="详细情况"></a>详细情况</h2><h3 id="D1"><a href="#D1" class="headerlink" title="D1"></a>D1</h3><p>早上打的从家里出发去了火车站，乘车2小时左右到达北京，父母是头一回坐高铁显得格外好奇</p>
+<p>北京站的出租车排队还是有提示的，前面多少人，这个在上海、杭州、济南都没见过，先进</p>
+<p><img src="/imgs/image-20191007165004059.png" alt="image-20191007165004059"></p>
+<p>中午先到如家酒店报到，定的2个房间，预定的时候多花了点钱每个房间每天都有早餐的，结果说只有我一个人房间有，说他们家系统与飞猪上的预定没匹配，协调一会，飞猪也投诉了把，最终是2个房间都给了早餐</p>
+<p>酒店房间只能说一般般，而且当时图便宜只是睡个觉就定的无窗的，后来在那里虽然都是晚上回来住了3天感觉还是挺压抑的，以后还是建议订有窗的</p>
+<p>下午打的去了天坛公园，刚一到门口就发现并没有想象中壮丽，一个是天坛南门本身没有太多修缮的痕迹，还有就是周边的老破小筒子楼胡同挺多的，这情况跟济南一样，被父母吐槽，哈哈</p>
+<p>但是逐步进入公园往里就不太一样了</p>
+<p>天坛公园本身是免费的，都是大片的树林老年人休闲场所，但是中间的天坛周边的景点是收门票的，之前网上定好的门票，二维码进入</p>
+<p>进去是个大长道，从南到北，路过园丘、回音壁，最终来到天坛的核心建筑祈年殿，原来的认知上总以为天坛真的有一个叫做“天坛”的建筑，其实并不是，就是祈年殿</p>
+<p><img src="/imgs/image-20191008114216536.png" alt="image-20191008114216536"></p>
+<p>拍拍照，然后周边的几个房子看了看，前面的2个房子中有各种历史与文物介绍，皇帝、日本人、英法德、毛爷爷等这里的故事，然后就从西门出去</p>
+<p>除了西收费口，来到大片树林长路中，这里的树都是一级二级保护植物，植树的位置都很讲究，前看血看都成线，小风吹着也很舒服，就在旁边椅子上呆了会，父母是真的爱上了这个地方</p>
+<p><img src="/imgs/image-20191008155421636.png" alt="image-20191008155421636"></p>
+<p>再往前走有个独特建筑连体的亭子，很漂亮</p>
+<p><img src="/imgs/image-20191008114827085.png" alt="image-20191008114827085"></p>
+<p>往南发现有个城池叫做斋宫，其实是皇帝拜天之前吃饭的地方，门票用身份证取免费的，下午4点半之后就关门了，那时候正好赶在最后进去了，护城河已经干涸，里面有钟、有各种屋子</p>
+<p>从西门出了天坛本想带父母体验下地铁，结果入口不好找，最终走了一段路才到地铁，到前门的路程有点折腾，然后就来到前门大街的南口，一直往北走</p>
+<p>刚到的时候人不多，然后随着夜幕降临，路边的灯光逐步开启，人逐步变多，本来计划去全聚德吃饭，不过看了下价格一顿饭人均200左右，父母觉得太贵没舍得去，想买支烤鸭一问也是79了还是算了，就去了前门大街小吃街里的一家面馆吃了下</p>
+<h3 id="D2"><a href="#D2" class="headerlink" title="D2"></a>D2</h3><p>酒店的早餐说实话档次是不高，口味也一般，不过父母觉得还可以，凑合吧</p>
+<p>D2基本按照路线走完</p>
+<p>早上先打的到前门附近，地下道穿过马路到达天安门的西南侧，然后就是安检排队了，本来是没有安检的，由于最近十一大庆准备需要<img src="/imgs/image-20191007165613165.png" alt="image-20191007165613165"></p>
+<p>安检后在大会堂、纪念碑、广场上拍拍照，正好多云，阴的时候拍照，否则很刺眼</p>
+<p><img src="/imgs/image-20191008115344441.png" alt="image-20191008115344441"></p>
+<p>再到西北角地下道穿过马路就到达天安门西侧了</p>
+<p>跟着人群穿过天安门，毛爷爷这照片是多少寸的呀。。。天安门城楼说是可以上去，不过目前是上不去的</p>
+<p><img src="/imgs/image-20191008115715263.png" alt="image-20191008115715263"></p>
+<p>穿过之后继续往前走，经过端门，目标午门</p>
+<p><img src="/imgs/image-20191007171455743.png" alt="image-20191007171455743"></p>
+<p>午门是真的非常大，非常壮观，进去身份证检票后先穿过午门</p>
+<p><img src="/imgs/image-20191008115955359.png" alt="image-20191008115955359"></p>
+<p>然后可以从后面走到午门城楼上去，里面还有一些皇家物件展示厅。城墙上可以绕一圈，不过时间有限还是选择走正门路线</p>
+<p><img src="/imgs/image-20191007171857208.png" alt="image-20191007171857208"></p>
+<p>为了听故事，用的百度地图的解说介绍</p>
+<p>先经过第一个门：太和门，特意拍了个全景</p>
+<p><img src="/imgs/image-20191008113331550.png" alt="image-20191008113331550"></p>
+<p>然后第一个大殿：太和殿</p>
+<p><img src="/imgs/image-20191007172620180.png" alt="image-20191007172620180"></p>
+<p>太和殿有龙椅，上朝的地方，仁德大隆，有4根金龙柱支撑</p>
+<p><img src="/imgs/image-20191007174035589.png" alt="image-20191007174035589"></p>
+<p>然后进去是乾清门，里面是皇帝居住的地方</p>
+<p>买门票的时候还买了钟表馆与珍宝馆的，在乾清门没有着急去乾清宫，先是右边进入看馆的地方，不过要稍微排队下，钟表馆就是各种钟表，皇帝收藏的，很快就看完了</p>
+<p><img src="/imgs/image-20191007172954236.png" alt="image-20191007172954236"></p>
+<p>珍宝馆的东西是比较多的，个人觉得还是值得一看，里面有非常漂亮的文物，价值连城造型优美，可以开开眼界</p>
+<p><img src="/imgs/image-20191007173417614.png" alt="image-20191007173417614"></p>
+<p>中午就在珍宝馆里的一家小卖部解决</p>
+<p>然后下午继续逛，先是从钟表馆旁边的道路看了下东六宫的情况，陆续看。。。</p>
+<p>红墙是真的高，确实是深宫，看不到周边的情况，感觉还是挺封闭的</p>
+<p><img src="/imgs/image-20191007173609521.png" alt="image-20191007173609521"></p>
+<p>最终穿过各种门回到了乾清宫继续走中轴，乾清宫就是皇帝办公，批奏折的地方了，里面写着正大光明</p>
+<p><img src="/imgs/image-20191007173902016.png" alt="image-20191007173902016"></p>
+<p>门口的大水缸是用于救火用的，不过说是很多都被当时军队熔炼做武器了，现存的这几个是留下的</p>
+<p>中间是交泰殿，盖章+皇上换衣处，交泰殿内部：无为二字</p>
+<p><img src="/imgs/image-20191007174313211.png" alt="image-20191007174313211"></p>
+<p>后面就是坤宁宫了，从交泰殿过去只能看到后门</p>
+<p>后宫不得干政，所以坤宁宫大门是朝北，与皇帝与政务朝南的方向相反，再往北就是御花园了，本以为是很大一片，不过就走的路线来看长度并不长，比较有意思的是中间的2棵树长在了一起</p>
+<p><img src="/imgs/image-20191007174440252.png" alt="image-20191007174440252"></p>
+<p>其他宫就没有再去看了，像太后的慈宁宫在西边没有过去，然后从北大门神武门出去了，神武门与午门的大小完全不是一个量级</p>
+<p><img src="/imgs/image-20191007174519313.png" alt="image-20191007174519313"></p>
+<p>紧接着就是景山公园，门票只要2块钱，右边说是明皇帝明思宗吊死的地方，也没去看，直接爬山上去看全景，山并不高，一会就上去了，有几个亭子，不过只要上最高的万春亭那个就可以了</p>
+<p>正面还有一个中心点标识，后面可以看到景山公园内的寿皇殿，还有中轴远处的鼓楼，这些都在中轴线上</p>
+<p><img src="/imgs/image-20191007175201379.png" alt="image-20191007175201379"></p>
+<p>南方向：故宫全景</p>
+<p><img src="/imgs/image-20191007175601895.png" alt="image-20191007175601895"></p>
+<p><img src="/imgs/image-20191007175656514.png" alt="image-20191007175656514"></p>
+<p>从景山西边下来紧挨着就是北海公园了，路中还能看到一些胡同，北海公园从东口进，然后穿过桥中心岛逛了一圈从南桥出中心岛，然后绕了一小圈基本觉得跟济南大明湖差不多就出来了</p>
+<p><img src="/imgs/image-20191007180359716.png" alt="image-20191007180359716"></p>
+<p>中途在湖边做的地方休息了一阵，北海的南边就是常说的中海与南海了，也就是政府办公地点中南海</p>
+<p>走的时候打车达不到，就做5路车，因为人多排起了队，父母吐槽说头一回做公交还要排队的…不过北京公交排队还有几路几路的标示在地面上</p>
+<p>明天要去长城，定的一日游</p>
+<p>酒店的早餐也是从外面做好运过来的，时间比较晚，时间是从7点开始的，旅行社的行程比较早，而且我们还是第一家接的，要求我们是凌晨4点就要准备好，所以只能自备早餐了，去超市买东西</p>
+<p>为了准备早起，早早的就睡了，而且这一天也确实走了不少路，好好休息一把</p>
+<h3 id="D3"><a href="#D3" class="headerlink" title="D3"></a>D3</h3><p>一大早北京凌晨4点就坐面包车拉到集合点了，在朋友圈吐槽见过北京凌晨4点后出发，坐上大巴，差不多1个多小时就到了八达岭，5点多出发大约6点40到达，家里父母一起不想爬的太累，跟着导游一起买的滑车上下</p>
+<p>滑车体验真的不错，就是一开始上去有点陡峭，但是下来的时候是真的好玩，推荐滑车上下</p>
+<p><img src="/imgs/image-20191008102949650.png" alt="image-20191008102949650"></p>
+<p>滑车下来后就到了中途的好汉坡，拍照主要是需要有遮光的镜头才能拍好，最终还是花钱洗了几张照片，自己拍的脸都是黑的</p>
+<p>从第四坡开始爬一直到第八坡，这一段也挺陡峭，但是并没有想象中那么难，一会就上去了，拍拍照原路返回滑车下去，路上从第六坡可以走旁边的下山路下去而不用再走长城不好走的路了</p>
+<p><img src="/imgs/image-20191008102059020.png" alt="image-20191008102059020"></p>
+<p>大巴集合去吃饭，这个车转的是真的晕，有人都吐了。。。</p>
+<p>吃饭中还给了北京烤鸭尝尝，完事后去往十三陵方向</p>
+<p>先是看到了碧玺，摸头，摸尾巴不得病</p>
+<p><img src="/imgs/image-20191008103419598.png" alt="image-20191008103419598"></p>
+<p>这个地方是个风水宝地，前有水，后靠山，两边也是封死的，不过后来开了路，一共13个陵，长陵是朱棣的，不过只开了上面参观，开的地下的陵只有一个叫做定陵，听说是最谈钱的一个皇帝</p>
+<p>每个陵都有一定距离，长陵不过看处不多所以就不过去了，主要看定陵，十三陵分布图如下</p>
+<p><img src="/imgs/image-20191008103750436.png" alt="image-20191008103750436"></p>
+<p>这里面有很多故事了，中间过程没有拍照，记得应该是导游说拍了不好，没拍~</p>
+<p>进十三陵一定是走旁边的路，因为中间是升天的路，不吉利。还有就是要</p>
+<p>其实地面被烧了好几回，其中清军来的时候就先烧了这里，改朝换代要先断龙脉</p>
+<p>下去后基本上有皇帝的石凳，皇后的，还有爱妃的，共3个，还有就是3个人的棺材木，还有旁边的26个大宝箱，不过听说宝箱里的东西大部分都没有了，好像是WG时期，红卫兵给烧了，因为皇帝是最大的地主</p>
+<p>然后下午3点多返程，后面有额外的奥林匹克公园导游行程，正好也报名去了</p>
+<p>先是坐着浏览车饶了一圈，从水立方停下</p>
+<p><img src="/imgs/image-20191008111343716.png" alt="image-20191008111343716"></p>
+<p>水立方目前已经改名冰立方了</p>
+<p>鸟巢，还有鸟巢前的价值5亿的玉石头</p>
+<p><img src="/imgs/image-20191008113126391.png" alt="image-20191008113126391"></p>
+<p>整个奥林匹克公园的布局非常讲究，中轴，各种龙脉，地龙、水龙，还有各种建筑的讲究，钉子塔，盘古七星大厦</p>
+<p>比较玄乎的就是水立方南边的娘娘庙了，听说水立方本来要建在这里，但是施工的时候发生了怪事，因为动了风水导致灾难，最终水立方往北迁移了</p>
+<p><img src="/imgs/image-20191008112400758.png" alt="image-20191008112400758"></p>
+<p>最终这天结束要回去了，不过路上因为2环内封路了，所以走了3站公交站才坐上公交</p>
+<h3 id="D4"><a href="#D4" class="headerlink" title="D4"></a>D4</h3><p>上午吃完早饭，剩余的几个公园也没有预定讲解的导游，只是自己去逛逛其实也挺没趣的，以后再说，父母也累了，提早改签回去休息了</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>北京游玩确实是需要历史了解与旅游解说才有意思，这方面主要是在十三陵、故宫与圆明园这几个景点上</p>
+<p>所以部分选择导游（尤其偏远地区）、或者购买电子导游服务是必要的，否则就是走马观花，手机导游的坑是有的，人多的地方会没网，所以还是人讲的好</p>
+<p>北京的很多风水是比较讲究的，虽然是科学发展观，但是风水依然在国家层面是看重的，有些事情没有博客上写，关于龙脉、数字、事件有很多关联，很多现象太巧合，还是挺难解释的</p>
+<p>我这个行程安排的还是比较紧的，如果D4玩完估计回家是比较累的，其他人制定可以一天砍掉1-2个项目，会更轻松一些</p>
+<p>其他经验</p>
+<ol>
+<li>提前规划路线很重要，前2天的门票可以提前买好，后面的看情况</li>
+<li>预定酒店还是定有窗的比较好，加早餐省事</li>
+<li>按照自己身体的情况，行程可以安排满，第二天基本能恢复体力，但是有必要最后预留1天时间在家休息调整</li>
+<li>相机拍好了是真的不错，不过手机是真的方便，相机还是太沉了。手机的缺点是要人像识别准，否则会把人脸拍成背景还调整饱和度导致失真，选择轻量级相机或者手机</li>
+<li>轻装上阵，尽量拿更少的东西，水带着2瓶即可否则太累。可以带点小零食休息的时候补充能量</li>
+</ol>
+<p>总之整个北京之行不管自己还是父母都还挺满意的，有机会再去补完景点~</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;路线&quot;&gt;&lt;a href=&quot;#路线&quot; class=&quot;headerlink&quot; title=&quot;路线&quot;&gt;&lt;/a&gt;路线&lt;/h2&gt;&lt;p&gt;这次出行主要是父母一直想来北京玩玩，自己也想来北京玩过，中秋正好父母歇班有空就来玩了&lt;/p&gt;
+&lt;p&gt;父母需求很简单，就是去故宫、长城就行了，
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
     <title>netty与nio揭秘</title>
     <link href="https://dawell.github.io/2019/08/31/netty%E4%B8%8Enio%E6%8F%AD%E7%A7%98/"/>
     <id>https://dawell.github.io/2019/08/31/netty与nio揭秘/</id>
     <published>2019-08-31T15:36:01.000Z</published>
-    <updated>2019-08-31T15:37:37.884Z</updated>
+    <updated>2019-08-31T15:43:55.764Z</updated>
     
-    <content type="html"><![CDATA[<h1 id="netty与nio"><a href="#netty与nio" class="headerlink" title="netty与nio"></a>netty与nio</h1><p>感觉很多文章都讲不到重点，很多都是API层面怎么用，很多同学搞IO这块看的也是一头雾水</p>
+    <content type="html"><![CDATA[<h1 id="Netty与NIO"><a href="#Netty与NIO" class="headerlink" title="Netty与NIO"></a>Netty与NIO</h1><p>感觉很多文章都讲不到重点，很多都是API层面怎么用，很多同学搞IO这块看的也是一头雾水</p>
 <p>今天来了兴致写一篇吧，一气呵成，前篇没有去查任何资料，全靠记忆与理解回顾，后篇是很早之前学习过程的笔记贴上，如有问题欢迎指正~</p>
 <p>Netty用于高并发服务开发，基于NIO，要想明白Netty，要先知道NIO的情况，然后多了解下操作系统就OK了，不想说netty你的性能优化真的是各种数组替换hash结构的骚操作太多~</p>
 <p>PS：这篇涉及IO模型、堆外内存、Netty分析、操作系统IO原理、内存分配、并发实践等内容，后续有空配图</p>
@@ -119,7 +342,7 @@
 </li>
 </ol>
 <h4 id="Work流程"><a href="#Work流程" class="headerlink" title="Work流程"></a>Work流程</h4><p>work的主要流程开始就是在服务端接收到请求时对work分配工作时操作的，关注pipeline</p>
-<h5 id="pipeline"><a href="#pipeline" class="headerlink" title="pipeline"></a>pipeline</h5><p>NioEventLoop中有processSelectKey方法</p>
+<h5 id="Pipeline"><a href="#Pipeline" class="headerlink" title="Pipeline"></a>Pipeline</h5><p>NioEventLoop中有processSelectKey方法</p>
 <ol>
 <li>用unsafe读取，while循环只要继续读，内部通过JavaNio获取JavaChannel个数，读取while条件中最大读取16条，如果中途读不到数据也会break跳出，读取的Channel会包装为Netty的NioSocketChannel，内部会做一些事情<ol>
 <li>设置非阻塞，创建unsafe、id、pipeline</li>
@@ -280,7 +503,7 @@
     
     <summary type="html">
     
-      &lt;h1 id=&quot;netty与nio&quot;&gt;&lt;a href=&quot;#netty与nio&quot; class=&quot;headerlink&quot; title=&quot;netty与nio&quot;&gt;&lt;/a&gt;netty与nio&lt;/h1&gt;&lt;p&gt;感觉很多文章都讲不到重点，很多都是API层面怎么用，很多同学搞IO这块看的也是一头雾
+      &lt;h1 id=&quot;Netty与NIO&quot;&gt;&lt;a href=&quot;#Netty与NIO&quot; class=&quot;headerlink&quot; title=&quot;Netty与NIO&quot;&gt;&lt;/a&gt;Netty与NIO&lt;/h1&gt;&lt;p&gt;感觉很多文章都讲不到重点，很多都是API层面怎么用，很多同学搞IO这块看的也是一头雾
     
     </summary>
     
@@ -1652,100 +1875,6 @@
     
     
       <category term="SpringCloud" scheme="https://dawell.github.io/tags/SpringCloud/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>SpringCloud-番外篇-临时任务</title>
-    <link href="https://dawell.github.io/2018/08/11/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E4%B8%B4%E6%97%B6%E4%BB%BB%E5%8A%A1/"/>
-    <id>https://dawell.github.io/2018/08/11/SpringCloud-番外篇-临时任务/</id>
-    <published>2018-08-11T07:41:14.000Z</published>
-    <updated>2018-08-17T07:54:41.418Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="SpringCloud文章系列"><a href="#SpringCloud文章系列" class="headerlink" title="SpringCloud文章系列"></a>SpringCloud文章系列</h1><ol>
-<li><a href="http://dawell.cc/2018/08/01/SpringCloud/" target="_blank" rel="noopener">SpringCloud</a></li>
-<li><a href="http://dawell.cc/2018/08/02/SpringCloud-%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83/" target="_blank" rel="noopener">SpringCloud-注册中心</a></li>
-<li><a href="http://dawell.cc/2018/08/03/SpringCloud-%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83/" target="_blank" rel="noopener">SpringCloud-配置中心</a></li>
-<li><a href="http://dawell.cc/2018/08/04/SpringCloud-%E9%93%BE%E8%B7%AF%E8%B7%9F%E8%B8%AA/" target="_blank" rel="noopener">SpringCloud-链路跟踪</a></li>
-<li><a href="http://dawell.cc/2018/08/05/SpringCloud-%E6%B6%88%E6%81%AF%E6%80%BB%E7%BA%BF/" target="_blank" rel="noopener">SpringCloud-消息总线</a></li>
-<li><a href="http://dawell.cc/2018/08/06/SpringCloud-API%E7%BD%91%E5%85%B3/" target="_blank" rel="noopener">SpringCloud-API网关</a></li>
-<li><a href="http://dawell.cc/2018/08/07/SpringCloud-%E5%BC%82%E6%AD%A5%E6%B6%88%E6%81%AF/" target="_blank" rel="noopener">SpringCloud-异步消息</a></li>
-<li><a href="http://dawell.cc/2018/08/08/SpringCloud-%E5%90%8C%E6%AD%A5%E8%B0%83%E7%94%A8/" target="_blank" rel="noopener">SpringCloud-同步调用</a></li>
-<li><a href="http://dawell.cc/2018/08/09/SpringCloud-%E6%96%AD%E8%B7%AF%E9%99%8D%E7%BA%A7/" target="_blank" rel="noopener">SpringCloud-断路降级</a></li>
-<li><a href="http://dawell.cc/2018/08/10/SpringCloud-%E7%9B%91%E6%8E%A7%E7%AE%A1%E7%90%86/" target="_blank" rel="noopener">SpringCloud-监控管理</a></li>
-<li>【当前文章】<a href="http://dawell.cc/2018/08/11/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E4%B8%B4%E6%97%B6%E4%BB%BB%E5%8A%A1/" target="_blank" rel="noopener">SpringCloud-番外篇-临时任务</a></li>
-<li><a href="http://dawell.cc/2018/08/12/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E6%96%87%E6%A1%A3%E7%94%9F%E6%88%90/" target="_blank" rel="noopener">SpringCloud-番外篇-文档生成</a></li>
-<li><a href="http://dawell.cc/2018/08/13/SpringCloud-%E7%95%AA%E5%A4%96%E7%AF%87-%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" target="_blank" rel="noopener">SpringCloud-番外篇-源码解析</a></li>
-</ol>
-<h3 id="接入说明"><a href="#接入说明" class="headerlink" title="接入说明"></a>接入说明</h3><ol>
-<li>目前采用最新的1.xRelease版本：1.5.15.RELEASE</li>
-<li>SpringCloud项目可以在start.spring.io下载，不过更方便的应该是通过idea新建项目，建立Spring Initializr项目</li>
-<li>我一般习惯将具体实现服务用具体的服务名，而公共组件用service-xxx来命名，当然还有一些比较固定名字的公共组件</li>
-</ol>
-<h3 id="Task"><a href="#Task" class="headerlink" title="Task"></a>Task</h3><h4 id="1-新建项目"><a href="#1-新建项目" class="headerlink" title="1. 新建项目"></a>1. 新建项目</h4><p>新建artifactId为service-task的服务</p>
-<h4 id="2-导入依赖"><a href="#2-导入依赖" class="headerlink" title="2. 导入依赖"></a>2. 导入依赖</h4><p>依赖说明</p>
-<ol>
-<li>actuator用于暴露监控的接口</li>
-<li>eureka-server是Eureka服务器的依赖</li>
-<li>config是Config客户端，从配置中心拉取配置</li>
-<li>task用于短命服务的依赖</li>
-<li>jpa与mysql的依赖用于存储task相关的数据</li>
-</ol>
-<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-actuator<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-config<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-netflix-eureka-client<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-task<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-data-jpa<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>mysql<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>mysql-connector-java<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<h4 id="3-编写启动类"><a href="#3-编写启动类" class="headerlink" title="3. 编写启动类"></a>3. 编写启动类</h4><p>打开ServiceTaskApplication，在class上加入@EnableTask注解</p>
-<h4 id="4-修改配置"><a href="#4-修改配置" class="headerlink" title="4. 修改配置"></a>4. 修改配置</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">server.port=8060</span><br><span class="line">spring.application.name=service-task</span><br><span class="line"></span><br><span class="line">#private</span><br><span class="line">spring.datasource.driverClassName=com.mysql.jdbc.Driver</span><br><span class="line">spring.datasource.url=jdbc:mysql://localhost:3306/springcloud</span><br><span class="line">spring.datasource.username=root</span><br><span class="line">spring.datasource.password=xxx</span><br><span class="line">spring.jpa.database=MySQL</span><br><span class="line">spring.jpa.show-sql=true  </span><br><span class="line">spring.jpa.generate-ddl=true  </span><br><span class="line">spring.jpa.hibernate.ddl-auto=update</span><br><span class="line">spring.jpa.hibernate.naming_strategy=org.hibernate.cfg.ImprovedNamingStrategy</span><br></pre></td></tr></table></figure>
-<p>主要配置jpa与datasource链接到mysql数据库，如果使用内存存储则不需要任何数据库配置</p>
-<h4 id="5-编写方法"><a href="#5-编写方法" class="headerlink" title="5. 编写方法"></a>5. 编写方法</h4><p>在main类中编写CommandLineRunner相关接口task会全部执行完</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@EnableTask</span></span><br><span class="line"><span class="meta">@SpringBootApplication</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ServiceTaskApplication</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        SpringApplication.run(ServiceTaskApplication.class, args);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> CommandLineRunner <span class="title">commandLineRunner</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> strings -&gt; System.out.println(<span class="string">"Hello World!"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> CommandLineRunner <span class="title">commandLineRunner2</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> strings -&gt; System.out.println(<span class="string">"Hello 2!"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h4 id="5-启动main"><a href="#5-启动main" class="headerlink" title="5. 启动main"></a>5. 启动main</h4><h4 id="6-验证"><a href="#6-验证" class="headerlink" title="6. 验证"></a>6. 验证</h4><p>main方法运行后会直接退出，同时控制台会打印”Hello World!”与”Hello 2!”</p>
-<h4 id="疑问"><a href="#疑问" class="headerlink" title="疑问"></a>疑问</h4><p>这个干嘛用的？<br>官方叫做短命任务，就是执行一次就结束的任务，用于一些临时处理的代码场景，每次执行都会记录在数据库中执行的结果，正常，异常信息</p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;SpringCloud文章系列&quot;&gt;&lt;a href=&quot;#SpringCloud文章系列&quot; class=&quot;headerlink&quot; title=&quot;SpringCloud文章系列&quot;&gt;&lt;/a&gt;SpringCloud文章系列&lt;/h1&gt;&lt;ol&gt;
-&lt;li&gt;&lt;a href=&quot;htt
-    
-    </summary>
-    
-      <category term="技术" scheme="https://dawell.github.io/categories/%E6%8A%80%E6%9C%AF/"/>
-    
-    
-      <category term="SpringCloud" scheme="https://dawell.github.io/tags/SpringCloud/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>20180501架构设计</title>
-    <link href="https://dawell.github.io/2018/08/11/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/"/>
-    <id>https://dawell.github.io/2018/08/11/架构设计/</id>
-    <published>2018-08-11T02:47:36.000Z</published>
-    <updated>2018-08-15T11:33:02.642Z</updated>
-    
-    <content type="html"><![CDATA[<p>准备介绍内容如下</p>
-<ol>
-<li>领域驱动</li>
-<li>前后端分离</li>
-<li>微服务设计</li>
-<li>缓存策略</li>
-<li>限流策略</li>
-</ol>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;p&gt;准备介绍内容如下&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;领域驱动&lt;/li&gt;
-&lt;li&gt;前后端分离&lt;/li&gt;
-&lt;li&gt;微服务设计&lt;/li&gt;
-&lt;li&gt;缓存策略&lt;/li&gt;
-&lt;li&gt;限流策略&lt;/li&gt;
-&lt;/ol&gt;
-
-    
-    </summary>
-    
     
   </entry>
   
